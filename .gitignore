@@ -18,3 +18,10 @@ __pycache__/
 .venv/
 venv/
 .DS_Store
+
+# Informes locales de revisión: contienen sitios y usuarios enmascarados
+informe_*.md
+informe_*.txt
+*_informe.md
+*_report.md
+*_revision.md

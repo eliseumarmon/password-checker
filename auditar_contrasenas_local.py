@@ -18,7 +18,7 @@ import sys
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlunsplit
 
 # Chrome exports Android app credentials using android://signature@package/.
 # Bitwarden matches Android apps using androidapp://package.
@@ -343,11 +343,12 @@ def process(rows):
         "android_apps": sum(ANDROID_SOURCE.fullmatch(g[0].url.strip()) is not None for g in unique),
         "url_credentials": sum(url_parts(r.url)[4] for r in output_rows),
         "undedupeable": sum(duplicate_key(r) is None for r in rows),
+        "merged_per_row": {id(row): len(group) - 1 for group, row in zip(unique, output_rows)},
     }
     return output_rows, stats
 
 
-def report(stats, details, dry_run, diagnostics=()):
+def report(stats, details, dry_run, diagnostics=(), report_requested=False):
     print("AUDITORIA LOCAL / {}".format("DRY RUN - SIN ESCRITURA" if dry_run else "EXPORTACION"))
     print("=" * 49)
     print("Filas de entrada:              {}".format(stats["originals"]))
@@ -394,7 +395,145 @@ def report(stats, details, dry_run, diagnostics=()):
         print("Comprueba manualmente estos registros antes de importar: una coma sin")
         print("comillas tambien podria pertenecer a una contrasena, no a la nota.")
     if dry_run:
-        print("\nDRY RUN: no se ha creado ni modificado ningun archivo.")
+        print("\nDRY RUN: no se crea CSV de Bitwarden." if report_requested else
+              "\nDRY RUN: no se ha creado ni modificado ningun archivo.")
+
+
+def markdown_cell(value, limit=None):
+    """Escape table syntax and untrusted names; never allow new table rows."""
+    value = re.sub(r"[\x00-\x1f\x7f]+", " ", str(value)).strip()
+    if limit is not None and len(value) > limit:
+        value = value[:limit - 1].rstrip() + "…"
+    for ch in ("\\", "|", "[", "]", "*", "_", chr(96), "<", ">"):
+        value = value.replace(ch, "\\" + ch)
+    return value or "—"
+
+
+def markdown_page(row):
+    """Link to website origin only: never leak URL query, path tokens or userinfo."""
+    name = markdown_cell(row.name.strip() or url_parts(row.url)[1] or "Sin nombre", 48)
+    try:
+        parsed = urlsplit(row.url)
+        if (parsed.scheme.lower() not in ("http", "https") or not parsed.hostname
+                or parsed.username is not None or parsed.password is not None):
+            return name
+        # No path/query/fragment: links in reports must not expose login tokens.
+        host = parsed.hostname.lower()
+        host = "[" + host + "]" if ":" in host else host
+        port = parsed.port
+        if port is not None and port != (80 if parsed.scheme.lower() == "http" else 443):
+            host += ":" + str(port)
+        origin = urlunsplit((parsed.scheme.lower(), host, "/", "", ""))
+        return "[{}]({})".format(name, origin)
+    except ValueError:
+        return name
+
+
+def make_markdown_report(rows, stats, diagnostics=()):
+    """One actionable row per imported credential, no passwords or notes."""
+    conflict_ids = {id(rec) for group in stats["conflicts"] for rec in group}
+    related_ids = {id(rec) for group in stats["possible_related"] for rec in group}
+    password_accounts = defaultdict(set)
+    for rec in rows:
+        _, host, _, invalid, _ = url_parts(rec.url)
+        if rec.password and host and not invalid and rec.username:
+            password_accounts[rec.password].add((host, rec.username))
+    reused_passwords = {pw for pw, accounts in password_accounts.items() if len(accounts) > 1}
+
+    records = []
+    for rec in rows:
+        issues = []
+        actions = []
+        priority = 2
+        def add(level, issue, action):
+            nonlocal priority
+            priority = min(priority, level)
+            issues.append(issue)
+            if action not in actions:
+                actions.append(action)
+        _, _, is_http, invalid, embedded = url_parts(rec.url)
+        if id(rec) in conflict_ids:
+            add(0, "Contraseñas distintas para la misma cuenta", "Verificar cuál funciona y retirar versiones obsoletas")
+        if rec.password in reused_passwords and rec.password:
+            add(0, "Contraseña reutilizada", "Cambiar por una contraseña única")
+        if not rec.password:
+            add(0, "Sin contraseña", "Comprobar si el acceso sigue siendo válido")
+        elif simple_weak(rec.password):
+            add(0, "Patrón de contraseña débil", "Cambiar por una contraseña larga y única")
+        elif len(rec.password) < 12:
+            add(1, "Contraseña corta (<12 caracteres)", "Valorar cambio por una contraseña larga")
+        elif len(rec.password) < 14:
+            add(1, "Contraseña de 12-13 caracteres", "Revisar fortaleza en contexto")
+        if not rec.username:
+            add(1, "Sin usuario", "Comprobar a qué cuenta corresponde")
+        if not rec.url or invalid:
+            add(1, "URL ausente o no reconocida", "Comprobar dirección del servicio")
+        if embedded:
+            add(0, "URL con credenciales incrustadas", "Corregir URL y revisar exposición")
+        if is_http:
+            add(1, "URL HTTP", "Localizar el acceso HTTPS")
+        if id(rec) in related_ids:
+            add(1, "Mismo dominio y usuario en otras URL", "Comprobar si son accesos distintos")
+        merged = stats["merged_per_row"].get(id(rec), 0)
+        if merged:
+            issues.append("{} duplicado(s) fusionado(s)".format(merged))
+        if not actions:
+            actions.append("Validar cuando se utilice")
+        records.append((priority, rec, issues, actions))
+
+    records.sort(key=lambda item: (item[0], (item[1].name or url_parts(item[1].url)[1]).casefold(), item[1].username.casefold()))
+    counts = Counter(level for level, _, _, _ in records)
+    lines = [
+        "# Informe de revisión de credenciales", "",
+        "> Generado localmente. Contiene nombres de servicios y usuarios enmascarados; **no compartir públicamente**.",
+        "> No contiene contraseñas ni notas. Los enlaces web apuntan solo al origen (sin rutas, parámetros ni fragmentos).", "",
+        "## Resumen", "",
+        "- Filas originales: **{}**".format(stats["originals"]),
+        "- Duplicados exactos fusionados: **{}**".format(stats["duplicates"]),
+        "- Credenciales para Bitwarden: **{}**".format(stats["final"]),
+        "- Cuentas con conflicto: **{}**".format(len(stats["conflicts"])),
+        "- Grupos de reutilización: **{}**".format(stats["reused_groups"]),
+        "- Prioridad alta: **{}**; media: **{}**; baja: **{}**".format(counts[0], counts[1], counts[2]),
+        "", "## Revisión por credencial", "",
+        "| Nº | Prioridad | Página | Usuario | Motivo | Acción recomendada |",
+        "| ---: | --- | --- | --- | --- | --- |",
+    ]
+    for number, (priority, rec, issues, actions) in enumerate(records, start=1):
+        lines.append("| {} | {} | {} | {} | {} | {} |".format(
+            number, ("Alta", "Media", "Baja")[priority], markdown_page(rec),
+            markdown_cell(masked_username(rec.username)),
+            markdown_cell("; ".join(issues) if issues else "Sin incidencias detectadas"),
+            markdown_cell("; ".join(actions))))
+    if diagnostics:
+        lines += ["", "## Avisos de lectura CSV", "",
+                  "Revisa manualmente las filas reparadas antes de importar:", ""]
+        for source, line, reason in diagnostics:
+            lines.append("- {}: línea {} — {}".format(markdown_cell(source), line, markdown_cell(reason)))
+    lines += ["", "## Alcance", "",
+              "La fortaleza es orientativa y no se comprueba la validez de las cuentas ni si hubo filtraciones.",
+              "Las contraseñas en conflicto se conservan en Bitwarden; no se elige ninguna automáticamente.",
+              "Los duplicados exactos ya fusionados no requieren otra acción por ese solo motivo.", ""]
+    return "\n".join(lines)
+
+
+def write_report(path, inputs, markdown):
+    """Create a private Markdown/text report without overwriting anything."""
+    output = Path(path)
+    if any(output.resolve() == Path(filename).resolve() for filename in inputs):
+        raise ValueError("El informe no puede sobrescribir un CSV de entrada")
+    if not output.parent.is_dir():
+        raise ValueError("No existe la carpeta del informe: {}".format(output.parent))
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    fd = os.open(output, flags, 0o600)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as file:
+            file.write(markdown)
+    except BaseException:
+        output.unlink(missing_ok=True)
+        raise
+    return output
 
 
 def write_export(path, inputs, rows):
@@ -437,6 +576,8 @@ def main(argv=None):
     modes.add_argument("--dry-run", action="store_true", help="Simula y muestra informe (predeterminado)")
     modes.add_argument("--apply", action="store_true", help="Escribe CSV final; requiere --output")
     parser.add_argument("--output", metavar="RUTA.csv", help="Ruta nueva para el CSV de Bitwarden")
+    parser.add_argument("--report", metavar="RUTA.md",
+                        help="Guarda tabla Markdown de revisión (también en dry-run, sin crear CSV)")
     parser.add_argument("--repair-extra-notes", action="store_true",
                         help="Reconstruye comas sin citar en la ultima columna de notas de Chrome/Brave; requiere revision")
     parser.add_argument("--detalle", action="store_true",
@@ -462,9 +603,34 @@ def main(argv=None):
         if not rows:
             raise ValueError("Los CSV no contienen registros; se cancela")
         cleaned, stats = process(rows)
-        report(stats, args.detalle, dry_run=not args.apply, diagnostics=diagnostics)
+        report_path = (args.report or
+                       str(Path(args.output).with_name(Path(args.output).stem + "_informe.md"))
+                       if args.apply else args.report)
+        # Dry-run solo escribe un informe cuando se solicita explicitamente.
+        if report_path:
+            targets = [Path(path).resolve() for path in files.values()]
+            if args.apply:
+                targets.append(Path(args.output).resolve())
+            if Path(report_path).resolve() in targets:
+                raise ValueError("El informe no puede coincidir con ningun CSV de entrada o salida")
+            if Path(report_path).exists():
+                raise ValueError("El informe ya existe: {}".format(report_path))
+        if args.apply and Path(args.output).exists():
+            raise ValueError("El CSV de salida ya existe: {}".format(args.output))
+        report(stats, args.detalle, dry_run=not args.apply, diagnostics=diagnostics,
+               report_requested=bool(report_path))
+        created_report = None
+        if report_path:
+            content = make_markdown_report(cleaned, stats, diagnostics)
+            created_report = write_report(report_path, files.values(), content)
+            print("\nInforme Markdown creado: {}".format(created_report))
         if args.apply:
-            filename = write_export(args.output, files.values(), cleaned)
+            try:
+                filename = write_export(args.output, files.values(), cleaned)
+            except BaseException:
+                if created_report is not None:
+                    created_report.unlink(missing_ok=True)
+                raise
             print("\nArchivo Bitwarden creado: {} ({} registros)".format(filename, len(cleaned)))
             print("IMPORTANTE: es texto plano. Importa como 'Bitwarden (csv)' y borra el")
             print("CSV generado y los CSV de origen cuando compruebes que todo funciona.")

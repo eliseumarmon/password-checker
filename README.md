@@ -4,9 +4,9 @@ Herramienta local (Python 3.9+, sin dependencias) para **auditar y consolidar ex
 
 ## Seguridad y modos
 
-- **Dry-run por defecto**: muestra estadísticas y avisos; no crea ni cambia archivos.
-- `--apply --output RUTA`: crea un CSV nuevo para Bitwarden. No sobrescribe ficheros, ni siquiera los de entrada.
-- Las contraseñas **no se imprimen**, transmiten ni incluyen en los informes. Los nombres de sitios y usuarios se muestran solo con `--detalle` (usuarios parcialmente ocultos).
+- **Dry-run por defecto**: muestra estadísticas y avisos; no crea ni cambia archivos. Con --report RUTA.md puedes guardar solo el informe de revisión, sin exportar contraseñas.
+- `--apply --output RUTA`: crea un CSV nuevo para Bitwarden y un informe `RUTA_informe.md`. No sobrescribe ficheros, ni siquiera los de entrada.
+- Las contraseñas **no se imprimen**, transmiten ni incluyen en los informes. El informe Markdown muestra nombres de servicios y usuarios enmascarados. Los enlaces web apuntan solo a la página principal del dominio, sin rutas ni parámetros que pudieran contener tokens.
 - **Todos los CSV de entrada y salida contienen contraseñas en texto plano**. No compartir, subir al repositorio, ni guardar en carpetas de sincronización o copias inseguras. El `.gitignore` es una última barrera, no una protección suficiente frente a `git add -f`.
 - `--apply` conserva **todas las contraseñas en conflicto**; no adivina cuál sigue siendo válida.
 
@@ -17,7 +17,7 @@ Exporta un archivo CSV desde cada navegador. No hace falta exportar por sistema 
 Linux:
 
 ```bash
-python3 auditar_contrasenas_local.py --chrome chrome.csv --brave brave.csv --firefox firefox.csv --dry-run --detalle
+python3 auditar_contrasenas_local.py --chrome chrome.csv --brave brave.csv --firefox firefox.csv --dry-run --report informe_revision.md
 python3 auditar_contrasenas_local.py --chrome chrome.csv --brave brave.csv --firefox firefox.csv --apply --output bitwarden_import.csv
 ```
 
@@ -29,6 +29,17 @@ py .\auditar_contrasenas_local.py --chrome chrome.csv --brave brave.csv --firefo
 ```
 
 La opción `--dry-run` es redundante: **es el comportamiento predeterminado**. `--detalle` es opcional. Selecciona el formato **Bitwarden (csv)** al importar el fichero generado.
+
+## Informe Markdown de revisión
+
+- Tabla de **todas las credenciales deduplicadas**, una por registro de Bitwarden (incluidas variantes conflictivas, identificadas por número).
+- Columnas: número, prioridad (**Alta / Media / Baja**), página enlazada con el nombre, usuario enmascarado, motivo y **acción recomendada**.
+- Ordenadas por prioridad: primero conflictos y contraseñas reutilizadas o evidentemente débiles, después otros avisos y finalmente accesos sin incidencias.
+- Incluye resumen con recuentos de duplicados, conflictos y otras incidencias, además de avisos de reparación CSV.
+- Nunca incluye contraseñas ni notas. Los enlaces web **solo apuntan al origen del dominio**, no a rutas de recuperación ni parámetros que podrían incluir tokens. Las aplicaciones Android aparecen con su nombre, sin enlace web artificial.
+- El informe Markdown es **texto plano**, extensión .md o .txt. Aunque no contiene contraseñas, revela servicios y usuarios parcialmente ocultos; mantenlo en local.
+
+**Modos:** sin --report y en --dry-run no se escribe nada. Con --dry-run --report informe_revision.md solo se guarda la tabla, no se genera CSV de contraseñas. --apply --output bitwarden_import.csv crea automáticamente bitwarden_import_informe.md; usa --report OTRO.md para elegir otra ruta. El script rechaza sobrescribir archivos existentes.
 
 ## Formatos de entrada
 

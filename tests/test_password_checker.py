@@ -187,6 +187,81 @@ class PasswordCheckerTests(unittest.TestCase):
         self.assertIn('URI fuera de su columna', result.stderr)
         self.assertNotIn('fake-password-123', result.stderr)
 
+    def test_dry_run_report_only_and_no_passwords(self):
+        report = self.root / 'revisar.md'
+        result = self.run_cli('--dry-run', '--report', str(report))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(report.exists())
+        self.assertFalse((self.root / 'bitwarden_import.csv').exists())
+        content = report.read_text(encoding='utf-8')
+        self.assertIn('| Nº | Prioridad | Página | Usuario | Motivo | Acción recomendada |', content)
+        self.assertIn('[GitHub](https://github.com/)', content)
+        self.assertIn('Verificar cuál funciona', content)
+        self.assertIn('Contraseña reutilizada', content)
+        self.assertIn('Duplicados exactos fusionados: **2**', content)
+        self.assertNotIn('fake-correct-123456', content)
+        self.assertNotIn('fake-old-123456789', content)
+        self.assertNotIn('nota, con coma', content)
+        self.assertEqual(content.count('\n| 1 |'), 1)
+        if os.name != 'nt':
+            self.assertEqual(report.stat().st_mode & 0o777, 0o600)
+        again = self.run_cli('--report', str(report))
+        self.assertNotEqual(again.returncode, 0)
+        self.assertIn('ya existe', again.stderr)
+
+    def test_apply_generates_report_next_to_csv_by_default(self):
+        output = self.root / 'bitwarden_import.csv'
+        result = self.run_cli('--apply', '--output', str(output))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = self.root / 'bitwarden_import_informe.md'
+        self.assertTrue(report.exists())
+        self.assertIn('[GitHub](https://github.com/)', report.read_text(encoding='utf-8'))
+        self.assertTrue(output.exists())
+        if os.name != 'nt':
+            self.assertEqual(report.stat().st_mode & 0o777, 0o600)
+
+    def test_report_markdown_links_escape_names_and_strip_tokens(self):
+        from auditar_contrasenas_local import Credential, make_markdown_report
+        rows = [Credential('chrome', 2, 'Site | [danger] ',
+                           'https://user:secret@private.invalid/reset/token?key=secret',
+                           'someone@example.invalid', 'fake-pass-1234567890', ''),
+                Credential('chrome', 3, 'Safe|[label]\nsecond row',
+                           'https://host.invalid/reset/TOKEN?token=abc#secret',
+                           'bob', 'fake-pass-9876543210', '')]
+        cleaned, stats = process(rows)
+        result = make_markdown_report(cleaned, stats)
+        self.assertIn('Safe\\|\\[label\\] second row', result)
+        self.assertIn('[Safe\\|\\[label\\] second row](https://host.invalid/)', result)
+        self.assertNotIn('token=abc', result)
+        self.assertNotIn('reset/TOKEN', result)
+        self.assertNotIn('user:secret', result)
+        self.assertNotIn('fake-pass-1234567890', result)
+        self.assertNotIn('fake-pass-9876543210', result)
+        table_rows = [row for row in result.splitlines() if row.startswith('| ')]
+        self.assertEqual(len(table_rows), 4)
+
+    def test_android_app_report_uses_plain_name_not_uri(self):
+        from auditar_contrasenas_local import make_markdown_report
+        self._csv(self.chrome, ['name', 'url', 'username', 'password', 'note'], [
+            ['VK: red social, mensajero', 'android://FAKE@com.example.social/',
+             'phoneuser', 'fake-password-12345', '']])
+        rows = read_export('chrome', self.chrome)
+        cleaned, stats = process(rows)
+        result = make_markdown_report(cleaned, stats)
+        self.assertIn('VK: red social, mensajero', result)
+        self.assertNotIn('FAKE@com.example.social', result)
+        self.assertNotIn('androidapp://', result)
+
+    def test_report_path_cannot_overwrite_input_or_output(self):
+        output = self.root / 'bitwarden.csv'
+        result = self.run_cli('--report', str(self.chrome))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('no puede coincidir', result.stderr)
+        result = self.run_cli('--apply', '--output', str(output), '--report', str(output))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(output.exists())
+        self.assertIn('no puede coincidir', result.stderr)
+
     def test_csv_utf8_and_semicolon_diagnostic(self):
         self.chrome.write_text('name;url;username;password;note\nSite;https://test.invalid;alice;abc;note\n', encoding='utf-8')
         result = self.run_cli('--dry-run')
