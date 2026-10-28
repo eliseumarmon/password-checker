@@ -140,6 +140,53 @@ class PasswordCheckerTests(unittest.TestCase):
         self.assertEqual(rows[0].password, 'fake,with,commas')
         self.assertEqual(rows[0].note, 'nota,comas')
 
+
+    def test_android_uri_unquoted_comma_in_title(self):
+        self.chrome.write_text(
+            'name,url,username,password,note\n'
+            'Red social,mensajero,android://FAKE@com.example.social/,user42,fake-password-123,\n',
+            encoding='utf-8')
+        diagnostics = []
+        rows = read_export('chrome', self.chrome, diagnostics=diagnostics)
+        self.assertEqual(rows[0].name, 'Red social,mensajero')
+        self.assertEqual(rows[0].username, 'user42')
+        self.assertEqual(rows[0].password, 'fake-password-123')
+        self.assertEqual(len(diagnostics), 1)
+        cleaned, stats = process(rows)
+        self.assertEqual(stats['invalid_url'], 0)
+        self.assertEqual(cleaned[0].url, 'androidapp://com.example.social')
+        self.assertIn('android://FAKE@com.example.social/', cleaned[0].note)
+
+    def test_android_uri_no_title_comma(self):
+        uri = 'android://FAKE@com.example.shop/'
+        self._csv(self.chrome, ['name','url','username','password','note'],
+                  [['Shop',uri,'user42','fake-password-123','']])
+        rows = read_export('chrome', self.chrome)
+        self.assertEqual(rows[0].url, uri)
+        self.assertEqual(rows[0].password, 'fake-password-123')
+        cleaned, stats = process(rows)
+        self.assertEqual(stats['invalid_url'], 0)
+        self.assertEqual(cleaned[0].url, 'androidapp://com.example.shop')
+
+    def test_shifted_title_with_missing_trailing_note(self):
+        self.chrome.write_text(
+            'name,url,username,password,note\n'
+            'Red social,mensajero,android://FAKE@com.example.social/,user42,fake-password-123\n',
+            encoding='utf-8')
+        rows = read_export('chrome', self.chrome)
+        self.assertEqual(rows[0].name, 'Red social,mensajero')
+        self.assertEqual(rows[0].note, '')
+
+    def test_repair_notes_rejects_misaligned_uri(self):
+        self.chrome.write_text(
+            'name,url,username,password,note\n'
+            'Red,social,mensajero,android://FAKE@com.example.social/,user42,fake-password-123,\n',
+            encoding='utf-8')
+        result = self.run_cli('--repair-extra-notes', '--dry-run')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('URI fuera de su columna', result.stderr)
+        self.assertNotIn('fake-password-123', result.stderr)
+
     def test_csv_utf8_and_semicolon_diagnostic(self):
         self.chrome.write_text('name;url;username;password;note\nSite;https://test.invalid;alice;abc;note\n', encoding='utf-8')
         result = self.run_cli('--dry-run')

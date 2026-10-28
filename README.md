@@ -40,6 +40,10 @@ url,username,password,httpRealm,formActionOrigin,guid,timeCreated,timeLastUsed,t
 
 El script identifica las columnas por su nombre y acepta BOM UTF-8 y valores entrecomillados, incluidas comas o saltos de línea en notas y contraseñas. En Firefox conserva el `httpRealm` no vacío en las notas. Otros metadatos de Firefox (`guid`, `timeCreated`, etc.) **no tienen correspondencia directa en Bitwarden (csv)** y se descartan.
 
+### Aplicaciones Android
+
+Las URI de apps Android de Chrome/Brave (android://FIRMA@paquete/) no son errores: se convierten a androidapp://paquete para Bitwarden, conservando la original en las notas. Si una coma sin entrecomillar en el nombre desplaza la URI, el programa puede reconstruirla de forma restringida y mostrar un aviso. Las filas ambiguas se rechazan, nunca se modifican contraseñas silenciosamente.
+
 ### Error «número de columnas incorrecto»
 
 Con una exportación CSV válida, una nota que contiene comas o saltos de línea entrecomillados **no causa errores**. Si Chrome muestra, por ejemplo, `chrome: linea 170: 6 columnas, esperadas 5`, el archivo puede estar **mal formado**. Comprueba primero que sea la exportación original, sin editar en Excel/LibreOffice, y prueba a exportarlo otra vez.

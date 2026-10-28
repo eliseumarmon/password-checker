@@ -20,6 +20,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit
 
+# Chrome exports Android app credentials using android://signature@package/.
+# Bitwarden matches Android apps using androidapp://package.
+ANDROID_SOURCE = re.compile(
+    r"^android://(?P<signature>[^/@\s]+)@(?P<package>[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+)/?$",
+    re.IGNORECASE,
+)
+ANDROIDAPP = re.compile(
+    r"^androidapp://(?P<package>[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+)/?$",
+    re.IGNORECASE,
+)
+
 BITWARDEN_FIELDS = (
     "folder", "favorite", "type", "name", "notes", "fields", "reprompt",
     "login_uri", "login_username", "login_password", "login_totp",
@@ -85,11 +96,34 @@ def read_export(source, filename, repair_extra_notes=False, diagnostics=None):
         # Algunos exportadores omiten los ultimos campos vacios; SOLO el
         # campo final de nota se puede rellenar sin desplazar columnas.
         for values in reader:
-            start_line = reader.line_num - ("\n".join(values).count("\n"))
             line = reader.line_num
+            start_line = reader.line_num - sum(value.count("\n") for value in values)
             if not values or (len(values) == 1 and not values[0].strip()):
                 continue
+
+            # If a title contains an unquoted comma, the URI can shift into
+            # the username column, even with the expected number of fields
+            # when the final empty note is missing. Only repair this narrowly
+            # when the next column is a recognizable, complete URI.
+            url_idx = next((keys[k] for k in ("url", "origin", "website", "hostname", "loginuri")
+                            if k in keys), None)
+            name_idx = next((keys[k] for k in ("name", "title") if k in keys), None)
+            if (source in ("chrome", "brave") and name_idx is not None and
+                    url_idx == name_idx + 1 and len(values) > url_idx + 1 and
+                    not supported_uri(values[url_idx]) and supported_uri(values[url_idx + 1])):
+                if len(values) in (expected, expected + 1) and note_last:
+                    values = (values[:name_idx] +
+                              [values[name_idx] + "," + values[url_idx]] +
+                              values[url_idx + 1:])
+                    if len(values) == expected - 1:
+                        values.append("")
+                    if diagnostics is not None:
+                        diagnostics.append((source, line, "nombre reconstruido; revisar la fila original"))
+                else:
+                    raise ValueError("{}: linea {}: URI desplazada; la reconstruccion de nombre es ambigua. No se importara.".format(source, line))
             if len(values) > expected:
+                if url_idx is not None and not supported_uri(values[url_idx]):
+                    raise ValueError("{}: linea {}: URI fuera de su columna o invalida; se cancela para proteger la contrasena.".format(source, line))
                 if not (repair_extra_notes and note_last and source in ("chrome", "brave")):
                     hint = (" Revisa comas sin comillas en notas; prueba --repair-extra-notes"
                             " solo si confirmas que las comas pertenecen a notas."
@@ -134,11 +168,38 @@ def read_export(source, filename, repair_extra_notes=False, diagnostics=None):
     return rows
 
 
+def supported_uri(raw):
+    """Require an explicit, known scheme when detecting shifted columns."""
+    if not raw or not raw.strip() or raw != raw.strip():
+        return False
+    if not re.match(r"^(?:https?://|android://|androidapp://)", raw, re.IGNORECASE):
+        return False
+    return not url_parts(raw)[3]
+
+
+def bitwarden_uri(raw):
+    """Convert Chrome Android URIs to Bitwarden's app URI format."""
+    match = ANDROID_SOURCE.fullmatch(raw.strip())
+    if match:
+        return "androidapp://" + match.group("package").lower()
+    return raw
+
+
 def url_parts(raw):
-    """(clave exacta prudente, host, http_inseguro, invalida, tiene_usuario_en_url)."""
+    """(clave exacta prudente, host/paquete, http_inseguro, invalida, auth_web)."""
     url = raw.strip()
     if not url:
         return "", "", False, True, False
+    app_source = ANDROID_SOURCE.fullmatch(url)
+    if app_source:
+        # Do not deduplicate different app signatures solely by package.
+        return (("android-source", app_source.group("package").casefold(),
+                 app_source.group("signature")),
+                app_source.group("package").casefold(), False, False, False)
+    app_uri = ANDROIDAPP.fullmatch(url)
+    if app_uri:
+        return (("androidapp", app_uri.group("package").casefold()),
+                app_uri.group("package").casefold(), False, False, False)
     try:
         # No aceptar esquemas inventados ni resolver URLs con peticiones externas.
         parsed = urlsplit(url if "://" in url else "https://" + url)
@@ -205,11 +266,16 @@ def merge_group(records):
         _, host, _, _, _ = url_parts(first.url)
         chosen = host or "Acceso sin nombre"
     notes = list(dict.fromkeys(r.note for r in records if r.note.strip()))
+    originals = list(dict.fromkeys(r.url for r in records if ANDROID_SOURCE.fullmatch(r.url.strip())))
+    for original in originals:
+        note = "URI Android de origen: " + original
+        if note not in notes:
+            notes.append(note)
     if len(notes) > 1:
         merged_note = "\n\n----- Nota adicional -----\n\n".join(notes)
     else:
         merged_note = notes[0] if notes else ""
-    return Credential(first.source, first.line, chosen, first.url,
+    return Credential(first.source, first.line, chosen, bitwarden_uri(first.url),
                       first.username, first.password, merged_note)
 
 
@@ -230,8 +296,8 @@ def process(rows):
     output_rows = [merge_group(group) for group in unique]
     notes_merged = sum(len(set(r.note for r in g if r.note.strip())) > 1 for g in unique)
     accounts = defaultdict(list)
-    for row in output_rows:
-        key = account_key(row)
+    for group, row in zip(unique, output_rows):
+        key = account_key(group[0])  # Use original URI for identity.
         if key is not None:
             accounts[key].append(row)
     conflicts = [group for group in accounts.values()
@@ -240,12 +306,13 @@ def process(rows):
     # Posibles registros relacionados en rutas diferentes del mismo dominio:
     # solo avisar, nunca fusionar por el dominio ni sobreescribir contrasenas.
     by_host_user = defaultdict(list)
-    for row in output_rows:
-        _, host, _, invalid, _ = url_parts(row.url)
+    for group, row in zip(unique, output_rows):
+        original = group[0]
+        _, host, _, invalid, _ = url_parts(original.url)
         if host and not invalid and row.username:
-            by_host_user[(host, row.username)].append(row)
-    possible_related = [g for g in by_host_user.values()
-                        if len({account_key(r) for r in g}) > 1]
+            by_host_user[(host, row.username)].append((original, row))
+    possible_related = [[row for _, row in g] for g in by_host_user.values()
+                        if len({account_key(original) for original, _ in g}) > 1]
 
     by_password = defaultdict(set)
     for row in output_rows:
@@ -273,6 +340,7 @@ def process(rows):
         "empty_url": sum(not r.url for r in output_rows),
         "http": sum(url_parts(r.url)[2] for r in output_rows),
         "invalid_url": sum(url_parts(r.url)[3] for r in output_rows if r.url),
+        "android_apps": sum(ANDROID_SOURCE.fullmatch(g[0].url.strip()) is not None for g in unique),
         "url_credentials": sum(url_parts(r.url)[4] for r in output_rows),
         "undedupeable": sum(duplicate_key(r) is None for r in rows),
     }
@@ -300,11 +368,13 @@ def report(stats, details, dry_run, diagnostics=()):
     print("Registros sin usuario: {}".format(stats["empty_username"]))
     print("Registros sin URL: {}".format(stats["empty_url"]))
     print("Registros con URL http: {}".format(stats["http"]))
+    print("Aplicaciones Android convertidas a formato Bitwarden: {}".format(stats["android_apps"]))
     print("Registros con URL no reconocida: {}".format(stats["invalid_url"]))
     print("Registros con usuario/clave incrustados en URL: {}".format(stats["url_credentials"]))
     print("Filas sin deduplicacion segura: {}".format(stats["undedupeable"]))
     print("\nLos conflictos NO se descartan: ambas claves se conservan para revision.")
     print("Las notas diferentes se conservan. No se fusionan URLs distintas por dominio.")
+    print("Las URI android:// se convierten a androidapp:// y se conserva la original en notas.")
     print("La fortaleza es orientativa: no se consultan filtraciones ni se verifica vigencia.")
     print("Ninguna contrasena se muestra en pantalla ni se envia a Internet.")
     if details:
