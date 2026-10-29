@@ -5,7 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from backend.password_checker.domain.accounts import account_key, duplicate_key, masked_username  # noqa: E402
+from backend.password_checker.domain.accounts import account_key, duplicate_key, masked_username, origin_account  # noqa: E402
 from backend.password_checker.domain.consolidation import consolidate  # noqa: E402
 from backend.password_checker.domain.credential import Credential  # noqa: E402
 from backend.password_checker.domain.notes import NOTE_SEPARATOR, combine_notes  # noqa: E402
@@ -86,6 +86,17 @@ class AccountTests(unittest.TestCase):
         self.assertNotEqual(account_key(cred('https://example.org', 'Alice', 'x')),
                             account_key(cred('https://example.org', 'alice', 'x')))
 
+    def test_origin_account_is_scheme_host_port_and_username(self):
+        same = origin_account(cred('https://Example.org/login?x=1', 'alice', 'x'))
+        self.assertEqual(same, origin_account(cred('https://example.org:443/settings', 'alice', 'x')))
+        self.assertNotEqual(origin_account(cred('http://127.0.0.1:8080/', 'admin', 'x')),
+                            origin_account(cred('http://127.0.0.1:9090/', 'admin', 'x')))
+        self.assertNotEqual(same, origin_account(cred('http://example.org/login', 'alice', 'x')))
+        self.assertEqual(origin_account(cred('android://SIGN@com.example.app/', 'eve', 'x')),
+                         origin_account(cred('androidapp://com.example.app', 'eve', 'x')))
+        self.assertIsNone(origin_account(cred('ftp://example.org', 'alice', 'x')))
+        self.assertIsNone(origin_account(cred('https://example.org', '', 'x')))
+
     def test_masked_username(self):
         self.assertEqual(masked_username('alice@example.org'), 'al***@example.org')
         self.assertEqual(masked_username('@example.org'), '***@example.org')
@@ -126,6 +137,14 @@ class ConsolidationTests(unittest.TestCase):
         self.assertEqual(stats['duplicates'], 1)
         self.assertEqual(len(stats['conflicts']), 1)
         self.assertEqual({r.password for r in stats['conflicts'][0]}, {'fake-current-123', 'fake-old-1234567'})
+
+    def test_reuse_separates_local_ports_but_not_paths_of_one_site(self):
+        _, stats = consolidate([cred('http://127.0.0.1:8080/', 'admin', 'fake-local-123456'),
+                                cred('http://127.0.0.1:9090/', 'admin', 'fake-local-123456')])
+        self.assertEqual((stats['reused_groups'], stats['reused_accounts']), (1, 2))
+        _, stats = consolidate([cred('https://github.com/login', 'alice', 'fake-same-123456'),
+                                cred('https://github.com/session', 'alice', 'fake-same-123456')])
+        self.assertEqual((stats['reused_groups'], stats['reused_accounts']), (0, 0))
 
     def test_reuse_and_related_metrics(self):
         rows = [cred('https://a.invalid/login', 'alice', 'fake-shared-123456'),

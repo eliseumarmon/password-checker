@@ -4,6 +4,8 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any, Callable, Dict, Hashable, List, Optional, Protocol, Sequence, Set, TypeVar
 
+from .accounts import origin_account
+
 
 class HasPassword(Protocol):
     password: str
@@ -28,3 +30,8 @@ def shared_password_groups(items: Sequence[T],
         members[item.password].append(item)
         accounts[item.password].add(account)
     return [group for password, group in members.items() if len(accounts[password]) > 1]
+
+
+def reused_password_groups(items: Sequence[T]) -> List[List[T]]:
+    """The single reuse rule shared by the CLI, the report and the GUI audit."""
+    return shared_password_groups(items, origin_account)

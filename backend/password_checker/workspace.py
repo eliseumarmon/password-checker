@@ -16,7 +16,7 @@ from typing import Any
 
 from .domain.credential import Credential
 from .domain.notes import combine_notes
-from .domain.reuse import shared_password_groups
+from .domain.reuse import reused_password_groups
 from .domain.strength import is_weak
 from .domain.urls import android_package, bitwarden_uri, parse_url
 from .infrastructure.bitwarden import write_bitwarden_csv
@@ -114,8 +114,7 @@ def detect_audit(rows: list[Candidate]) -> dict[str, Any]:
     weak = [r.id for r in active if is_weak(r.password)]
     incomplete = [r.id for r in active
                   if not r.url or not r.username or not r.password or parse_url(r.url).invalid]
-    reused = [[r.id for r in group] for group in
-              shared_password_groups(active, lambda r: (canonical_url(r), r.username))]
+    reused = [[r.id for r in group] for group in reused_password_groups(active)]
     return {'reused': reused, 'weak': weak, 'incomplete': incomplete, 'breaches': 'not_checked'}
 
 

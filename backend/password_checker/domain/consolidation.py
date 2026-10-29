@@ -9,10 +9,10 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from typing import Any, Dict, List, Sequence, Tuple
 
-from .accounts import account_key, duplicate_key, host_account
+from .accounts import account_key, duplicate_key, host_account, origin_account
 from .credential import Credential
 from .notes import combine_notes
-from .reuse import shared_password_groups
+from .reuse import reused_password_groups
 from .strength import MIN_LENGTH, RECOMMENDED_LENGTH, is_obviously_weak
 from .urls import android_package, bitwarden_uri, is_android_source, parse_url
 
@@ -72,8 +72,8 @@ def consolidate(rows: Sequence[Credential]) -> Tuple[List[Credential], Dict[str,
     """Return the consolidated credentials and review metrics."""
     unique = group_exact_duplicates(rows)
     output_rows = [merge_group(group) for group in unique]
-    reused = shared_password_groups(output_rows, host_account)
-    reused_accounts = {host_account(r) for group in reused for r in group}
+    reused = reused_password_groups(output_rows)
+    reused_accounts = {origin_account(r) for group in reused for r in group}
     # Length and pattern metrics are independent, overlapping counters (a short
     # common password counts in both), unlike the exclusive assess_strength().
     distinct_passwords = set(r.password for r in output_rows if r.password)

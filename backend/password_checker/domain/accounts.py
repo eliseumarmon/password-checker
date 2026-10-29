@@ -7,8 +7,21 @@ from .credential import Credential
 from .urls import parse_url
 
 
+def origin_account(rec: Credential) -> Optional[Tuple[Any, str]]:
+    """Origin (scheme, host, port) or Android package + username: one account for reuse checks.
+
+    Paths of one site are the same account; local apps on different ports are not.
+    """
+    url = parse_url(rec.url)
+    if url.invalid or not rec.username:
+        return None
+    if url.key[0] in ("android-source", "androidapp"):
+        return ("android", url.host), rec.username
+    return url.key[:2], rec.username
+
+
 def host_account(rec: Credential) -> Optional[Tuple[str, str]]:
-    """Domain + username, for reuse and relatedness checks across URL paths."""
+    """Domain + username, to warn about related accounts across URL paths."""
     url = parse_url(rec.url)
     if url.host and not url.invalid and rec.username:
         return url.host, rec.username
