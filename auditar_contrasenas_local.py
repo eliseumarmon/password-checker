@@ -23,11 +23,5 @@ from backend.password_checker.domain.consolidation import consolidate as process
 from backend.password_checker.domain.credential import Credential  # noqa: F401
 from backend.password_checker.infrastructure.csv_reader import read_export  # noqa: F401
 
-# Still imported by backend/password_checker/workspace.py until it uses the domain directly.
-from backend.password_checker.domain.accounts import account_key  # noqa: F401
-from backend.password_checker.domain.strength import is_obviously_weak as simple_weak  # noqa: F401
-from backend.password_checker.domain.urls import bitwarden_uri, parse_url as url_parts  # noqa: F401
-from backend.password_checker.infrastructure.bitwarden import BITWARDEN_FIELDS  # noqa: F401
-
 if __name__ == "__main__":
     sys.exit(main())

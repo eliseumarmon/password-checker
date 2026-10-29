@@ -1,6 +1,6 @@
 """In-memory review workspace. No HTTP or UI dependencies.
 
-The existing CSV reader stays the single source of truth during migration.
+Rules come from the shared domain package, so the CLI and the GUI agree.
 Original credentials are immutable; candidate edits never change imports.
 """
 from __future__ import annotations
@@ -14,10 +14,13 @@ from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Any
 
-from auditar_contrasenas_local import (
-    BITWARDEN_FIELDS, Credential, account_key, bitwarden_uri,
-    read_export, simple_weak, url_parts,
-)
+from .domain.credential import Credential
+from .domain.notes import combine_notes
+from .domain.reuse import shared_password_groups
+from .domain.strength import is_weak
+from .domain.urls import bitwarden_uri, parse_url
+from .infrastructure.bitwarden import write_bitwarden_csv
+from .infrastructure.csv_reader import read_export
 
 ALLOWED_REVIEW = frozenset({'pending', 'reviewed', 'verified', 'incorrect'})
 
@@ -40,7 +43,7 @@ class Candidate:
         preserved_note = (row.note + '\n\n' if row.note else '') + 'URI Android original: ' + row.url if original_android else row.note
         return cls(
             id=secrets.token_hex(12), original=row,
-            name=row.name or url_parts(row.url)[1] or 'Acceso sin nombre',
+            name=row.name or parse_url(row.url).host or 'Acceso sin nombre',
             url=bitwarden_uri(row.url), username=row.username,
             password=row.password, note=preserved_note,
         )
@@ -57,19 +60,19 @@ def canonical_url(row: Candidate) -> Any:
     if (row.original.url.lower().startswith('android://') and
             row.url == bitwarden_uri(row.original.url)):
         identity_url = row.original.url
-    key, _, _, invalid, embedded_auth = url_parts(identity_url)
-    return None if invalid or embedded_auth else key
+    url = parse_url(identity_url)
+    return None if url.invalid or url.embedded_auth else url.key
 
 
 def summarize(row: Candidate) -> dict[str, Any]:
-    _, host, http, invalid, embedded = url_parts(row.url)
+    url = parse_url(row.url)
     return {
         'id': row.id, 'name': row.name, 'url': row.url,
         'username': row.username, 'type': kind_of(row.url),
         'source': row.original.source, 'line': row.original.line,
         'included': row.included, 'review': row.review,
-        'http': http, 'invalid_uri': invalid, 'embedded_auth': embedded,
-        'host': host,
+        'http': url.insecure_http, 'invalid_uri': url.invalid, 'embedded_auth': url.embedded_auth,
+        'host': url.host,
     }
 
 
@@ -109,21 +112,11 @@ def detect_groups(rows: list[Candidate]) -> list[dict[str, Any]]:
 
 def detect_audit(rows: list[Candidate]) -> dict[str, Any]:
     active = [r for r in rows if r.included]
-    passwords: dict[str, list[Candidate]] = defaultdict(list)
-    weak = []
-    incomplete = []
-    for r in active:
-        if r.password:
-            passwords[r.password].append(r)
-        if r.password and (len(r.password) < 12 or simple_weak(r.password)):
-            weak.append(r.id)
-        if not r.url or not r.username or not r.password or url_parts(r.url)[3]:
-            incomplete.append(r.id)
-    reused = []
-    for members in passwords.values():
-        accounts = {(canonical_url(r), r.username) for r in members}
-        if len(accounts) > 1:
-            reused.append([r.id for r in members])
+    weak = [r.id for r in active if is_weak(r.password)]
+    incomplete = [r.id for r in active
+                  if not r.url or not r.username or not r.password or parse_url(r.url).invalid]
+    reused = [[r.id for r in group] for group in
+              shared_password_groups(active, lambda r: (canonical_url(r), r.username))]
     return {'reused': reused, 'weak': weak, 'incomplete': incomplete, 'breaches': 'not_checked'}
 
 
@@ -143,9 +136,7 @@ class Workspace:
             self._history.pop(0)
 
     def import_files(self, files: list[tuple[str, bytes]], repair_extra_notes: bool = False) -> dict[str, Any]:
-        """Parse all files or none. The legacy parser requires a filename;
-        temporary files are immediately removed even on errors.
-        """
+        """Parse all files or none, from memory: no plaintext temporary files."""
         candidates = []
         metadata = []
         for file_name, content in files:
@@ -233,9 +224,7 @@ class Workspace:
             self._checkpoint()
             for group in groups:
                 primary = group[0]
-                distinct_notes = list(dict.fromkeys(r.note for r in group if r.note.strip()))
-                new_note = '\n\n----- Nota adicional -----\n\n'.join(distinct_notes)
-                self._records[primary.id] = replace(primary, note=new_note)
+                self._records[primary.id] = replace(primary, note=combine_notes(r.note for r in group))
                 for r in group[1:]:
                     self._records[r.id] = replace(r, included=False)
             return self.snapshot()
@@ -253,16 +242,8 @@ class Workspace:
             if not records:
                 raise ValueError('No hay credenciales para exportar')
             buffer = io.StringIO(newline='')
-            writer = csv.DictWriter(buffer, fieldnames=BITWARDEN_FIELDS, lineterminator='\n')
-            writer.writeheader()
-            for row in records:
-                writer.writerow({
-                    'folder': '', 'favorite': '', 'type': 'login',
-                    'name': row.name, 'notes': row.note, 'fields': '',
-                    'reprompt': '0', 'login_uri': row.url, 'login_username': row.username,
-                    'login_password': row.password, 'login_totp': '',
-                })
-            return buffer.getvalue().encode('utf-8-sig'), len(records)
+            count = write_bitwarden_csv(buffer, records)
+            return buffer.getvalue().encode('utf-8-sig'), count
 
     def serialize(self) -> dict[str, Any]:
         """Copy the full candidate state for encryption without writing plaintext."""
