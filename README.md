@@ -100,6 +100,17 @@ python3 -m unittest discover -s tests -v
 
 Los tests utilizan únicamente **credenciales ficticias** y nunca dependen de exportaciones reales.
 
+### Tests E2E de la interfaz
+
+```bash
+cd frontend
+npm ci
+npx playwright install chromium   # solo la primera vez
+npm run e2e
+```
+
+Playwright compila el frontend y arranca `app.py` con el Python de `.venv` (otro intérprete: variable `E2E_PYTHON`). El puerto 8000 debe estar libre: la sesión vive en memoria y los tests la reemplazan. Los CSV ficticios se generan en memoria dentro de `frontend/e2e/`.
+
 ## Después de importar
 
 Verifica las entradas y conflictos en Bitwarden, conserva un respaldo seguro mientras confirmas que todo funciona y elimina los archivos CSV en texto plano. Revisa también copias temporales, carpetas de descargas y sincronización.
