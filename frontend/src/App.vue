@@ -24,6 +24,13 @@ const sessionMode = ref<'save' | 'load' | null>(null);
 const sessionPassphrase = ref('');
 const sessionConfirmation = ref('');
 const sessionFile = ref<File | null>(null);
+// Per-viewer convenience only: storage may be unavailable, so failures are ignored.
+const SIDEBAR_KEY = 'pc.sidebarCollapsed';
+const collapsed = ref(readCollapsed());
+function readCollapsed(): boolean {
+  try { return localStorage.getItem(SIDEBAR_KEY) === '1'; } catch { return false; }
+}
+watch(collapsed, value => { try { localStorage.setItem(SIDEBAR_KEY, value ? '1' : '0'); } catch { /* ignore */ } });
 
 const data = computed(() => store.data);
 const records = computed(() => data.value?.records ?? []);
@@ -151,15 +158,15 @@ onMounted(async () => { await store.execute(api.state); });
 
 <template>
   <div class="shell">
-    <aside class="sidebar" aria-label="Navegación principal">
-      <div class="brand"><span class="brand-mark">◇</span><div><strong>Password Checker</strong><small>Revisión privada de credenciales</small></div></div>
+    <aside class="sidebar" :class="{collapsed}" aria-label="Navegación principal">
+      <button class="brand" :aria-label="collapsed?'Expandir menú':'Contraer menú'" :title="collapsed?'Expandir menú':'Contraer menú'" :aria-expanded="!collapsed" @click="collapsed=!collapsed"><span class="brand-mark">◇</span><span class="label"><strong>Password Checker</strong><small>Revisión privada de credenciales</small></span></button>
       <nav>
-        <button :class="{active:screen==='credentials'}" @click="screen='credentials'">▤ &nbsp; Credenciales</button>
-        <button :class="{active:screen==='audit'}" @click="screen='audit'">⬡ &nbsp; Auditoría</button>
-        <button :class="{active:screen==='trash'}" @click="screen='trash'"><TrashIcon /> &nbsp; Papelera ({{trashed.length}})</button>
-        <button :class="{active:screen==='settings'}" @click="screen='settings'">⚙ &nbsp; Ajustes</button>
+        <button :class="{active:screen==='credentials'}" title="Credenciales" @click="screen='credentials'"><span class="nav-icon">▤</span><span class="label">Credenciales</span></button>
+        <button :class="{active:screen==='audit'}" title="Auditoría" @click="screen='audit'"><span class="nav-icon">⬡</span><span class="label">Auditoría</span></button>
+        <button :class="{active:screen==='trash'}" :title="`Papelera (${trashed.length})`" @click="screen='trash'"><span class="nav-icon"><TrashIcon /></span><span class="label">Papelera ({{trashed.length}})</span></button>
+        <button :class="{active:screen==='settings'}" title="Ajustes" @click="screen='settings'"><span class="nav-icon">⚙</span><span class="label">Ajustes</span></button>
       </nav>
-      <p class="sidebar-note">Solo en este equipo · Sin conexión externa</p>
+      <p class="sidebar-note label">Solo en este equipo · Sin conexión externa</p>
     </aside>
 
     <main class="main">

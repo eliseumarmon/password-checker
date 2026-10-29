@@ -17,7 +17,7 @@
 5. **Continuidad.** La revisión de cientos de registros debe poder retomarse sin repetir trabajo.
 6. **Sin falsear certezas.** «Revisado» no significa «Acceso verificado»; no haber consultado filtraciones no significa «Sin filtraciones».
 
-**Lenguaje de interfaz:** español sencillo, acciones concretas: «Comparar», «Conservar ambos», «Excluir del resultado», «Deshacer», «Guardar sesión cifrada». Evitar etiquetas ambiguas como «Arreglar» y «Seguro» cuando no se haya comprobado nada.
+**Lenguaje de interfaz:** español sencillo, acciones concretas: «Comparar», «Conservar ambos», «Descartar» (a la papelera), «Restaurar», «Deshacer», «Guardar sesión cifrada». Evitar etiquetas ambiguas como «Arreglar» y «Seguro» cuando no se haya comprobado nada.
 
 ## 2. Sistema visual
 
@@ -62,7 +62,7 @@ No utilizar verde para indicar que una contraseña es «segura» si únicamente 
 | Revisado | Check de revisión + texto | Inspeccionado sin confirmar acceso |
 | Verificado | Check de acceso + texto «Acceso comprobado» | El usuario declara que ha iniciado sesión correctamente |
 | Incorrecto | Icono X + texto «No permite acceder» | Requiere corrección manual |
-| Excluido | Texto «Excluido del CSV» | No saldrá en el resultado; reversible |
+| En la papelera | Icono de basura y sección «Papelera» | No saldrá en el CSV; se restaura desde la papelera |
 
 El estado de **revisión** y el estado de **seguridad** son independientes. Las ediciones de URL/usuario/contraseña invalidan la verificación previa; una edición de notas no.
 
@@ -96,7 +96,7 @@ Acción transversal visible: **Guardar sesión cifrada** (cuando haya una sesió
 └──────────────────┴──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Estructura:** barra lateral de **220–240 px**; cabecera de **64–72 px**; contenido central flexible. Tabla de datos con encabezado fijo y ordenación explícita (`asc/desc/ninguna`). Fila seleccionada abre panel lateral de **380–460 px** o área dividida si el ancho lo permite.
+**Estructura:** barra lateral de **220–240 px**, contraíble a iconos (**64 px**); cabecera de **64–72 px**; contenido central flexible. Tabla de datos con encabezado fijo y ordenación explícita (`asc/desc/ninguna`). La edición de una fila se abre en un diálogo centrado (hasta **760 px**); la comparación de duplicados, en panel lateral de **380–460 px**.
 
 **Tabla por defecto (Duplicados):** sitio, tipo, usuario, cantidad de registros, coincidencias URL/usuario/contraseña, fuentes, estado y acción. **No mostrar la contraseña en texto en la tabla**. Comparaciones solo dentro del grupo, con controles individuales para revelarla. El valor real de usuario es visible (truncar solo visualmente; tooltip/copia accesible).
 
