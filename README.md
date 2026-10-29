@@ -109,7 +109,7 @@ npx playwright install chromium   # solo la primera vez
 npm run e2e
 ```
 
-Playwright compila el frontend y arranca `app.py` con el Python de `.venv` (otro intérprete: variable `E2E_PYTHON`). El puerto 8000 debe estar libre: la sesión vive en memoria y los tests la reemplazan. Los CSV ficticios se generan en memoria dentro de `frontend/e2e/`.
+Playwright compila el frontend y arranca un backend propio en el puerto 5173 con el Python de `.venv` (otro intérprete: variable `E2E_PYTHON`), así no toca la sesión de `app.py` en el 8000. No ejecutes a la vez `npm run dev`, que usa el mismo puerto. Los CSV ficticios se generan en memoria dentro de `frontend/e2e/`.
 
 ## Después de importar
 

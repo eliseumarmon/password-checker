@@ -13,14 +13,15 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   reporter: 'list',
   use: {
-    baseURL: 'http://127.0.0.1:8000',
+    baseURL: 'http://127.0.0.1:5173',
     trace: 'retain-on-failure',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: `npm --prefix frontend run build && "${python}" app.py`,
+    // Port 5173 is allowed by the origin guard and keeps the user's app on 8000 untouched.
+    command: `npm --prefix frontend run build && "${python}" -m uvicorn backend.password_checker.api:app --host 127.0.0.1 --port 5173`,
     cwd: root,
-    url: 'http://127.0.0.1:8000/api/workspace',
+    url: 'http://127.0.0.1:5173/api/workspace',
     // Always a fresh build and an empty workspace.
     reuseExistingServer: false,
     timeout: 120_000,
