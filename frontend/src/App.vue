@@ -179,6 +179,7 @@ onMounted(async () => { await store.execute(api.state); });
     </aside>
 
     <main class="main">
+      <div class="sticky-head">
       <header class="topbar">
         <div><h1>{{ ({ credentials: 'Credenciales', audit: 'Auditoría local', trash: 'Papelera', settings: 'Ajustes' })[screen] }}</h1><p>Los originales no se modifican · Las contraseñas permanecen ocultas</p></div>
         <div class="top-actions">
@@ -188,6 +189,13 @@ onMounted(async () => { await store.execute(api.state); });
         </div>
       </header>
       <div v-if="store.error" class="error" role="alert">{{store.error}} <button @click="store.error=''" aria-label="Cerrar aviso">×</button></div>
+      <div v-if="data?.stats.total" class="metrics">
+        <div class="metric"><span>Credenciales</span><strong>{{data.stats.total}}</strong></div>
+        <div class="metric"><span>Duplicados y conflictos</span><strong>{{data.groups.length}}</strong></div>
+        <div class="metric"><span>Revisadas</span><strong>{{data.stats.reviewed}} / {{data.stats.total}}</strong><div class="progress"><span :style="{width:progress+'%'}"></span></div></div>
+        <div class="metric"><span>En la papelera</span><strong>{{data.stats.excluded}}</strong></div>
+      </div>
+      </div>
       <section v-if="!data?.stats.total" class="welcome card">
         <h2>Empieza importando tus contraseñas</h2>
         <p>Arrastra varios CSV de Chrome, Brave y Firefox. Se compararán antes de fusionar nada.</p>
@@ -202,12 +210,6 @@ onMounted(async () => { await store.execute(api.state); });
       </section>
 
       <template v-else>
-        <div class="metrics">
-          <div class="metric"><span>Credenciales</span><strong>{{data.stats.total}}</strong></div>
-          <div class="metric"><span>Duplicados y conflictos</span><strong>{{data.groups.length}}</strong></div>
-          <div class="metric"><span>Revisadas</span><strong>{{data.stats.reviewed}} / {{data.stats.total}}</strong><div class="progress"><span :style="{width:progress+'%'}"></span></div></div>
-          <div class="metric"><span>En la papelera</span><strong>{{data.stats.excluded}}</strong></div>
-        </div>
         <section v-if="screen==='credentials'" class="workspace card">
           <div class="section-heading"><div><h2>Explorar y consolidar</h2><p>Analiza los registros antes de elegir cuáles exportar.</p></div>
             <div class="heading-actions"><button @click="fileInput?.click()">Importar otros CSV</button><button :disabled="store.busy" @click="merge">Fusionar copias exactas</button></div>

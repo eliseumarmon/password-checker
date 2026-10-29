@@ -1,7 +1,7 @@
 # Interfaz: básicos de uso
 
 Ramas encadenadas, una por funcionalidad:
-`fix/audit-review-in-place` → `feat/trash` → `feat/centered-editor-compact` → `feat/collapsible-sidebar` → `fix/mobile-single-view` → `feat/row-actions-trash` → `feat/sticky-header` → `feat/centered-compare`.
+`fix/audit-review-in-place` → `feat/trash` → `feat/centered-editor-compact` → `feat/collapsible-sidebar` → `fix/mobile-single-view` → `feat/row-actions-trash` → `feat/sticky-header` → `feat/centered-compare` → `feat/sticky-stats-sidebar`.
 
 ## Specs
 
@@ -20,6 +20,7 @@ Ramas encadenadas, una por funcionalidad:
 - [x] T6. Columna «Acciones» con Comparar + basura de grupo completo.
 - [x] T7. Cabecera fija con título y acciones.
 - [x] T8. Comparación centrada con registros lado a lado; la ficha se abre encima.
+- [x] T9. Estadísticas fijas bajo la cabecera (fila compacta en móvil) y barra lateral fija a la altura de la ventana.
 
 ## Registro
 
