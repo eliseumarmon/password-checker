@@ -82,6 +82,7 @@ async function quickEdit(id: string, payload: RecordEdit): Promise<void> {
     if (selected.value?.id === id) selected.value = null;
   }
 }
+function closeEditor(): void { selected.value = null; revealed.value = false; }
 function moveToTrash(id: string): Promise<void> { return quickEdit(id, { included: false }); }
 function restore(id: string): Promise<void> { return quickEdit(id, { included: true }); }
 async function merge(): Promise<void> {
@@ -251,11 +252,23 @@ onMounted(async () => { await store.execute(api.state); });
       </template>
     </main>
 
-    <div v-if="selectedGroup || selected" class="overlay" @click.self="selectedGroup=null;selected=null;revealed=false">
-      <section class="drawer" role="dialog" aria-modal="true" :aria-label="selected?'Editar credencial':'Comparar duplicados'">
-        <div class="drawer-top"><h2>{{selected?'Editar credencial':'Comparar registros'}}</h2><button aria-label="Cerrar panel" @click="selected=null;selectedGroup=null;revealed=false">✕</button></div>
-        <template v-if="selected">
-          <div class="editor-fields">
+    <div v-if="selectedGroup" class="overlay" @click.self="selectedGroup=null">
+      <section class="drawer" role="dialog" aria-modal="true" aria-label="Comparar duplicados">
+        <div class="drawer-top"><h2>Comparar registros</h2><button aria-label="Cerrar panel" @click="selectedGroup=null">✕</button></div>
+          <p>{{labelGroup(selectedGroup.kind)}} · {{selectedGroup.count}} registros. Ninguna contraseña se elimina por defecto.</p>
+          <div v-for="(r,i) in selectedGroup.members" :key="r.id" class="compare-card">
+            <div class="row-between"><strong>{{r.source}} · línea {{r.line}}</strong><span class="status" :class="r.review">{{labelReview(r.review)}}</span></div>
+            <p>{{r.name}} · {{r.username}}</p><p class="muted" :title="r.url">{{r.url}}</p>
+            <div class="compare-flags"><span>URL {{r.match_url?'✓':'≠'}}</span><span>Usuario {{r.match_username?'✓':'≠'}}</span><span>Clave {{r.match_password?'✓':'≠'}}</span></div>
+            <div class="compare-actions"><button @click="openRecord(r.id)">Ver / editar</button><button v-if="r.included" class="danger" :disabled="store.busy" @click="moveToTrash(r.id)"><TrashIcon /> Descartar</button></div>
+          </div>
+          <p class="hint">Las coincidencias se comparan respecto al primer registro del grupo. Lo descartado va a la papelera y se puede restaurar.</p>
+      </section>
+    </div>
+    <div v-if="selected" class="overlay modal-overlay" @click.self="closeEditor">
+      <section class="editor-dialog card" role="dialog" aria-modal="true" aria-label="Editar credencial">
+        <div class="drawer-top"><h2>Editar credencial</h2><button aria-label="Cerrar" @click="closeEditor">✕</button></div>
+          <div class="editor-fields editor-grid">
             <label>Nombre<input v-model="form.name" autocomplete="off" /></label>
             <label>URL o paquete Android<input v-model="form.url" autocomplete="off" spellcheck="false" /></label>
             <button v-if="safeWebUrl(form.url || '')" @click="openSite(form.url || '')">↗ Abrir sitio en pestaña nueva</button>
@@ -267,18 +280,7 @@ onMounted(async () => { await store.execute(api.state); });
             <p class="hint">Editar esta contraseña guardada NO cambia la contraseña real del servicio.</p>
             <p class="muted">Origen inmutable: {{selected.source}} · línea {{selected.line}}</p>
           </div>
-          <div class="drawer-actions"><button v-if="selected.included" class="danger push-left" :disabled="store.busy" @click="moveToTrash(selected.id)"><TrashIcon /> Descartar</button><button v-else class="push-left" :disabled="store.busy" @click="restore(selected.id)">Restaurar</button><button @click="selected=null;revealed=false">Cancelar</button><button class="primary" :disabled="store.busy" @click="save">Guardar cambios</button></div>
-        </template>
-        <template v-else-if="selectedGroup">
-          <p>{{labelGroup(selectedGroup.kind)}} · {{selectedGroup.count}} registros. Ninguna contraseña se elimina por defecto.</p>
-          <div v-for="(r,i) in selectedGroup.members" :key="r.id" class="compare-card">
-            <div class="row-between"><strong>{{r.source}} · línea {{r.line}}</strong><span class="status" :class="r.review">{{labelReview(r.review)}}</span></div>
-            <p>{{r.name}} · {{r.username}}</p><p class="muted" :title="r.url">{{r.url}}</p>
-            <div class="compare-flags"><span>URL {{r.match_url?'✓':'≠'}}</span><span>Usuario {{r.match_username?'✓':'≠'}}</span><span>Clave {{r.match_password?'✓':'≠'}}</span></div>
-            <div class="compare-actions"><button @click="openRecord(r.id)">Ver / editar</button><button v-if="r.included" class="danger" :disabled="store.busy" @click="moveToTrash(r.id)"><TrashIcon /> Descartar</button></div>
-          </div>
-          <p class="hint">Las coincidencias se comparan respecto al primer registro del grupo. Lo descartado va a la papelera y se puede restaurar.</p>
-        </template>
+          <div class="drawer-actions"><button v-if="selected.included" class="danger push-left" :disabled="store.busy" @click="moveToTrash(selected.id)"><TrashIcon /> Descartar</button><button v-else class="push-left" :disabled="store.busy" @click="restore(selected.id)">Restaurar</button><button @click="closeEditor">Cancelar</button><button class="primary" :disabled="store.busy" @click="save">Guardar cambios</button></div>
       </section>
     </div>
     <div v-if="sessionMode" class="overlay modal-overlay" @click.self="closeSession">
