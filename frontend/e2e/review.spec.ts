@@ -176,3 +176,10 @@ test('collapses the sidebar to icons and remembers it', async ({ page }) => {
   await aside.getByRole('button', { name: 'Expandir menú' }).click();
   await expect.poll(width).toBeGreaterThan(200);
 });
+
+test('shows only cards, not the table, on narrow screens', async ({ page }) => {
+  await page.setViewportSize({ width: 600, height: 800 });
+  await expect(page.locator('.desktop-table')).toBeHidden();
+  await expect(page.locator('.mobile-cards .record-card').first()).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Navegación móvil' })).toBeVisible();
+});
