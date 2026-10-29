@@ -17,43 +17,19 @@ import os
 import re
 import sys
 from collections import Counter, defaultdict
-from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
-# Chrome exports Android app credentials using android://signature@package/.
-# Bitwarden matches Android apps using androidapp://package.
-ANDROID_SOURCE = re.compile(
-    r"^android://(?P<signature>[^/@\s]+)@(?P<package>[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+)/?$",
-    re.IGNORECASE,
-)
-ANDROIDAPP = re.compile(
-    r"^androidapp://(?P<package>[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+)/?$",
-    re.IGNORECASE,
-)
+from backend.password_checker.domain.accounts import account_key, masked_username  # noqa: F401
+from backend.password_checker.domain.consolidation import consolidate as process
+from backend.password_checker.domain.credential import Credential
+from backend.password_checker.domain.strength import is_obviously_weak as simple_weak
+from backend.password_checker.domain.urls import bitwarden_uri, parse_url as url_parts, supported_uri  # noqa: F401
 
 BITWARDEN_FIELDS = (
     "folder", "favorite", "type", "name", "notes", "fields", "reprompt",
     "login_uri", "login_username", "login_password", "login_totp",
 )
-COMMON = {
-    "123456", "12345678", "123456789", "1234567890", "123456789123",
-    "password", "password1", "password123", "qwerty", "qwerty123",
-    "admin", "admin123", "letmein", "welcome", "welcome1", "abc123",
-    "111111", "000000", "iloveyou", "contrasena", "contraseña", "1234",
-    "12345", "dragon", "monkey", "123123", "qwertyuiop",
-}
-
-
-@dataclass(frozen=True)
-class Credential:
-    source: str
-    line: int
-    name: str
-    url: str
-    username: str
-    password: str
-    note: str
 
 
 def column_key(value):
@@ -173,184 +149,10 @@ def read_export(source, filename, repair_extra_notes=False, diagnostics=None):
     return rows
 
 
-def supported_uri(raw):
-    """Require an explicit, known scheme when detecting shifted columns."""
-    if not raw or not raw.strip() or raw != raw.strip():
-        return False
-    if not re.match(r"^(?:https?://|android://|androidapp://)", raw, re.IGNORECASE):
-        return False
-    return not url_parts(raw)[3]
-
-
-def bitwarden_uri(raw):
-    """Convert Chrome Android URIs to Bitwarden's app URI format."""
-    match = ANDROID_SOURCE.fullmatch(raw.strip())
-    if match:
-        return "androidapp://" + match.group("package").lower()
-    return raw
-
-
-def url_parts(raw):
-    """(clave exacta prudente, host/paquete, http_inseguro, invalida, auth_web)."""
-    url = raw.strip()
-    if not url:
-        return "", "", False, True, False
-    app_source = ANDROID_SOURCE.fullmatch(url)
-    if app_source:
-        # Do not deduplicate different app signatures solely by package.
-        return (("android-source", app_source.group("package").casefold(),
-                 app_source.group("signature")),
-                app_source.group("package").casefold(), False, False, False)
-    app_uri = ANDROIDAPP.fullmatch(url)
-    if app_uri:
-        return (("androidapp", app_uri.group("package").casefold()),
-                app_uri.group("package").casefold(), False, False, False)
-    try:
-        # No aceptar esquemas inventados ni resolver URLs con peticiones externas.
-        parsed = urlsplit(url if "://" in url else "https://" + url)
-        scheme = parsed.scheme.casefold()
-        host = (parsed.hostname or "").casefold()
-        port = parsed.port  # Valida puertos malformados.
-        if scheme not in ("http", "https") or not host:
-            return url, "", False, True, bool(parsed.username or parsed.password)
-        # Mantener subdominios, rutas, parametros, fragmentos, puertos y esquemas.
-        # Solo normalizamos mayusculas y el / vacio en la raiz.
-        default_port = 80 if scheme == "http" else 443
-        network = host if port in (None, default_port) else "{}:{}".format(host, port)
-        # Compatibilidad con IPv6 al reconstruir la autoridad.
-        if ":" in host:
-            network = "[{}]".format(host)
-            if port not in (None, default_port):
-                network += ":{}".format(port)
-        path = parsed.path or "/"
-        canonical = (scheme, network, path, parsed.query, parsed.fragment)
-        return canonical, host, scheme == "http", False, bool(parsed.username or parsed.password)
-    except ValueError:
-        return url, "", False, True, False
-
-
-def account_key(rec):
-    key, _, _, invalid, embedded_auth = url_parts(rec.url)
-    if not rec.url or not rec.username or invalid or embedded_auth:
-        return None  # No fusionar cuentas ambiguas o sin usuario.
-    return key, rec.username  # No cambiar mayusculas de usuarios potencialmente sensibles.
-
-
-def duplicate_key(rec):
-    account = account_key(rec)
-    return (account, rec.password) if account and rec.password else None
-
-
-def masked_username(username):
-    if not username:
-        return "(sin usuario)"
-    if "@" in username:
-        local, domain = username.rsplit("@", 1)
-        return (local[:2] + "***@" + domain) if local else "***@" + domain
-    return username[:2] + "***" if len(username) > 2 else "**"
-
-
 def label(rec):
     _, host, _, invalid, _ = url_parts(rec.url)
     site = host if host else ("(URL no reconocida)" if invalid else "(sin URL)")
     return "{} / {}".format(site, masked_username(rec.username))
-
-
-def simple_weak(password):
-    lower = password.casefold()
-    return (lower in COMMON or
-            bool(re.fullmatch(r"(.)\1{5,}", password)) or
-            bool(re.fullmatch(r"(12345|123456|qwerty|asdf|abcd)[a-z0-9]*", lower)))
-
-
-def merge_group(records):
-    """Preserva notas distintas sin exponerlas en los informes."""
-    first = records[0]
-    chosen = next((r.name for r in records if r.name.strip()), "")
-    if not chosen:
-        _, host, _, _, _ = url_parts(first.url)
-        chosen = host or "Acceso sin nombre"
-    notes = list(dict.fromkeys(r.note for r in records if r.note.strip()))
-    originals = list(dict.fromkeys(r.url for r in records if ANDROID_SOURCE.fullmatch(r.url.strip())))
-    for original in originals:
-        note = "URI Android de origen: " + original
-        if note not in notes:
-            notes.append(note)
-    if len(notes) > 1:
-        merged_note = "\n\n----- Nota adicional -----\n\n".join(notes)
-    else:
-        merged_note = notes[0] if notes else ""
-    return Credential(first.source, first.line, chosen, bitwarden_uri(first.url),
-                      first.username, first.password, merged_note)
-
-
-def process(rows):
-    """Devuelve las credenciales unificadas y metricas; sin tocar el disco."""
-    groups = {}
-    unique = []
-    for row in rows:
-        key = duplicate_key(row)
-        if key is None:
-            unique.append([row])
-        elif key in groups:
-            groups[key].append(row)
-        else:
-            group = [row]
-            groups[key] = group
-            unique.append(group)
-    output_rows = [merge_group(group) for group in unique]
-    notes_merged = sum(len(set(r.note for r in g if r.note.strip())) > 1 for g in unique)
-    accounts = defaultdict(list)
-    for group, row in zip(unique, output_rows):
-        key = account_key(group[0])  # Use original URI for identity.
-        if key is not None:
-            accounts[key].append(row)
-    conflicts = [group for group in accounts.values()
-                 if len({r.password for r in group}) > 1]
-
-    # Posibles registros relacionados en rutas diferentes del mismo dominio:
-    # solo avisar, nunca fusionar por el dominio ni sobreescribir contrasenas.
-    by_host_user = defaultdict(list)
-    for group, row in zip(unique, output_rows):
-        original = group[0]
-        _, host, _, invalid, _ = url_parts(original.url)
-        if host and not invalid and row.username:
-            by_host_user[(host, row.username)].append((original, row))
-    possible_related = [[row for _, row in g] for g in by_host_user.values()
-                        if len({account_key(original) for original, _ in g}) > 1]
-
-    by_password = defaultdict(set)
-    for row in output_rows:
-        if row.password:
-            _, host, _, invalid, _ = url_parts(row.url)
-            if host and not invalid and row.username:
-                by_password[row.password].add((host, row.username))
-    reused = [group for group in by_password.values() if len(group) > 1]
-    distinct_passwords = set(r.password for r in output_rows if r.password)
-    stats = {
-        "originals": len(rows),
-        "by_source": Counter(row.source for row in rows),
-        "final": len(output_rows),
-        "duplicates": len(rows) - len(output_rows),
-        "notes_merged": notes_merged,
-        "conflicts": conflicts,
-        "possible_related": possible_related,
-        "reused_groups": len(reused),
-        "reused_accounts": len(set().union(*reused)) if reused else 0,
-        "short": sum(len(password) < 12 for password in distinct_passwords),
-        "moderate": sum(12 <= len(password) < 14 for password in distinct_passwords),
-        "obvious": sum(simple_weak(password) for password in distinct_passwords),
-        "empty_password": sum(not r.password for r in output_rows),
-        "empty_username": sum(not r.username for r in output_rows),
-        "empty_url": sum(not r.url for r in output_rows),
-        "http": sum(url_parts(r.url)[2] for r in output_rows),
-        "invalid_url": sum(url_parts(r.url)[3] for r in output_rows if r.url),
-        "android_apps": sum(ANDROID_SOURCE.fullmatch(g[0].url.strip()) is not None for g in unique),
-        "url_credentials": sum(url_parts(r.url)[4] for r in output_rows),
-        "undedupeable": sum(duplicate_key(r) is None for r in rows),
-        "merged_per_row": {id(row): len(group) - 1 for group, row in zip(unique, output_rows)},
-    }
-    return output_rows, stats
 
 
 def report(stats, details, dry_run, diagnostics=(), report_requested=False):
