@@ -1,7 +1,7 @@
 # Interfaz: básicos de uso
 
 Ramas encadenadas, una por funcionalidad:
-`fix/audit-review-in-place` → `feat/trash` → `feat/centered-editor-compact` → `feat/collapsible-sidebar` → `fix/mobile-single-view` → `feat/row-actions-trash`.
+`fix/audit-review-in-place` → `feat/trash` → `feat/centered-editor-compact` → `feat/collapsible-sidebar` → `fix/mobile-single-view` → `feat/row-actions-trash` → `feat/sticky-header` → `feat/centered-compare`.
 
 ## Specs
 
@@ -18,6 +18,8 @@ Ramas encadenadas, una por funcionalidad:
 - [x] T4. S4 con test E2E (el propio logo contrae y expande).
 - [x] T5. En pantallas estrechas solo tarjetas, sin tabla.
 - [x] T6. Columna «Acciones» con Comparar + basura de grupo completo.
+- [x] T7. Cabecera fija con título y acciones.
+- [x] T8. Comparación centrada con registros lado a lado; la ficha se abre encima.
 
 ## Registro
 
