@@ -12,7 +12,6 @@ import threading
 from collections import defaultdict
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
-from tempfile import NamedTemporaryFile
 from typing import Any
 
 from auditar_contrasenas_local import (
@@ -155,17 +154,9 @@ class Workspace:
             header = next(csv.reader(io.StringIO(content.decode('utf-8-sig', errors='strict'))), [])
             keys = {h.strip().casefold().replace('_', '') for h in header}
             source = 'firefox' if 'httprealm' in keys else ('brave' if 'brave' in file_name.lower() else 'chrome')
-            # A temporary file is necessary until read_export accepts streams.
-            # It is deleted immediately and never placed in the project directory.
-            tmp_path = None
-            try:
-                with NamedTemporaryFile(suffix='.csv', delete=False) as tmp:
-                    tmp.write(content)
-                    tmp_path = Path(tmp.name)
-                parsed = read_export(source, str(tmp_path), repair_extra_notes=repair_extra_notes)
-            finally:
-                if tmp_path is not None:
-                    tmp_path.unlink(missing_ok=True)
+            # Parse directly from a Unicode stream: no explicit plaintext temp file.
+            stream = io.StringIO(content.decode('utf-8-sig', errors='strict'), newline='')
+            parsed = read_export(source, stream, repair_extra_notes=repair_extra_notes)
             candidates.extend(Candidate.from_source(row) for row in parsed)
             metadata.append({'name': Path(file_name).name, 'source': source, 'count': len(parsed)})
         if not candidates:

@@ -12,6 +12,7 @@ contrasenas en texto plano. No los subas a repositorios, chats ni nubes.
 
 import argparse
 import csv
+from contextlib import nullcontext
 import os
 import re
 import sys
@@ -65,11 +66,15 @@ def read_export(source, filename, repair_extra_notes=False, diagnostics=None):
     Solo repara comas no escapadas de una columna *note* final con permiso
     explicito. CSV con comillas bien formadas se lee de forma nativa.
     """
-    path = Path(filename)
-    if not path.is_file():
-        raise ValueError("No existe el archivo de {}: {}".format(source, path))
+    if hasattr(filename, "read"):
+        file_context = nullcontext(filename)
+    else:
+        path = Path(filename)
+        if not path.is_file():
+            raise ValueError("No existe el archivo de {}: {}".format(source, path))
+        file_context = path.open("r", encoding="utf-8-sig", newline="")
     rows = []
-    with path.open("r", encoding="utf-8-sig", newline="") as file:
+    with file_context as file:
         reader = csv.reader(file, strict=True)
         try:
             headers = next(reader)

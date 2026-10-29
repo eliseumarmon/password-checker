@@ -38,7 +38,7 @@ Durante la revisión, pulsa **Guardar sesión cifrada** e introduce una contrase
 
 - Datos en memoria durante la ejecución. **Guardar sesión cifrada** permite descargar un archivo `.pwc` protegido por contraseña (Argon2id + AES-256-GCM); **Abrir sesión cifrada** lo recupera. No existe guardado automático: guarda antes de cerrar. El historial de deshacer no se conserva al reabrir.
 - Las credenciales se envían exclusivamente entre el navegador y el backend **del mismo equipo**; no se requiere Internet ni se realiza seguimiento.
-- El importador legado necesita un archivo temporal por CSV; el adaptador lo elimina al acabar o fallar. No utilices discos sincronizados para el entorno de trabajo.
+- El lector CSV admite flujos en memoria y no escribe archivos temporales explícitos. En subidas HTTP de gran tamaño, el parser multipart del framework puede usar almacenamiento temporal. Evita discos o carpetas sincronizados para el entorno de trabajo.
 - Las contraseñas están ocultas al abrir las fichas y no se incluyen en las listas generales.
 - `Exportar Bitwarden` descarga un CSV en texto plano; elimina su copia cuando hayas verificado la migración.
 - No hay comprobación de filtraciones de datos ni automatización de logins.

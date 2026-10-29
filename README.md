@@ -93,4 +93,4 @@ Verifica las entradas y conflictos en Bitwarden, conserva un respaldo seguro mie
 
 ## Interfaz gráfica local (primer incremento)
 
-Consulta [la guía de instalación y ejecución](README-GUI.md). Se ha incorporado una interfaz FastAPI + Vue 3 para revisar y editar credenciales. Las sesiones cifradas reanudables **todavía no están disponibles**: antes de realizar una revisión larga, consulta las [limitaciones actuales](docs/implementacion-v0.1.md).
+Consulta [la guía de instalación y ejecución](README-GUI.md). Se ha incorporado una interfaz FastAPI + Vue 3 para revisar y editar credenciales. El guardado de sesiones cifradas es **manual** mediante archivos `.pwc` (Argon2id + AES-256-GCM): antes de realizar una revisión larga, consulta las [limitaciones actuales](docs/implementacion-v0.1.md).

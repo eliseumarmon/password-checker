@@ -18,7 +18,7 @@
 ## Pendientes explícitos
 
 1. **Guardado manual:** el progreso permanece en memoria mientras la aplicación está abierta. Para continuar otro día hay que descargar una sesión `.pwc` cifrada y reabrirla más tarde; **no hay autosalvado**. Perder el archivo o su contraseña implica perder ese progreso. El historial de deshacer no se guarda al cerrar.
-2. Parser CSV a flujo en memoria: actualmente el adaptador utiliza archivos temporales que elimina en `finally` inmediatamente; extraer la lectura de streams del script legado para evitar escritura temporal de contraseñas.
+2. **Multipart HTTP:** el parser del framework podría almacenar temporalmente ficheros grandes mientras recibe la solicitud; mantener límites estrictos y revisar esta superficie. El parser CSV propio ya funciona sobre flujos en memoria sin crear archivos temporales explícitos.
 3. Comparación A/B con más información de los originales (notas, variantes, usuario en dos paneles) y pruebas de accesibilidad/teclado.
 4. Validación segura de enlaces Android: el identificador del paquete no permite abrir la app automáticamente desde cualquier navegador.
 5. Mejor evaluación local de fortaleza (p.ej. zxcvbn, sin usar servicios externos).
