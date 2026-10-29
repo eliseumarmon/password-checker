@@ -6,12 +6,13 @@ from pathlib import Path
 from typing import Optional
 from urllib.parse import urlsplit
 
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from .sessions import MAX_SESSION_BYTES, decrypt_session, encrypt_session
 from .workspace import Workspace
 
 MAX_FILE_SIZE = 5 * 1024 * 1024
@@ -112,6 +113,32 @@ def undo():
         return workspace.undo()
     except ValueError as error:
         raise HTTPException(409, str(error)) from None
+
+
+class SessionPassphrase(BaseModel):
+    passphrase: str = Field(min_length=12, max_length=1024)
+
+
+@app.post('/api/session/save')
+def save_session(credentials: SessionPassphrase):
+    try:
+        content = encrypt_session(workspace.serialize(), credentials.passphrase)
+    except ValueError as error:
+        raise HTTPException(422, str(error)) from None
+    return Response(content, media_type='application/octet-stream', headers={
+        'Content-Disposition': 'attachment; filename="password-checker-session.pwc"',
+    })
+
+
+@app.post('/api/session/load')
+async def load_session(file: UploadFile = File(...), passphrase: str = Form(...)):
+    if not (file.filename or '').endswith('.pwc'):
+        raise HTTPException(400, 'Selecciona un archivo de sesión .pwc')
+    content = await file.read(MAX_SESSION_BYTES + 1)
+    try:
+        return workspace.restore(decrypt_session(content, passphrase))
+    except ValueError as error:
+        raise HTTPException(422, str(error)) from None
 
 
 @app.get('/api/export')

@@ -12,11 +12,12 @@
 - Ordenar y buscar en tabla, filtrar web/Android, solo pendientes, editar todos los campos.
 - Auditoría offline de reutilización, debilidad básica y campos incompletos. Filtraciones **no comprobadas**.
 - Revisada/verificada/incorrecta, edición de contraseña invalida verificación, exclusión reversible, deshacer (30 operaciones).
+- Guardado voluntario de sesión cifrada `.pwc` con Argon2id + AES-256-GCM, integridad autenticada y reapertura sin pérdida de progreso.
 - Fusión de copias exactas **solo bajo petición** y CSV Bitwarden descargado tras confirmación.
 
 ## Pendientes explícitos
 
-1. **Sesiones cifradas y reanudables:** por ahora los cambios solo viven en memoria del proceso. Al reiniciar el backend se pierde la sesión. La interfaz advierte claramente de esta limitación. No usar el software para una revisión de varios días hasta resolverla.
+1. **Guardado manual:** el progreso permanece en memoria mientras la aplicación está abierta. Para continuar otro día hay que descargar una sesión `.pwc` cifrada y reabrirla más tarde; **no hay autosalvado**. Perder el archivo o su contraseña implica perder ese progreso. El historial de deshacer no se guarda al cerrar.
 2. Parser CSV a flujo en memoria: actualmente el adaptador utiliza archivos temporales que elimina en `finally` inmediatamente; extraer la lectura de streams del script legado para evitar escritura temporal de contraseñas.
 3. Comparación A/B con más información de los originales (notas, variantes, usuario en dos paneles) y pruebas de accesibilidad/teclado.
 4. Validación segura de enlaces Android: el identificador del paquete no permite abrir la app automáticamente desde cualquier navegador.

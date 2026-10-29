@@ -28,9 +28,15 @@ Pruebas del motor sin instalar la interfaz:
 python -m unittest discover -s tests -v
 ```
 
+## Reanudar entre sesiones
+
+Durante la revisión, pulsa **Guardar sesión cifrada** e introduce una contraseña nueva de al menos 12 caracteres. Descarga y conserva el archivo `password-checker-session.pwc`. Para reanudar, abre Password Checker, pulsa **Abrir sesión cifrada anterior**, selecciona el archivo y escribe la misma contraseña. No hay recuperación si olvidas la clave. La sesión cifrada incluye también las credenciales y notas originales; protégela como un respaldo sensible.
+
+**Importante:** el guardado es manual. Si cierras el backend antes de descargar el `.pwc`, perderás las modificaciones no guardadas. Al restaurar se reanuda la revisión, pero no el historial de deshacer.
+
 ## Seguridad y limitaciones actuales
 
-- Datos en memoria durante la ejecución; no se guardan sesiones cifradas todavía. Si se cierra el backend, se pierde el progreso.
+- Datos en memoria durante la ejecución. **Guardar sesión cifrada** permite descargar un archivo `.pwc` protegido por contraseña (Argon2id + AES-256-GCM); **Abrir sesión cifrada** lo recupera. No existe guardado automático: guarda antes de cerrar. El historial de deshacer no se conserva al reabrir.
 - Las credenciales se envían exclusivamente entre el navegador y el backend **del mismo equipo**; no se requiere Internet ni se realiza seguimiento.
 - El importador legado necesita un archivo temporal por CSV; el adaptador lo elimina al acabar o fallar. No utilices discos sincronizados para el entorno de trabajo.
 - Las contraseñas están ocultas al abrir las fichas y no se incluyen en las listas generales.

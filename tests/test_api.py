@@ -43,6 +43,26 @@ class APITests(unittest.TestCase):
         self.assertIn(b'fictional-secret-123', export.content)
         self.assertEqual(self.client.post('/api/undo').json()['stats']['included'], 2)
 
+    def test_save_and_restore_session(self):
+        payload = b'name,url,username,password,note\nA,https://example.org/login,alice,fictional-123456,\n'
+        imported = self.client.post('/api/import', files=[('files', ('chrome.csv', payload, 'text/csv'))]).json()
+        identifier = imported['records'][0]['id']
+        self.client.patch('/api/records/' + identifier, json={'review': 'verified'})
+        passphrase = 'fictional-session-passphrase-12345'
+        saved = self.client.post('/api/session/save', json={'passphrase': passphrase})
+        self.assertEqual(saved.status_code, 200, saved.text)
+        self.assertNotIn(b'fictional-123456', saved.content)
+        # Failing to decrypt must preserve current workspace.
+        invalid = self.client.post('/api/session/load', data={'passphrase': 'wrong-long-passphrase'},
+                                   files={'file': ('session.pwc', saved.content, 'application/octet-stream')})
+        self.assertEqual(invalid.status_code, 422)
+        self.assertEqual(workspace.snapshot()['stats']['verified'], 1)
+        self.client.patch('/api/records/' + identifier, json={'review': 'pending'})
+        restored = self.client.post('/api/session/load', data={'passphrase': passphrase},
+                                    files={'file': ('session.pwc', saved.content, 'application/octet-stream')})
+        self.assertEqual(restored.status_code, 200, restored.text)
+        self.assertEqual(restored.json()['stats']['verified'], 1)
+
     def test_cross_origin_rejected_and_no_cache(self):
         response = self.client.get('/api/workspace', headers={'Origin': 'https://evil.example'})
         self.assertEqual(response.status_code, 403)

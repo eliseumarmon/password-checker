@@ -24,18 +24,34 @@ export const api = {
   }).then(parse<WorkspaceState>),
   mergeExact: () => fetch('/api/merge-exact', { method: 'POST' }).then(parse<WorkspaceState>),
   undo: () => fetch('/api/undo', { method: 'POST' }).then(parse<WorkspaceState>),
+  saveSession: async (passphrase: string) => {
+    const response = await fetch('/api/session/save', {
+      method: 'POST', headers: jsonHeaders, body: JSON.stringify({ passphrase }),
+    });
+    if (!response.ok) throw new Error(`No se pudo guardar la sesión (${response.status})`);
+    download(await response.blob(), 'password-checker-session.pwc');
+  },
+  loadSession: async (file: File, passphrase: string) => {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('passphrase', passphrase);
+    return fetch('/api/session/load', { method: 'POST', body: form }).then(parse<WorkspaceState>);
+  },
   exportCsv: async () => {
     const response = await fetch('/api/export', { cache: 'no-store' });
     if (!response.ok) throw new Error(`No se pudo exportar (${response.status})`);
-    const blob = await response.blob();
+    download(await response.blob(), 'bitwarden_import.csv');
+  },
+};
+
+function download(blob: Blob, fileName: string): void {
     const href = URL.createObjectURL(blob);
     try {
       const anchor = document.createElement('a');
-      anchor.href = href; anchor.download = 'bitwarden_import.csv';
+      anchor.href = href; anchor.download = fileName;
       anchor.click();
     } finally { setTimeout(() => URL.revokeObjectURL(href), 1_000); }
-  },
-};
+}
 
 /** Never navigate to non-web URI or leak credentials through the URL. */
 export function safeWebUrl(raw: string): string | null {

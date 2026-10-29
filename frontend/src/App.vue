@@ -19,7 +19,10 @@ const form = ref<RecordEdit>({});
 const revealed = ref(false);
 const note = ref('');
 const fileInput = ref<HTMLInputElement | null>(null);
-const confirmExport = ref(false);
+const sessionMode = ref<'save' | 'load' | null>(null);
+const sessionPassphrase = ref('');
+const sessionConfirmation = ref('');
+const sessionFile = ref<File | null>(null);
 
 const data = computed(() => store.data);
 const records = computed(() => data.value?.records ?? []);
@@ -102,6 +105,40 @@ function labelGroup(kind: DuplicateGroup['kind']): string {
   return ({ exact: 'Copia exacta', conflict: 'Contraseñas diferentes', 'multiple-accounts': 'Varias cuentas' })[kind];
 }
 function editFromAudit(id: string): void { screen.value = 'credentials'; subtab.value = 'all'; void openRecord(id); }
+function closeSession(): void {
+  sessionMode.value = null;
+  sessionPassphrase.value = '';
+  sessionConfirmation.value = '';
+  sessionFile.value = null;
+}
+function showSession(mode: 'save' | 'load'): void {
+  closeSession();
+  sessionMode.value = mode;
+}
+async function submitSession(): Promise<void> {
+  store.error = '';
+  try {
+    if (sessionPassphrase.value.length < 12) {
+      throw new Error('Utiliza una contraseña de sesión de al menos 12 caracteres.');
+    }
+    if (sessionMode.value === 'save') {
+      if (sessionPassphrase.value !== sessionConfirmation.value) {
+        throw new Error('Las contraseñas de sesión no coinciden.');
+      }
+      await api.saveSession(sessionPassphrase.value);
+    } else if (sessionMode.value === 'load') {
+      if (!sessionFile.value) throw new Error('Selecciona el archivo cifrado .pwc.');
+      if (data.value?.stats.total && !window.confirm('Abrir otra sesión reemplazará los cambios que estén en memoria. ¿Continuar?')) return;
+      await store.execute(() => api.loadSession(sessionFile.value!, sessionPassphrase.value));
+      if (store.error) return;
+      screen.value = 'credentials';
+      subtab.value = 'duplicates';
+      selected.value = null; selectedGroup.value = null;
+    }
+    closeSession();
+  } catch (error) { errorMessage(error); }
+}
+
 
 watch(screen, () => { selected.value = null; selectedGroup.value = null; revealed.value = false; });
 onMounted(async () => { await store.execute(api.state); });
@@ -123,6 +160,7 @@ onMounted(async () => { await store.execute(api.state); });
       <header class="topbar">
         <div><h1>{{ screen === 'credentials' ? 'Credenciales' : screen === 'audit' ? 'Auditoría local' : 'Ajustes' }}</h1><p>Los originales no se modifican · Las contraseñas permanecen ocultas</p></div>
         <div class="top-actions">
+          <button v-if="data?.stats.total" @click="showSession('save')">Guardar sesión cifrada</button>
           <button :disabled="!data?.can_undo || store.busy" @click="store.execute(api.undo)" title="Deshacer último cambio">↶ Deshacer</button>
           <button class="primary" :disabled="!data?.stats.included || store.busy" @click="exportNow">Exportar Bitwarden</button>
         </div>
@@ -135,6 +173,7 @@ onMounted(async () => { await store.execute(api.state); });
           <span class="big-icon">⇧</span><strong>Arrastra aquí los CSV</strong>
           <span>o utiliza el selector de archivos</span>
           <button class="primary" :disabled="store.busy" @click="fileInput?.click()">Elegir archivos</button>
+          <button @click="showSession('load')">Abrir sesión cifrada anterior</button>
           <input ref="fileInput" type="file" accept=".csv,text/csv" multiple hidden @change="loadFileList(($event.target as HTMLInputElement).files || [])" />
         </div>
         <p class="hint">Los CSV contienen contraseñas en texto plano. No los incluyas en repositorios ni carpetas compartidas.</p>
@@ -190,7 +229,7 @@ onMounted(async () => { await store.execute(api.state); });
           <div class="audit-block"><h3>Contraseñas vulneradas</h3><p class="audit-count muted">No comprobadas</p><p>La comprobación de filtraciones requeriría una integración futura.</p></div></div>
         </section>
 
-        <section v-else class="workspace card"><h2>Ajustes y privacidad</h2><p>Aplicación local, sin telemetría ni fuentes externas.</p><div class="settings-row"><strong>Guardar y reanudar sesión cifrada</strong><span class="status">Pendiente de implementación</span></div><div class="settings-row"><strong>Modo móvil con ADB reverse</strong><span>Compatible con loopback, sujeto a configuración de ADB.</span></div><div class="settings-row"><strong>Exportación</strong><span>Formato Bitwarden (CSV) · Confirma antes de descargar.</span></div></section>
+        <section v-else class="workspace card"><h2>Ajustes y privacidad</h2><p>Aplicación local, sin telemetría ni fuentes externas.</p><div class="settings-row"><strong>Guardar y reanudar sesión cifrada</strong><span>Archivo local .pwc cifrado con Argon2id + AES-256-GCM</span><div><button @click="showSession('save')">Guardar</button> <button @click="showSession('load')">Abrir</button></div></div><div class="settings-row"><strong>Modo móvil con ADB reverse</strong><span>Compatible con loopback, sujeto a configuración de ADB.</span></div><div class="settings-row"><strong>Exportación</strong><span>Formato Bitwarden (CSV) · Confirma antes de descargar.</span></div></section>
       </template>
     </main>
 
@@ -223,6 +262,24 @@ onMounted(async () => { await store.execute(api.state); });
           </div>
           <p class="hint">Las coincidencias se comparan respecto al primer registro del grupo. Excluir es reversible mediante Deshacer.</p>
         </template>
+      </section>
+    </div>
+    <div v-if="sessionMode" class="overlay modal-overlay" @click.self="closeSession">
+      <section class="session-dialog card" role="dialog" aria-modal="true" aria-label="Sesión cifrada">
+        <div class="drawer-top"><h2>{{sessionMode==='save'?'Guardar sesión cifrada':'Abrir sesión anterior'}}</h2><button aria-label="Cerrar" @click="closeSession">✕</button></div>
+        <p v-if="sessionMode==='save'">Descarga un archivo cifrado para continuar la revisión otro día, incluso desde otro equipo. No podremos recuperar la contraseña que elijas.</p>
+        <p v-else>Selecciona el archivo .pwc y escribe la contraseña con la que lo guardaste.</p>
+        <label v-if="sessionMode==='load'" class="session-field">Archivo cifrado
+          <input type="file" accept=".pwc" @change="sessionFile=($event.target as HTMLInputElement).files?.[0] || null" />
+        </label>
+        <label class="session-field">Contraseña de sesión (mínimo 12 caracteres)
+          <input v-model="sessionPassphrase" type="password" autocomplete="off" />
+        </label>
+        <label v-if="sessionMode==='save'" class="session-field">Confirmar contraseña
+          <input v-model="sessionConfirmation" type="password" autocomplete="off" />
+        </label>
+        <p class="hint">La contraseña de sesión nunca se guarda en el navegador ni se envía a Internet.</p>
+        <div class="drawer-actions"><button @click="closeSession">Cancelar</button><button class="primary" :disabled="store.busy" @click="submitSession">{{sessionMode==='save'?'Descargar archivo cifrado':'Abrir sesión'}}</button></div>
       </section>
     </div>
     <nav class="mobile-nav" aria-label="Navegación móvil"><button :class="{active:screen==='credentials'}" @click="screen='credentials'">▤<span>Credenciales</span></button><button :class="{active:screen==='audit'}" @click="screen='audit'">⬡<span>Auditoría</span></button><button :class="{active:screen==='settings'}" @click="screen='settings'">⚙<span>Ajustes</span></button></nav>

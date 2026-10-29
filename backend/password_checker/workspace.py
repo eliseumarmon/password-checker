@@ -10,7 +10,7 @@ import io
 import secrets
 import threading
 from collections import defaultdict
-from dataclasses import dataclass, replace
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any
@@ -136,6 +136,7 @@ class Workspace:
         self._records: dict[str, Candidate] = {}
         self._files: list[dict[str, Any]] = []
         self._history: list[dict[str, Candidate]] = []
+        self._restored = False
 
     def _checkpoint(self) -> None:
         self._history.append(self._records.copy())
@@ -173,6 +174,7 @@ class Workspace:
             self._records = {r.id: r for r in candidates}
             self._files = metadata
             self._history.clear()
+            self._restored = False
             return self.snapshot()
 
     def snapshot(self) -> dict[str, Any]:
@@ -191,7 +193,7 @@ class Workspace:
                     'verified': sum(r.review == 'verified' for r in records),
                 },
                 'can_undo': bool(self._history),
-                'session_saved': False,
+                'session_saved': self._restored,
             }
 
     def get(self, identifier: str) -> dict[str, Any]:
@@ -270,3 +272,63 @@ class Workspace:
                     'login_password': row.password, 'login_totp': '',
                 })
             return buffer.getvalue().encode('utf-8-sig'), len(records)
+
+    def serialize(self) -> dict[str, Any]:
+        """Copy the full candidate state for encryption without writing plaintext."""
+        with self._lock:
+            if not self._records:
+                raise ValueError('No hay ninguna sesión cargada')
+            return {'version': 1, 'files': list(self._files),
+                    'records': [asdict(row) for row in self._records.values()]}
+
+    def restore(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Validate the entire untrusted snapshot before committing any change."""
+        if payload.get('version') != 1 or not isinstance(payload.get('records'), list):
+            raise ValueError('Formato de sesión no compatible')
+        items = payload['records']
+        if not 1 <= len(items) <= 100000:
+            raise ValueError('Número de credenciales no válido')
+        files = payload.get('files')
+        if not isinstance(files, list) or len(files) > 15:
+            raise ValueError('Metadatos de sesión no válidos')
+        validated = {}
+        expected = {'id', 'original', 'name', 'url', 'username', 'password', 'note', 'included', 'review'}
+        original_keys = {'source', 'line', 'name', 'url', 'username', 'password', 'note'}
+        for raw in items:
+            if not isinstance(raw, dict) or set(raw) != expected or not isinstance(raw.get('original'), dict):
+                raise ValueError('Credencial cifrada no válida')
+            origin = raw['original']
+            if set(origin) != original_keys:
+                raise ValueError('Origen de credencial no válido')
+            for key in ('source', 'name', 'url', 'username', 'password', 'note'):
+                if not isinstance(origin[key], str) or len(origin[key]) > 100_000:
+                    raise ValueError('Datos de origen no válidos')
+            if type(origin['line']) is not int or origin['line'] < 1:
+                raise ValueError('Línea de origen no válida')
+            for key in ('id', 'name', 'url', 'username', 'password', 'note'):
+                if not isinstance(raw[key], str) or len(raw[key]) > 100_000:
+                    raise ValueError('Campo de credencial no válido')
+            if not raw['id'] or raw['id'] in validated or not isinstance(raw['included'], bool):
+                raise ValueError('ID o inclusión de credencial no válidos')
+            if not isinstance(raw['review'], str) or raw['review'] not in ALLOWED_REVIEW:
+                raise ValueError('Estado de revisión no válido')
+            validated[raw['id']] = Candidate(
+                id=raw['id'], original=Credential(**origin),
+                name=raw['name'], url=raw['url'], username=raw['username'],
+                password=raw['password'], note=raw['note'],
+                included=raw['included'], review=raw['review'],
+            )
+        safe_files = []
+        for file in files:
+            if (not isinstance(file, dict) or set(file) != {'name', 'source', 'count'}
+                    or not isinstance(file['name'], str) or len(file['name']) > 1024
+                    or file['source'] not in ('chrome', 'brave', 'firefox')
+                    or type(file['count']) is not int or file['count'] < 0):
+                raise ValueError('Metadatos de archivo no válidos')
+            safe_files.append(file)
+        with self._lock:
+            self._records = validated
+            self._files = safe_files
+            self._history.clear()
+            self._restored = True
+            return self.snapshot()
