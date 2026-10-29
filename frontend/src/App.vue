@@ -91,6 +91,15 @@ async function quickEdit(id: string, payload: RecordEdit): Promise<void> {
 }
 function closeEditor(): void { selected.value = null; revealed.value = false; }
 function moveToTrash(id: string): Promise<void> { return quickEdit(id, { included: false }); }
+async function trashGroup(group: DuplicateGroup): Promise<void> {
+  if (!window.confirm(`Se moverán ${group.count} registros de «${group.name}» a la papelera. Podrás restaurarlos. ¿Continuar?`)) return;
+  await store.execute(async () => {
+    let state = data.value!;
+    for (const member of group.members) state = await api.edit(member.id, { included: false });
+    return state;
+  });
+  selectedGroup.value = null;
+}
 function restore(id: string): Promise<void> { return quickEdit(id, { included: true }); }
 async function merge(): Promise<void> {
   if (!window.confirm('Las copias idénticas por URL, usuario y contraseña irán a la papelera. Las notas se combinarán. ¿Continuar?')) return;
@@ -215,9 +224,9 @@ onMounted(async () => { await store.execute(api.state); });
               <Column field="type" header="Tipo" sortable><template #body="{data:g}">{{g.type==='android'?'Android':'Web'}}</template></Column>
               <Column field="count" header="Copias" sortable/>
               <Column field="kind" header="Comparación" sortable><template #body="{data:g}"><span class="status" :class="g.kind">{{labelGroup(g.kind)}}</span></template></Column>
-              <Column header="Acción"><template #body="{data:g}"><button @click="openGroup(g)">Comparar</button></template></Column>
+              <Column header="Acciones"><template #body="{data:g}"><div class="row-actions"><button @click="openGroup(g)">Comparar</button><button class="icon-button danger" aria-label="Mover grupo a la papelera" title="Mover grupo a la papelera" :disabled="store.busy" @click="trashGroup(g)"><TrashIcon /></button></div></template></Column>
             </DataTable>
-            <div class="mobile-cards"><article v-for="g in visibleGroups" :key="g.id" class="record-card" @click="openGroup(g)"><div class="row-between"><strong>{{g.name}}</strong><span class="status" :class="g.kind">{{labelGroup(g.kind)}}</span></div><p>{{g.username}}</p><p class="muted">{{g.count}} registros · {{g.type==='android'?'Android':'Web'}}</p><button @click.stop="openGroup(g)">Comparar →</button></article></div>
+            <div class="mobile-cards"><article v-for="g in visibleGroups" :key="g.id" class="record-card" @click="openGroup(g)"><div class="row-between"><strong>{{g.name}}</strong><span class="status" :class="g.kind">{{labelGroup(g.kind)}}</span></div><p>{{g.username}}</p><p class="muted">{{g.count}} registros · {{g.type==='android'?'Android':'Web'}}</p><div class="row-actions"><button @click.stop="openGroup(g)">Comparar →</button><button class="icon-button danger" aria-label="Mover grupo a la papelera" :disabled="store.busy" @click.stop="trashGroup(g)"><TrashIcon /></button></div></article></div>
           </template>
 
           <template v-else>
@@ -227,7 +236,7 @@ onMounted(async () => { await store.execute(api.state); });
               <Column field="type" header="Tipo" sortable><template #body="{data:r}">{{r.type==='android'?'Android':'Web'}}</template></Column>
               <Column field="source" header="Origen" sortable/>
               <Column field="review" header="Revisión" sortable><template #body="{data:r}"><span class="status" :class="r.review">{{labelReview(r.review)}}</span></template></Column>
-              <Column header="Acción"><template #body="{data:r}"><div class="row-actions"><button @click="openRecord(r.id)">Editar</button><button class="icon-button danger" aria-label="Mover a la papelera" title="Mover a la papelera" :disabled="store.busy" @click="moveToTrash(r.id)"><TrashIcon /></button></div></template></Column>
+              <Column header="Acciones"><template #body="{data:r}"><div class="row-actions"><button @click="openRecord(r.id)">Editar</button><button class="icon-button danger" aria-label="Mover a la papelera" title="Mover a la papelera" :disabled="store.busy" @click="moveToTrash(r.id)"><TrashIcon /></button></div></template></Column>
             </DataTable>
             <div class="mobile-cards"><article v-for="r in visibleRows" :key="r.id" class="record-card"><div class="row-between"><strong>{{r.name}}</strong><span class="status" :class="r.review">{{labelReview(r.review)}}</span></div><p>{{r.username}}</p><p class="muted">{{r.type}} · {{r.source}}</p><div class="row-actions"><button @click="openRecord(r.id)">Editar →</button><button class="icon-button danger" aria-label="Mover a la papelera" :disabled="store.busy" @click="moveToTrash(r.id)"><TrashIcon /></button></div></article></div>
           </template>
@@ -249,7 +258,7 @@ onMounted(async () => { await store.execute(api.state); });
               <Column field="name" header="Sitio / App" sortable><template #body="{data:r}"><strong>{{r.name}}</strong><small class="url-truncate">{{r.url}}</small></template></Column>
               <Column field="username" header="Usuario" sortable/>
               <Column field="source" header="Origen" sortable/>
-              <Column header="Acción"><template #body="{data:r}"><button :disabled="store.busy" @click="restore(r.id)">Restaurar</button></template></Column>
+              <Column header="Acciones"><template #body="{data:r}"><button :disabled="store.busy" @click="restore(r.id)">Restaurar</button></template></Column>
             </DataTable>
             <div class="mobile-cards"><article v-for="r in trashed" :key="r.id" class="record-card"><strong>{{r.name}}</strong><p>{{r.username}}</p><p class="muted">{{r.source}}</p><button :disabled="store.busy" @click="restore(r.id)">Restaurar</button></article></div>
           </template>

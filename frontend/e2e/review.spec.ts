@@ -183,3 +183,11 @@ test('shows only cards, not the table, on narrow screens', async ({ page }) => {
   await expect(page.locator('.mobile-cards .record-card').first()).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Navegación móvil' })).toBeVisible();
 });
+
+test('trashes a whole duplicate group from its row actions', async ({ page }) => {
+  const table = page.locator('.desktop-table');
+  await expect(table.getByRole('columnheader', { name: 'Acciones' })).toBeVisible();
+  await table.getByRole('row', { name: /Conflict/ }).getByRole('button', { name: 'Mover grupo a la papelera' }).click();
+  await expect(metric(page, 'En la papelera')).toHaveText('2');
+  await expect(page.getByRole('button', { name: 'Duplicados (1)' })).toBeVisible();
+});
