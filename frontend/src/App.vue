@@ -159,8 +159,7 @@ onMounted(async () => { await store.execute(api.state); });
 <template>
   <div class="shell">
     <aside class="sidebar" :class="{collapsed}" aria-label="Navegación principal">
-      <div class="brand"><span class="brand-mark">◇</span><div class="label"><strong>Password Checker</strong><small>Revisión privada de credenciales</small></div></div>
-      <button class="sidebar-toggle" :aria-label="collapsed?'Expandir menú':'Contraer menú'" :title="collapsed?'Expandir menú':'Contraer menú'" :aria-expanded="!collapsed" @click="collapsed=!collapsed">{{collapsed?'»':'«'}}</button>
+      <button class="brand" :aria-label="collapsed?'Expandir menú':'Contraer menú'" :title="collapsed?'Expandir menú':'Contraer menú'" :aria-expanded="!collapsed" @click="collapsed=!collapsed"><span class="brand-mark">◇</span><span class="label"><strong>Password Checker</strong><small>Revisión privada de credenciales</small></span></button>
       <nav>
         <button :class="{active:screen==='credentials'}" title="Credenciales" @click="screen='credentials'"><span class="nav-icon">▤</span><span class="label">Credenciales</span></button>
         <button :class="{active:screen==='audit'}" title="Auditoría" @click="screen='audit'"><span class="nav-icon">⬡</span><span class="label">Auditoría</span></button>
