@@ -145,7 +145,7 @@ onMounted(async () => { await store.execute(api.state); });
 </script>
 
 <template>
-  <div class="shell app-dark">
+  <div class="shell">
     <aside class="sidebar" aria-label="Navegación principal">
       <div class="brand"><span class="brand-mark">◇</span><div><strong>Password Checker</strong><small>Revisión privada de credenciales</small></div></div>
       <nav>
