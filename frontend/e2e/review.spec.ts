@@ -191,3 +191,12 @@ test('trashes a whole duplicate group from its row actions', async ({ page }) =>
   await expect(metric(page, 'En la papelera')).toHaveText('2');
   await expect(page.getByRole('button', { name: 'Duplicados (1)' })).toBeVisible();
 });
+
+test('keeps the header and its actions visible while scrolling', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 420 });
+  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.mouse.wheel(0, 2000);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
+  await expect(page.getByRole('heading', { level: 1 })).toBeInViewport();
+  await expect(page.getByRole('button', { name: 'Exportar Bitwarden' })).toBeInViewport();
+});
