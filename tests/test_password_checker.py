@@ -155,7 +155,7 @@ class PasswordCheckerTests(unittest.TestCase):
         cleaned, stats = process(rows)
         self.assertEqual(stats['invalid_url'], 0)
         self.assertEqual(cleaned[0].url, 'androidapp://com.example.social')
-        self.assertIn('android://FAKE@com.example.social/', cleaned[0].note)
+        self.assertEqual(cleaned[0].note, '')  # Bitwarden drops the signature; nothing added to notes.
 
     def test_android_uri_no_title_comma(self):
         uri = 'android://FAKE@com.example.shop/'

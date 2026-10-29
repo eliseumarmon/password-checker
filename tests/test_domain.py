@@ -41,7 +41,8 @@ class UrlTests(unittest.TestCase):
         self.assertNotEqual(first.key, second.key)
         self.assertTrue(is_android_source(' android://SIGN-A@com.example.app/ '))
         self.assertFalse(is_android_source('androidapp://com.example.app'))
-        self.assertEqual(bitwarden_uri('android://SIGN@Com.Example.App/'), 'androidapp://com.example.app')
+        # Same as Bitwarden's Chrome importer: package kept as written, signature dropped.
+        self.assertEqual(bitwarden_uri('android://SIGN@Com.Example.App/'), 'androidapp://Com.Example.App')
         self.assertEqual(bitwarden_uri('https://example.org'), 'https://example.org')
 
     def test_supported_uri_requires_explicit_known_scheme(self):
@@ -138,12 +139,14 @@ class ConsolidationTests(unittest.TestCase):
         self.assertEqual(len(stats['possible_related']), 1)
         self.assertEqual(len(stats['possible_related'][0]), 2)
 
-    def test_android_source_uri_converted_and_preserved_in_notes(self):
-        merged, stats = consolidate([cred('android://SIGN@com.example.app/', 'eve', 'fake-app-123456', name='')])
-        self.assertEqual(merged[0].url, 'androidapp://com.example.app')
-        self.assertEqual(merged[0].name, 'com.example.app')
-        self.assertIn('URI Android de origen: android://SIGN@com.example.app/', merged[0].note)
-        self.assertEqual(stats['android_apps'], 1)
+    def test_android_source_follows_bitwarden_chrome_importer(self):
+        merged, stats = consolidate([cred('android://SIGN@Com.Example.App/', 'eve', 'fake-app-123456', 'mine', name=''),
+                                     cred('android://SIGN@com.example.other/', 'eve', 'fake-app-654321', '', name='')])
+        self.assertEqual(merged[0].url, 'androidapp://Com.Example.App')
+        self.assertEqual(merged[0].name, 'Com.Example.App')
+        self.assertEqual(merged[0].note, 'mine')
+        self.assertEqual(merged[1].note, '')
+        self.assertEqual(stats['android_apps'], 2)
 
 
 if __name__ == '__main__':

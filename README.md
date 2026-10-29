@@ -53,7 +53,7 @@ El script identifica las columnas por su nombre y acepta BOM UTF-8 y valores ent
 
 ### Aplicaciones Android
 
-Las URI de apps Android de Chrome/Brave (android://FIRMA@paquete/) no son errores: se convierten a androidapp://paquete para Bitwarden, conservando la original en las notas. Si una coma sin entrecomillar en el nombre desplaza la URI, el programa puede reconstruirla de forma restringida y mostrar un aviso. Las filas ambiguas se rechazan, nunca se modifican contraseñas silenciosamente.
+Las URI de apps Android de Chrome/Brave (android://FIRMA@paquete/) no son errores: se convierten a androidapp://paquete igual que el importador de Chrome de Bitwarden: se conserva el paquete tal cual, se descarta la firma y las notas no se modifican. Si una coma sin entrecomillar en el nombre desplaza la URI, el programa puede reconstruirla de forma restringida y mostrar un aviso. Las filas ambiguas se rechazan, nunca se modifican contraseñas silenciosamente.
 
 ### Error «número de columnas incorrecto»
 

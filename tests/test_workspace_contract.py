@@ -29,6 +29,11 @@ class WorkspaceContractTests(unittest.TestCase):
             '﻿folder,favorite,type,name,notes,fields,reprompt,login_uri,login_username,login_password,login_totp\n'
             ',,login,Site,n,,0,https://a.invalid,u,"fake,pw",\n').encode('utf-8'))
 
+    def test_android_candidate_follows_bitwarden_chrome_importer(self):
+        app = candidate('android://SIGN@Com.Example.App/', 'eve', 'fake-app-123456', 'mine', name='')
+        self.assertEqual((app.url, app.name, app.note), ('androidapp://Com.Example.App', 'Com.Example.App', 'mine'))
+        self.assertEqual(app.original.url, 'android://SIGN@Com.Example.App/')
+
     def test_merge_keeps_distinct_non_blank_notes_in_order(self):
         rows = [candidate('https://a.invalid', 'u', 'fake-1234567890', note) for note in ('first', ' ', 'second', 'first')]
         workspace = workspace_with(*rows)

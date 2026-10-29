@@ -82,12 +82,20 @@ def supported_uri(raw: str) -> bool:
     return not parse_url(raw).invalid
 
 
-def bitwarden_uri(raw: str) -> str:
-    """Convert Chrome Android URIs to Bitwarden's app URI format."""
+def android_package(raw: str) -> Optional[str]:
+    """Package of a Chrome android:// URI, exactly as written."""
     match = ANDROID_SOURCE.fullmatch(raw.strip())
-    if match:
-        return "androidapp://" + match.group("package").lower()
-    return raw
+    return match.group("package") if match else None
+
+
+def bitwarden_uri(raw: str) -> str:
+    """Convert Chrome Android URIs as Bitwarden's own Chrome importer does.
+
+    The signing-key hash is dropped and the package keeps its case;
+    see bitwarden/clients libs/importer/src/importers/chrome-csv-importer.ts.
+    """
+    package = android_package(raw)
+    return "androidapp://" + package if package else raw
 
 
 def web_origin(raw: str) -> Optional[str]:

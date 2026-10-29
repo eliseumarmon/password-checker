@@ -54,7 +54,7 @@ def report(stats, details, dry_run, diagnostics=(), report_requested=False):
     print("Filas sin deduplicacion segura: {}".format(stats["undedupeable"]))
     print("\nLos conflictos NO se descartan: ambas claves se conservan para revision.")
     print("Las notas diferentes se conservan. No se fusionan URLs distintas por dominio.")
-    print("Las URI android:// se convierten a androidapp:// y se conserva la original en notas.")
+    print("Las URI android:// se convierten a androidapp://paquete, como hace Bitwarden.")
     print("La fortaleza es orientativa: no se consultan filtraciones ni se verifica vigencia.")
     print("Ninguna contrasena se muestra en pantalla ni se envia a Internet.")
     if details:

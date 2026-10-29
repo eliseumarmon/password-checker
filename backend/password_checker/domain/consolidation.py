@@ -14,7 +14,7 @@ from .credential import Credential
 from .notes import combine_notes
 from .reuse import shared_password_groups
 from .strength import MIN_LENGTH, RECOMMENDED_LENGTH, is_obviously_weak
-from .urls import bitwarden_uri, is_android_source, parse_url
+from .urls import android_package, bitwarden_uri, is_android_source, parse_url
 
 Group = List[Credential]
 
@@ -41,12 +41,9 @@ def merge_group(records: Group) -> Credential:
     first = records[0]
     chosen = next((r.name for r in records if r.name.strip()), "")
     if not chosen:
-        chosen = parse_url(first.url).host or "Acceso sin nombre"
-    android_notes = ["URI Android de origen: " + url for url in
-                     dict.fromkeys(r.url for r in records if is_android_source(r.url))]
-    merged_note = combine_notes([r.note for r in records] + android_notes)
+        chosen = android_package(first.url) or parse_url(first.url).host or "Acceso sin nombre"
     return Credential(first.source, first.line, chosen, bitwarden_uri(first.url),
-                      first.username, first.password, merged_note)
+                      first.username, first.password, combine_notes(r.note for r in records))
 
 
 def find_conflicts(unique: Sequence[Group], merged: Sequence[Credential]) -> List[Group]:
