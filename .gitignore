@@ -33,3 +33,7 @@ node_modules/
 dist/
 *.pwc
 *.pwc-session
+
+# Resultados de Playwright
+test-results/
+playwright-report/
