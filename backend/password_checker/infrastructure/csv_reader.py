@@ -15,6 +15,8 @@ from ..domain.urls import supported_uri
 
 URL_COLUMNS = ("url", "origin", "website", "hostname", "loginuri")
 NAME_COLUMNS = ("name", "title")
+USERNAME_COLUMNS = ("username", "user", "login", "loginusername")
+NOTE_COLUMNS = ("note", "notes")
 
 
 def column_key(value):
@@ -58,7 +60,7 @@ def read_export(source, filename, repair_extra_notes=False, diagnostics=None):
         expected = len(headers)
         # En CSV del navegador, una nota sin comillas puede contener comas.
         # No sabemos si la coma estaba en la contrasena, por eso opt-in.
-        note_last = expected > 0 and column_key(headers[-1]) in ("note", "notes")
+        note_last = expected > 0 and column_key(headers[-1]) in NOTE_COLUMNS
         url_idx = next((keys[k] for k in URL_COLUMNS if k in keys), None)
         name_idx = next((keys[k] for k in NAME_COLUMNS if k in keys), None)
         # Algunos exportadores omiten los ultimos campos vacios; SOLO el
@@ -118,9 +120,9 @@ def read_export(source, filename, repair_extra_notes=False, diagnostics=None):
 
             name = field(*NAME_COLUMNS)
             url = field(*URL_COLUMNS).strip()
-            username = field("username", "user", "login", "loginusername")
+            username = field(*USERNAME_COLUMNS)
             password = field("password")
-            note = field("note", "notes")
+            note = field(*NOTE_COLUMNS)
             # Firefox no exporta 'name' ni 'note', sino realm y metadatos.
             # El realm ayuda a reconocer cuentas HTTP Basic diferentes.
             if source == "firefox":

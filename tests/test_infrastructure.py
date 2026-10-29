@@ -11,7 +11,7 @@ from backend.password_checker.domain.credential import Credential  # noqa: E402
 from backend.password_checker.infrastructure.bitwarden import BITWARDEN_FIELDS, write_bitwarden_csv  # noqa: E402
 from backend.password_checker.infrastructure.files import create_new_file  # noqa: E402
 
-ERRORS = {'same_as_protected_error': 'protected', 'missing_folder_error': 'missing {}', 'newline': '\n'}
+CREATE_OPTIONS = {'same_as_protected_error': 'protected', 'missing_folder_error': 'missing {}', 'newline': '\n'}
 
 
 class CreateNewFileTests(unittest.TestCase):
@@ -22,7 +22,7 @@ class CreateNewFileTests(unittest.TestCase):
 
     def test_creates_file_with_content(self):
         target = self.root / 'new.md'
-        created = create_new_file(target, [], lambda f: f.write('hola'), **ERRORS)
+        created = create_new_file(target, [], lambda f: f.write('hola'), **CREATE_OPTIONS)
         self.assertEqual(created, target)
         self.assertEqual(target.read_text(encoding='utf-8'), 'hola')
 
@@ -30,14 +30,14 @@ class CreateNewFileTests(unittest.TestCase):
         existing = self.root / 'existing.csv'
         existing.write_text('original', encoding='utf-8')
         with self.assertRaises(FileExistsError):
-            create_new_file(existing, [], lambda f: f.write('x'), **ERRORS)
+            create_new_file(existing, [], lambda f: f.write('x'), **CREATE_OPTIONS)
         with self.assertRaisesRegex(ValueError, '^protected$'):
-            create_new_file(existing, [existing], lambda f: f.write('x'), **ERRORS)
+            create_new_file(existing, [existing], lambda f: f.write('x'), **CREATE_OPTIONS)
         self.assertEqual(existing.read_text(encoding='utf-8'), 'original')
 
     def test_missing_folder_message_names_folder(self):
         with self.assertRaisesRegex(ValueError, '^missing .*nope$'):
-            create_new_file(self.root / 'nope' / 'x.md', [], lambda f: f.write('x'), **ERRORS)
+            create_new_file(self.root / 'nope' / 'x.md', [], lambda f: f.write('x'), **CREATE_OPTIONS)
 
     def test_partial_file_removed_when_writing_fails(self):
         target = self.root / 'partial.csv'
@@ -46,7 +46,7 @@ class CreateNewFileTests(unittest.TestCase):
             file.write('half')
             raise RuntimeError('disk full')
         with self.assertRaises(RuntimeError):
-            create_new_file(target, [], fail, **ERRORS)
+            create_new_file(target, [], fail, **CREATE_OPTIONS)
         self.assertFalse(target.exists())
 
 
