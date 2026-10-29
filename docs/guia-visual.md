@@ -96,7 +96,7 @@ Acción transversal visible: **Guardar sesión cifrada** (cuando haya una sesió
 └──────────────────┴──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Estructura:** barra lateral de **220–240 px**, contraíble a iconos (**64 px**); cabecera de **64–72 px**; contenido central flexible. Tabla de datos con encabezado fijo y ordenación explícita (`asc/desc/ninguna`). La edición de una fila se abre en un diálogo centrado (hasta **760 px**); la comparación de duplicados, en panel lateral de **380–460 px**.
+**Estructura:** barra lateral de **220–240 px**, contraíble a iconos (**64 px**); cabecera de **64–72 px**; contenido central flexible. Tabla de datos con encabezado fijo y ordenación explícita (`asc/desc/ninguna`). La edición (hasta **760 px**) y la comparación de duplicados (hasta **900 px**, registros lado a lado) se abren en diálogos centrados. La cabecera con título y acciones queda fija al desplazarse.
 
 **Tabla por defecto (Duplicados):** sitio, tipo, usuario, cantidad de registros, coincidencias URL/usuario/contraseña, fuentes, estado y acción. **No mostrar la contraseña en texto en la tabla**. Comparaciones solo dentro del grupo, con controles individuales para revelarla. El valor real de usuario es visible (truncar solo visualmente; tooltip/copia accesible).
 

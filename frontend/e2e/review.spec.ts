@@ -200,3 +200,15 @@ test('keeps the header and its actions visible while scrolling', async ({ page }
   await expect(page.getByRole('heading', { level: 1 })).toBeInViewport();
   await expect(page.getByRole('button', { name: 'Exportar Bitwarden' })).toBeInViewport();
 });
+
+test('opens the comparison centred and the editor above it', async ({ page }) => {
+  await page.locator('.desktop-table').getByRole('row', { name: /Conflict/ }).getByRole('button', { name: 'Comparar' }).click();
+  const compare = page.getByRole('dialog', { name: 'Comparar duplicados' });
+  const box = (await compare.boundingBox())!;
+  expect(Math.abs(box.x + box.width / 2 - page.viewportSize()!.width / 2)).toBeLessThan(10);
+
+  await compare.getByRole('button', { name: 'Ver / editar' }).first().click();
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  await editor.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(compare).toBeVisible();
+});
