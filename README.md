@@ -79,6 +79,19 @@ Tras revisar las líneas indicadas en el informe, ejecuta el mismo comando con `
 
 **Limitación de seguridad importante:** la herramienta no determina si una contraseña funciona y no consulta filtraciones ni servicios externos. La importación puede crear entradas duplicadas cuando cambian las rutas del mismo servicio, porque se prioriza no perder contraseñas.
 
+## Arquitectura
+
+`auditar_contrasenas_local.py` es solo el punto de entrada de la CLI. Las reglas se comparten con la interfaz gráfica para que ambas den el mismo resultado:
+
+| Capa | Ruta | Contenido |
+| --- | --- | --- |
+| Dominio | `backend/password_checker/domain/` | Identidad de URL y cuentas, apps Android, duplicados, conflictos, reutilización, fortaleza y fusión de notas. Sin E/S ni dependencias externas. |
+| Infraestructura | `backend/password_checker/infrastructure/` | Lectura de exportaciones CSV, formato Bitwarden y creación exclusiva de archivos privados. |
+| Aplicación | `backend/password_checker/application/` | Informe Markdown de revisión. |
+| Adaptadores | `backend/password_checker/cli.py`, `api.py`, `workspace.py` | Línea de comandos, API local y espacio de revisión de la GUI. |
+
+Las dependencias solo apuntan hacia el dominio; `tests/test_architecture.py` lo comprueba. El dominio, la infraestructura y la CLI funcionan con Python 3.9 sin dependencias.
+
 ## Pruebas
 
 ```bash

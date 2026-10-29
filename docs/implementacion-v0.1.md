@@ -23,6 +23,6 @@
 4. Validación segura de enlaces Android: el identificador del paquete no permite abrir la app automáticamente desde cualquier navegador.
 5. Mejor evaluación local de fortaleza (p.ej. zxcvbn, sin usar servicios externos).
 6. Pruebas E2E, revisión de dependencia/CI frontend y validación con usuarios.
-7. Refactor adicional del `auditar_contrasenas_local.py`: hoy comparte motor con la GUI y la CLI, pero el script anterior todavía contiene reglas de negocio y presentación; mover gradualmente a dominio puro sin alterar comportamiento de la CLI.
+7. Separación por capas: **hecho** el núcleo de dominio puro (`backend/password_checker/domain/`), compartido por la CLI y el espacio de revisión, con infraestructura y CLI separadas y salida de la CLI idéntica a la anterior. **Pendiente**: llevar `api.py` y `workspace.py` a sus capas (API y aplicación) y dividir `frontend/src/App.vue` por funcionalidades.
 
 **No debe afirmarse** que se han implementado funciones pendientes. La exportación CSV y las importaciones contienen secretos en claro; almacenar y borrar de acuerdo con el modelo de amenazas documentado.
