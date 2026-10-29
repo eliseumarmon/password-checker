@@ -104,7 +104,6 @@ function labelReview(review: Review): string {
 function labelGroup(kind: DuplicateGroup['kind']): string {
   return ({ exact: 'Copia exacta', conflict: 'Contraseñas diferentes', 'multiple-accounts': 'Varias cuentas' })[kind];
 }
-function editFromAudit(id: string): void { screen.value = 'credentials'; subtab.value = 'all'; void openRecord(id); }
 function closeSession(): void {
   sessionMode.value = null;
   sessionPassphrase.value = '';
@@ -223,9 +222,9 @@ onMounted(async () => { await store.execute(api.state); });
 
         <section v-else-if="screen==='audit'" class="workspace card">
           <h2>Revisión de seguridad offline</h2><p>Las brechas de datos no se consultan. Las advertencias son locales y pueden solaparse.</p>
-          <div class="audit-grid"><div class="audit-block"><h3>Contraseñas reutilizadas</h3><p class="audit-count">{{data.audit.reused.length}} grupos</p><details v-for="(ids,i) in data.audit.reused" :key="i"><summary>{{ids.length}} registros comparten contraseña</summary><div v-for="id in ids" :key="id" class="audit-item"><span>{{recById.get(id)?.name}} — {{recById.get(id)?.username}}</span><button @click="editFromAudit(id)">Revisar</button></div></details><p v-if="!data.audit.reused.length" class="muted">Sin reutilizaciones detectadas.</p></div>
-          <div class="audit-block"><h3>Contraseñas poco seguras</h3><p class="audit-count">{{data.audit.weak.length}} credenciales</p><div v-for="id in data.audit.weak" :key="id" class="audit-item"><span>{{recById.get(id)?.name}} — {{recById.get(id)?.username}}</span><button @click="editFromAudit(id)">Revisar</button></div></div>
-          <div class="audit-block"><h3>Datos incompletos</h3><p class="audit-count">{{data.audit.incomplete.length}} credenciales</p><div v-for="id in data.audit.incomplete" :key="id" class="audit-item"><span>{{recById.get(id)?.name}} — {{recById.get(id)?.username}}</span><button @click="editFromAudit(id)">Revisar</button></div></div>
+          <div class="audit-grid"><div class="audit-block"><h3>Contraseñas reutilizadas</h3><p class="audit-count">{{data.audit.reused.length}} grupos</p><details v-for="(ids,i) in data.audit.reused" :key="i"><summary>{{ids.length}} registros comparten contraseña</summary><div v-for="id in ids" :key="id" class="audit-item"><span>{{recById.get(id)?.name}} — {{recById.get(id)?.username}}</span><button @click="openRecord(id)">Revisar</button></div></details><p v-if="!data.audit.reused.length" class="muted">Sin reutilizaciones detectadas.</p></div>
+          <div class="audit-block"><h3>Contraseñas poco seguras</h3><p class="audit-count">{{data.audit.weak.length}} credenciales</p><div v-for="id in data.audit.weak" :key="id" class="audit-item"><span>{{recById.get(id)?.name}} — {{recById.get(id)?.username}}</span><button @click="openRecord(id)">Revisar</button></div></div>
+          <div class="audit-block"><h3>Datos incompletos</h3><p class="audit-count">{{data.audit.incomplete.length}} credenciales</p><div v-for="id in data.audit.incomplete" :key="id" class="audit-item"><span>{{recById.get(id)?.name}} — {{recById.get(id)?.username}}</span><button @click="openRecord(id)">Revisar</button></div></div>
           <div class="audit-block"><h3>Contraseñas vulneradas</h3><p class="audit-count muted">No comprobadas</p><p>La comprobación de filtraciones requeriría una integración futura.</p></div></div>
         </section>
 

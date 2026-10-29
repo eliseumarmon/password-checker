@@ -11,6 +11,7 @@ const CHROME_CSV = [
 const BRAVE_CSV = [
   'name,url,username,password,note',
   ',android://SIGN@com.example.app/,eve,fake-App-1234567,',
+  'Weak,https://weak.invalid/,carol,fake-123,',
 ].join('\n');
 
 async function importFixtures(page: Page) {
@@ -20,7 +21,7 @@ async function importFixtures(page: Page) {
     { name: 'chrome.csv', mimeType: 'text/csv', buffer: Buffer.from(CHROME_CSV) },
     { name: 'brave.csv', mimeType: 'text/csv', buffer: Buffer.from(BRAVE_CSV) },
   ]);
-  await expect(page.getByRole('button', { name: 'Todas (5)' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Todas (6)' })).toBeVisible();
 }
 
 function metric(page: Page, label: string): Locator {
@@ -58,7 +59,7 @@ function contrastOf(cell: Locator): Promise<number> {
 test.beforeEach(async ({ page }) => importFixtures(page));
 
 test('imports several CSV files and groups duplicates and conflicts', async ({ page }) => {
-  await expect(metric(page, 'Credenciales')).toHaveText('5');
+  await expect(metric(page, 'Credenciales')).toHaveText('6');
   await expect(page.getByRole('button', { name: 'Duplicados (2)' })).toBeVisible();
   const table = page.locator('.desktop-table');
   await expect(table.getByRole('row', { name: /Conflict/ })).toBeVisible();
@@ -66,14 +67,14 @@ test('imports several CSV files and groups duplicates and conflicts', async ({ p
 });
 
 test('shows Android apps in Bitwarden format', async ({ page }) => {
-  await page.getByRole('button', { name: 'Todas (5)' }).click();
+  await page.getByRole('button', { name: 'Todas (6)' }).click();
   const row = page.locator('.desktop-table').getByRole('row', { name: /com\.example\.app/ });
   await expect(row).toContainText('androidapp://com.example.app');
   await expect(row).toContainText('Android');
 });
 
 test('keeps table cells readable on the dark theme', async ({ page }) => {
-  await page.getByRole('button', { name: 'Todas (5)' }).click();
+  await page.getByRole('button', { name: 'Todas (6)' }).click();
   const row = page.locator('.desktop-table tbody tr').first();
   for (const index of [1, 2, 3, 5]) {
     expect(await contrastOf(row.locator('td').nth(index))).toBeGreaterThanOrEqual(4.5);
@@ -82,7 +83,7 @@ test('keeps table cells readable on the dark theme', async ({ page }) => {
 
 test('keeps drawer actions visible and saves edits', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 600 });
-  await page.getByRole('button', { name: 'Todas (5)' }).click();
+  await page.getByRole('button', { name: 'Todas (6)' }).click();
   await page.locator('.desktop-table').getByRole('row', { name: /bob/ }).first()
     .getByRole('button', { name: 'Editar' }).click();
   const drawer = page.getByRole('dialog', { name: 'Editar credencial' });
@@ -101,4 +102,13 @@ test('merges exact copies and can undo it', async ({ page }) => {
   await expect(metric(page, 'Excluidas de exportación')).toHaveText('1');
   await page.getByRole('button', { name: /Deshacer/ }).click();
   await expect(metric(page, 'Excluidas de exportación')).toHaveText('0');
+});
+
+test('reviews a record from the audit without leaving the audit', async ({ page }) => {
+  await page.getByRole('complementary', { name: 'Navegación principal' }).getByRole('button', { name: /Auditoría/ }).click();
+  await page.locator('.audit-block', { hasText: 'Contraseñas poco seguras' }).getByRole('button', { name: 'Revisar' }).first().click();
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  await expect(editor).toBeVisible();
+  await editor.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Auditoría local');
 });
