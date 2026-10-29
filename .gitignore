@@ -25,3 +25,11 @@ informe_*.txt
 *_informe.md
 *_report.md
 *_revision.md
+
+# Frontend generado y sesiones cifradas locales
+frontend/node_modules/
+frontend/dist/
+node_modules/
+dist/
+*.pwc
+*.pwc-session

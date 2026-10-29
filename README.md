@@ -90,3 +90,7 @@ Los tests utilizan únicamente **credenciales ficticias** y nunca dependen de ex
 ## Después de importar
 
 Verifica las entradas y conflictos en Bitwarden, conserva un respaldo seguro mientras confirmas que todo funciona y elimina los archivos CSV en texto plano. Revisa también copias temporales, carpetas de descargas y sincronización.
+
+## Interfaz gráfica local (primer incremento)
+
+Consulta [la guía de instalación y ejecución](README-GUI.md). Se ha incorporado una interfaz FastAPI + Vue 3 para revisar y editar credenciales. Las sesiones cifradas reanudables **todavía no están disponibles**: antes de realizar una revisión larga, consulta las [limitaciones actuales](docs/implementacion-v0.1.md).
