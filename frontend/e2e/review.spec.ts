@@ -143,3 +143,22 @@ test('reviews a record from the audit without leaving the audit', async ({ page 
   await editor.getByRole('button', { name: 'Cancelar' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Auditoría local');
 });
+
+test('opens the editor centred on the screen', async ({ page }) => {
+  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.locator('.desktop-table').getByRole('row', { name: /carol/ })
+    .getByRole('button', { name: 'Editar' }).click();
+  const box = await page.getByRole('dialog', { name: 'Editar credencial' }).boundingBox();
+  const viewport = page.viewportSize()!;
+  expect(Math.abs(box!.x + box!.width / 2 - viewport.width / 2)).toBeLessThan(10);
+});
+
+test('uses compact cards and rows and normal-sized checkboxes', async ({ page }) => {
+  for (const card of await page.locator('.metric').all()) {
+    expect((await card.boundingBox())!.height).toBeLessThanOrEqual(76);
+  }
+  const row = (await page.locator('.desktop-table tbody tr').first().boundingBox())!;
+  expect(row.height).toBeLessThanOrEqual(56);
+  const checkbox = (await page.getByRole('checkbox', { name: 'Solo pendientes' }).boundingBox())!;
+  expect(Math.max(checkbox.width, checkbox.height)).toBeLessThanOrEqual(20);
+});

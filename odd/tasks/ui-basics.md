@@ -14,9 +14,10 @@ Ramas encadenadas, una por funcionalidad:
 
 - [x] T1. S1 con test E2E.
 - [x] T2. S2 con tests E2E.
-- [ ] T3. S3 con tests E2E.
+- [x] T3. S3 con tests E2E.
 - [ ] T4. S4 con test E2E.
 
 ## Registro
 
 - L1. Los E2E usan su propio backend en el puerto 5173: el 8000 puede tener una sesión real cargada.
+- L2. PrimeVue fija el padding de celdas con más especificidad (`.p-datatable-tbody>tr>td`); los ajustes compactos de tabla deben igualarla.
