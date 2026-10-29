@@ -72,7 +72,7 @@ Tras revisar las líneas indicadas en el informe, ejecuta el mismo comando con `
 - Duplicado exacto: misma URL normalizada, **usuario exacto** y contraseña idéntica; fusiona notas distintas y conserva un registro.
 - Conflicto: misma URL + usuario, pero contraseñas diferentes; **conserva ambas**.
 - Posibles relacionados: mismo dominio y usuario, pero URLs distintas; avisa, **no fusiona** automáticamente.
-- Reutilización: contraseña idéntica utilizada en más de una cuenta, agrupadas por dominio + usuario.
+- Reutilización: contraseña idéntica utilizada en más de una cuenta. Una cuenta es **origen (esquema + host + puerto) o paquete Android + usuario**: las rutas de una misma web cuentan como una sola cuenta y las apps locales en puertos distintos, como cuentas diferentes. La CLI y la interfaz aplican la misma regla.
 - Fortaleza orientativa: longitud y patrones evidentes. **No es una estimación criptográfica ni una comprobación de filtraciones**.
 - Riesgos: contraseñas vacías, usuarios vacíos, `http://`, URLs no reconocidas y credenciales incrustadas en URL.
 - No fusiona automáticamente credenciales incompletas o ambiguas.

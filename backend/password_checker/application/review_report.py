@@ -4,8 +4,8 @@ from __future__ import annotations
 import re
 from collections import Counter
 
-from ..domain.accounts import host_account, masked_username
-from ..domain.reuse import shared_password_groups
+from ..domain.accounts import masked_username
+from ..domain.reuse import reused_password_groups
 from ..domain.strength import Strength, assess_strength
 from ..domain.urls import parse_url, web_origin
 
@@ -78,7 +78,7 @@ def make_markdown_report(rows, stats, diagnostics=()):
     """One actionable row per imported credential, no passwords or notes."""
     conflict_ids = {id(rec) for group in stats["conflicts"] for rec in group}
     related_ids = {id(rec) for group in stats["possible_related"] for rec in group}
-    reused_passwords = {group[0].password for group in shared_password_groups(rows, host_account)}
+    reused_passwords = {group[0].password for group in reused_password_groups(rows)}
 
     records = []
     for rec in rows:
