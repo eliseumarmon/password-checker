@@ -7,9 +7,9 @@ passwords are always kept so the user can decide which one is valid.
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 
-from .accounts import account_key, duplicate_key
+from .accounts import account_key, duplicate_key, host_account
 from .credential import Credential
 from .notes import combine_notes
 from .reuse import shared_password_groups
@@ -17,14 +17,6 @@ from .strength import MIN_LENGTH, RECOMMENDED_LENGTH, is_obviously_weak
 from .urls import bitwarden_uri, is_android_source, parse_url
 
 Group = List[Credential]
-
-
-def host_account(rec: Credential) -> Optional[Tuple[str, str]]:
-    """Domain + username, for reuse and relatedness checks across URL paths."""
-    url = parse_url(rec.url)
-    if url.host and not url.invalid and rec.username:
-        return url.host, rec.username
-    return None
 
 
 def group_exact_duplicates(rows: Sequence[Credential]) -> List[Group]:
@@ -71,10 +63,10 @@ def find_possible_related(unique: Sequence[Group], merged: Sequence[Credential])
     """Same domain and username on different URLs: warn only, never merge."""
     by_host_user: Dict[Tuple[str, str], List[Tuple[Credential, Credential]]] = defaultdict(list)
     for group, row in zip(unique, merged):
-        original = group[0]
-        url = parse_url(original.url)
-        if url.host and not url.invalid and row.username:
-            by_host_user[(url.host, row.username)].append((original, row))
+        original = group[0]  # Merged rows keep the original username.
+        key = host_account(original)
+        if key is not None:
+            by_host_user[key].append((original, row))
     return [[row for _, row in g] for g in by_host_user.values()
             if len({account_key(original) for original, _ in g}) > 1]
 
@@ -85,6 +77,8 @@ def consolidate(rows: Sequence[Credential]) -> Tuple[List[Credential], Dict[str,
     output_rows = [merge_group(group) for group in unique]
     reused = shared_password_groups(output_rows, host_account)
     reused_accounts = {host_account(r) for group in reused for r in group}
+    # Length and pattern metrics are independent, overlapping counters (a short
+    # common password counts in both), unlike the exclusive assess_strength().
     distinct_passwords = set(r.password for r in output_rows if r.password)
     urls = [parse_url(r.url) for r in output_rows]
     stats = {

@@ -126,6 +126,18 @@ class ConsolidationTests(unittest.TestCase):
         self.assertEqual(len(stats['conflicts']), 1)
         self.assertEqual({r.password for r in stats['conflicts'][0]}, {'fake-current-123', 'fake-old-1234567'})
 
+    def test_reuse_and_related_metrics(self):
+        rows = [cred('https://a.invalid/login', 'alice', 'fake-shared-123456'),
+                cred('https://a.invalid/other', 'alice', 'fake-shared-123456'),
+                cred('https://b.invalid', 'bob', 'fake-shared-123456'),
+                cred('https://c.invalid', 'carol', 'fake-unique-123456')]
+        _, stats = consolidate(rows)
+        # Same domain + user on two paths is one reuse account, but a possible relation.
+        self.assertEqual(stats['reused_groups'], 1)
+        self.assertEqual(stats['reused_accounts'], 2)
+        self.assertEqual(len(stats['possible_related']), 1)
+        self.assertEqual(len(stats['possible_related'][0]), 2)
+
     def test_android_source_uri_converted_and_preserved_in_notes(self):
         merged, stats = consolidate([cred('android://SIGN@com.example.app/', 'eve', 'fake-app-123456', name='')])
         self.assertEqual(merged[0].url, 'androidapp://com.example.app')

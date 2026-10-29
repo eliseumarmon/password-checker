@@ -1,10 +1,18 @@
 """Account identity: when two credentials can safely be treated as the same login."""
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Optional, Tuple
 
 from .credential import Credential
 from .urls import parse_url
+
+
+def host_account(rec: Credential) -> Optional[Tuple[str, str]]:
+    """Domain + username, for reuse and relatedness checks across URL paths."""
+    url = parse_url(rec.url)
+    if url.host and not url.invalid and rec.username:
+        return url.host, rec.username
+    return None
 
 
 def account_key(rec: Credential) -> Optional[Any]:

@@ -2,9 +2,14 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any, Callable, Dict, Hashable, List, Optional, Sequence, Set, TypeVar
+from typing import Any, Callable, Dict, Hashable, List, Optional, Protocol, Sequence, Set, TypeVar
 
-T = TypeVar("T")
+
+class HasPassword(Protocol):
+    password: str
+
+
+T = TypeVar("T", bound=HasPassword)
 
 
 def shared_password_groups(items: Sequence[T],
@@ -17,10 +22,9 @@ def shared_password_groups(items: Sequence[T],
     members: Dict[str, List[T]] = defaultdict(list)
     accounts: Dict[str, Set[Any]] = defaultdict(set)
     for item in items:
-        password = item.password  # type: ignore[attr-defined]
         account = account_of(item)
-        if not password or account is None:
+        if not item.password or account is None:
             continue
-        members[password].append(item)
-        accounts[password].add(account)
+        members[item.password].append(item)
+        accounts[item.password].add(account)
     return [group for password, group in members.items() if len(accounts[password]) > 1]
