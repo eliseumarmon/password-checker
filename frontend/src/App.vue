@@ -4,6 +4,7 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import { api, safeWebUrl } from './api';
 import { useWorkspace } from './store';
+import TrashIcon from './TrashIcon.vue';
 import type { CredentialDetail, CredentialSummary, DuplicateGroup, FilterType, RecordEdit, Review, Screen } from './types';
 
 const store = useWorkspace();
@@ -28,7 +29,9 @@ const data = computed(() => store.data);
 const records = computed(() => data.value?.records ?? []);
 const groups = computed(() => data.value?.groups ?? []);
 const recById = computed(() => new Map(records.value.map(r => [r.id, r])));
-const visibleRows = computed(() => records.value.filter(r => matches(r)));
+const activeRecords = computed(() => records.value.filter(r => r.included));
+const trashed = computed(() => records.value.filter(r => !r.included));
+const visibleRows = computed(() => activeRecords.value.filter(r => matches(r)));
 const visibleGroups = computed(() => groups.value.filter(g => matches(g) && (!pendingOnly.value || g.pending)));
 const progress = computed(() => data.value?.stats.total ? Math.round(100 * data.value.stats.reviewed / data.value.stats.total) : 0);
 
@@ -63,7 +66,7 @@ async function openRecord(id: string): Promise<void> {
     selected.value = await api.detail(id);
     form.value = { name: selected.value.name, url: selected.value.url,
       username: selected.value.username, password: selected.value.password,
-      note: selected.value.note, included: selected.value.included, review: selected.value.review };
+      note: selected.value.note, review: selected.value.review };
     revealed.value = false;
   } catch (error) { errorMessage(error); }
 }
@@ -79,8 +82,10 @@ async function quickEdit(id: string, payload: RecordEdit): Promise<void> {
     if (selected.value?.id === id) selected.value = null;
   }
 }
+function moveToTrash(id: string): Promise<void> { return quickEdit(id, { included: false }); }
+function restore(id: string): Promise<void> { return quickEdit(id, { included: true }); }
 async function merge(): Promise<void> {
-  if (!window.confirm('Solo se excluirán copias idénticas por URL, usuario y contraseña. Las notas se combinarán. ¿Continuar?')) return;
+  if (!window.confirm('Las copias idénticas por URL, usuario y contraseña irán a la papelera. Las notas se combinarán. ¿Continuar?')) return;
   await store.execute(api.mergeExact);
   selectedGroup.value = null;
 }
@@ -150,6 +155,7 @@ onMounted(async () => { await store.execute(api.state); });
       <nav>
         <button :class="{active:screen==='credentials'}" @click="screen='credentials'">▤ &nbsp; Credenciales</button>
         <button :class="{active:screen==='audit'}" @click="screen='audit'">⬡ &nbsp; Auditoría</button>
+        <button :class="{active:screen==='trash'}" @click="screen='trash'"><TrashIcon /> &nbsp; Papelera ({{trashed.length}})</button>
         <button :class="{active:screen==='settings'}" @click="screen='settings'">⚙ &nbsp; Ajustes</button>
       </nav>
       <p class="sidebar-note">Solo en este equipo · Sin conexión externa</p>
@@ -157,7 +163,7 @@ onMounted(async () => { await store.execute(api.state); });
 
     <main class="main">
       <header class="topbar">
-        <div><h1>{{ screen === 'credentials' ? 'Credenciales' : screen === 'audit' ? 'Auditoría local' : 'Ajustes' }}</h1><p>Los originales no se modifican · Las contraseñas permanecen ocultas</p></div>
+        <div><h1>{{ ({ credentials: 'Credenciales', audit: 'Auditoría local', trash: 'Papelera', settings: 'Ajustes' })[screen] }}</h1><p>Los originales no se modifican · Las contraseñas permanecen ocultas</p></div>
         <div class="top-actions">
           <button v-if="data?.stats.total" @click="showSession('save')">Guardar sesión cifrada</button>
           <button :disabled="!data?.can_undo || store.busy" @click="store.execute(api.undo)" title="Deshacer último cambio">↶ Deshacer</button>
@@ -183,14 +189,14 @@ onMounted(async () => { await store.execute(api.state); });
           <div class="metric"><span>Credenciales</span><strong>{{data.stats.total}}</strong></div>
           <div class="metric"><span>Duplicados y conflictos</span><strong>{{data.groups.length}}</strong></div>
           <div class="metric"><span>Revisadas</span><strong>{{data.stats.reviewed}} / {{data.stats.total}}</strong><div class="progress"><span :style="{width:progress+'%'}"></span></div></div>
-          <div class="metric"><span>Excluidas de exportación</span><strong>{{data.stats.excluded}}</strong></div>
+          <div class="metric"><span>En la papelera</span><strong>{{data.stats.excluded}}</strong></div>
         </div>
         <section v-if="screen==='credentials'" class="workspace card">
           <div class="section-heading"><div><h2>Explorar y consolidar</h2><p>Analiza los registros antes de elegir cuáles exportar.</p></div>
             <div class="heading-actions"><button @click="fileInput?.click()">Importar otros CSV</button><button :disabled="store.busy" @click="merge">Fusionar copias exactas</button></div>
             <input ref="fileInput" hidden type="file" multiple accept=".csv,text/csv" @change="loadFileList(($event.target as HTMLInputElement).files || [])" />
           </div>
-          <div class="tabs" role="tablist"><button :class="{selected:subtab==='duplicates'}" @click="subtab='duplicates'">Duplicados ({{groups.length}})</button><button :class="{selected:subtab==='all'}" @click="subtab='all'">Todas ({{records.length}})</button></div>
+          <div class="tabs" role="tablist"><button :class="{selected:subtab==='duplicates'}" @click="subtab='duplicates'">Duplicados ({{groups.length}})</button><button :class="{selected:subtab==='all'}" @click="subtab='all'">Todas ({{activeRecords.length}})</button></div>
           <div class="filters"><input v-model="query" aria-label="Buscar credenciales" placeholder="Buscar por nombre, URL o usuario" /><select v-model="filterType" aria-label="Filtrar tipo"><option value="all">Web y Android</option><option value="web">Solo web</option><option value="android">Solo Android</option></select><label class="check"><input v-model="pendingOnly" type="checkbox" /> Solo pendientes</label></div>
 
           <template v-if="subtab==='duplicates'">
@@ -213,10 +219,9 @@ onMounted(async () => { await store.execute(api.state); });
               <Column field="type" header="Tipo" sortable><template #body="{data:r}">{{r.type==='android'?'Android':'Web'}}</template></Column>
               <Column field="source" header="Origen" sortable/>
               <Column field="review" header="Revisión" sortable><template #body="{data:r}"><span class="status" :class="r.review">{{labelReview(r.review)}}</span></template></Column>
-              <Column header="Salida"><template #body="{data:r}">{{r.included?'Incluida':'Excluida'}}</template></Column>
-              <Column header="Acción"><template #body="{data:r}"><button @click="openRecord(r.id)">Editar</button></template></Column>
+              <Column header="Acción"><template #body="{data:r}"><div class="row-actions"><button @click="openRecord(r.id)">Editar</button><button class="icon-button danger" aria-label="Mover a la papelera" title="Mover a la papelera" :disabled="store.busy" @click="moveToTrash(r.id)"><TrashIcon /></button></div></template></Column>
             </DataTable>
-            <div class="mobile-cards"><article v-for="r in visibleRows" :key="r.id" class="record-card"><div class="row-between"><strong>{{r.name}}</strong><span class="status" :class="r.review">{{labelReview(r.review)}}</span></div><p>{{r.username}}</p><p class="muted">{{r.type}} · {{r.source}}</p><button @click="openRecord(r.id)">Editar →</button></article></div>
+            <div class="mobile-cards"><article v-for="r in visibleRows" :key="r.id" class="record-card"><div class="row-between"><strong>{{r.name}}</strong><span class="status" :class="r.review">{{labelReview(r.review)}}</span></div><p>{{r.username}}</p><p class="muted">{{r.type}} · {{r.source}}</p><div class="row-actions"><button @click="openRecord(r.id)">Editar →</button><button class="icon-button danger" aria-label="Mover a la papelera" :disabled="store.busy" @click="moveToTrash(r.id)"><TrashIcon /></button></div></article></div>
           </template>
         </section>
 
@@ -226,6 +231,20 @@ onMounted(async () => { await store.execute(api.state); });
           <div class="audit-block"><h3>Contraseñas poco seguras</h3><p class="audit-count">{{data.audit.weak.length}} credenciales</p><div v-for="id in data.audit.weak" :key="id" class="audit-item"><span>{{recById.get(id)?.name}} — {{recById.get(id)?.username}}</span><button @click="openRecord(id)">Revisar</button></div></div>
           <div class="audit-block"><h3>Datos incompletos</h3><p class="audit-count">{{data.audit.incomplete.length}} credenciales</p><div v-for="id in data.audit.incomplete" :key="id" class="audit-item"><span>{{recById.get(id)?.name}} — {{recById.get(id)?.username}}</span><button @click="openRecord(id)">Revisar</button></div></div>
           <div class="audit-block"><h3>Contraseñas vulneradas</h3><p class="audit-count muted">No comprobadas</p><p>La comprobación de filtraciones requeriría una integración futura.</p></div></div>
+        </section>
+
+        <section v-else-if="screen==='trash'" class="workspace card">
+          <h2>Credenciales descartadas</h2><p>No se exportan. Restaura las que quieras recuperar.</p>
+          <p v-if="!trashed.length" class="empty">La papelera está vacía.</p>
+          <template v-else>
+            <DataTable :value="trashed" dataKey="id" sortField="name" :sortOrder="1" stripedRows removableSort class="desktop-table" :paginator="trashed.length>30" :rows="30">
+              <Column field="name" header="Sitio / App" sortable><template #body="{data:r}"><strong>{{r.name}}</strong><small class="url-truncate">{{r.url}}</small></template></Column>
+              <Column field="username" header="Usuario" sortable/>
+              <Column field="source" header="Origen" sortable/>
+              <Column header="Acción"><template #body="{data:r}"><button :disabled="store.busy" @click="restore(r.id)">Restaurar</button></template></Column>
+            </DataTable>
+            <div class="mobile-cards"><article v-for="r in trashed" :key="r.id" class="record-card"><strong>{{r.name}}</strong><p>{{r.username}}</p><p class="muted">{{r.source}}</p><button :disabled="store.busy" @click="restore(r.id)">Restaurar</button></article></div>
+          </template>
         </section>
 
         <section v-else class="workspace card"><h2>Ajustes y privacidad</h2><p>Aplicación local, sin telemetría ni fuentes externas.</p><div class="settings-row"><strong>Guardar y reanudar sesión cifrada</strong><span>Archivo local .pwc cifrado con Argon2id + AES-256-GCM</span><div><button @click="showSession('save')">Guardar</button> <button @click="showSession('load')">Abrir</button></div></div><div class="settings-row"><strong>Modo móvil con ADB reverse</strong><span>Compatible con loopback, sujeto a configuración de ADB.</span></div><div class="settings-row"><strong>Exportación</strong><span>Formato Bitwarden (CSV) · Confirma antes de descargar.</span></div></section>
@@ -245,11 +264,10 @@ onMounted(async () => { await store.execute(api.state); });
             <label>Contraseña <span class="secret-input"><input v-model="form.password" :type="revealed?'text':'password'" autocomplete="new-password" spellcheck="false" /><button :aria-label="revealed?'Ocultar contraseña':'Mostrar contraseña'" @click="revealed=!revealed">{{revealed?'Ocultar':'Mostrar'}}</button></span></label>
             <label>Notas<textarea v-model="form.note" rows="5"></textarea></label>
             <label>Estado de revisión<select v-model="form.review"><option value="pending">Pendiente</option><option value="reviewed">Revisada (sin verificar acceso)</option><option value="verified">Verificada manualmente</option><option value="incorrect">No funciona</option></select></label>
-            <label class="check"><input v-model="form.included" type="checkbox" /> Incluir en exportación</label>
             <p class="hint">Editar esta contraseña guardada NO cambia la contraseña real del servicio.</p>
             <p class="muted">Origen inmutable: {{selected.source}} · línea {{selected.line}}</p>
           </div>
-          <div class="drawer-actions"><button @click="selected=null;revealed=false">Cancelar</button><button class="primary" :disabled="store.busy" @click="save">Guardar cambios</button></div>
+          <div class="drawer-actions"><button v-if="selected.included" class="danger push-left" :disabled="store.busy" @click="moveToTrash(selected.id)"><TrashIcon /> Descartar</button><button v-else class="push-left" :disabled="store.busy" @click="restore(selected.id)">Restaurar</button><button @click="selected=null;revealed=false">Cancelar</button><button class="primary" :disabled="store.busy" @click="save">Guardar cambios</button></div>
         </template>
         <template v-else-if="selectedGroup">
           <p>{{labelGroup(selectedGroup.kind)}} · {{selectedGroup.count}} registros. Ninguna contraseña se elimina por defecto.</p>
@@ -257,9 +275,9 @@ onMounted(async () => { await store.execute(api.state); });
             <div class="row-between"><strong>{{r.source}} · línea {{r.line}}</strong><span class="status" :class="r.review">{{labelReview(r.review)}}</span></div>
             <p>{{r.name}} · {{r.username}}</p><p class="muted" :title="r.url">{{r.url}}</p>
             <div class="compare-flags"><span>URL {{r.match_url?'✓':'≠'}}</span><span>Usuario {{r.match_username?'✓':'≠'}}</span><span>Clave {{r.match_password?'✓':'≠'}}</span></div>
-            <div class="compare-actions"><button @click="openRecord(r.id)">Ver / editar</button><button v-if="r.included" @click="quickEdit(r.id,{included:false})">Excluir de exportación</button></div>
+            <div class="compare-actions"><button @click="openRecord(r.id)">Ver / editar</button><button v-if="r.included" class="danger" :disabled="store.busy" @click="moveToTrash(r.id)"><TrashIcon /> Descartar</button></div>
           </div>
-          <p class="hint">Las coincidencias se comparan respecto al primer registro del grupo. Excluir es reversible mediante Deshacer.</p>
+          <p class="hint">Las coincidencias se comparan respecto al primer registro del grupo. Lo descartado va a la papelera y se puede restaurar.</p>
         </template>
       </section>
     </div>
@@ -281,6 +299,6 @@ onMounted(async () => { await store.execute(api.state); });
         <div class="drawer-actions"><button @click="closeSession">Cancelar</button><button class="primary" :disabled="store.busy" @click="submitSession">{{sessionMode==='save'?'Descargar archivo cifrado':'Abrir sesión'}}</button></div>
       </section>
     </div>
-    <nav class="mobile-nav" aria-label="Navegación móvil"><button :class="{active:screen==='credentials'}" @click="screen='credentials'">▤<span>Credenciales</span></button><button :class="{active:screen==='audit'}" @click="screen='audit'">⬡<span>Auditoría</span></button><button :class="{active:screen==='settings'}" @click="screen='settings'">⚙<span>Ajustes</span></button></nav>
+    <nav class="mobile-nav" aria-label="Navegación móvil"><button :class="{active:screen==='credentials'}" @click="screen='credentials'">▤<span>Credenciales</span></button><button :class="{active:screen==='audit'}" @click="screen='audit'">⬡<span>Auditoría</span></button><button :class="{active:screen==='trash'}" @click="screen='trash'"><TrashIcon /><span>Papelera</span></button><button :class="{active:screen==='settings'}" @click="screen='settings'">⚙<span>Ajustes</span></button></nav>
   </div>
 </template>

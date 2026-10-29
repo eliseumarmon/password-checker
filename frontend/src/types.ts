@@ -1,5 +1,5 @@
 export type Review = 'pending' | 'reviewed' | 'verified' | 'incorrect';
-export type Screen = 'credentials' | 'audit' | 'settings';
+export type Screen = 'credentials' | 'audit' | 'trash' | 'settings';
 export type FilterType = 'all' | 'web' | 'android';
 
 export interface CredentialSummary {

@@ -97,11 +97,42 @@ test('keeps drawer actions visible and saves edits', async ({ page }) => {
   await expect(page.locator('.desktop-table')).toContainText('Conflict renamed');
 });
 
-test('merges exact copies and can undo it', async ({ page }) => {
+test('merges exact copies into the trash and can undo it', async ({ page }) => {
   await page.getByRole('button', { name: 'Fusionar copias exactas' }).click();
-  await expect(metric(page, 'Excluidas de exportación')).toHaveText('1');
+  await expect(metric(page, 'En la papelera')).toHaveText('1');
+  await expect(page.getByRole('button', { name: 'Todas (5)' })).toBeVisible();
   await page.getByRole('button', { name: /Deshacer/ }).click();
-  await expect(metric(page, 'Excluidas de exportación')).toHaveText('0');
+  await expect(metric(page, 'En la papelera')).toHaveText('0');
+});
+
+function sidebar(page: Page): Locator {
+  return page.getByRole('complementary', { name: 'Navegación principal' });
+}
+
+test('trashes a row from its quick action and restores it from the trash', async ({ page }) => {
+  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.locator('.desktop-table').getByRole('row', { name: /carol/ })
+    .getByRole('button', { name: 'Mover a la papelera' }).click();
+  await expect(page.getByRole('button', { name: 'Todas (5)' })).toBeVisible();
+  await expect(page.locator('.desktop-table')).not.toContainText('carol');
+
+  await sidebar(page).getByRole('button', { name: /Papelera/ }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Papelera');
+  const row = page.locator('.desktop-table').getByRole('row', { name: /carol/ });
+  await row.getByRole('button', { name: 'Restaurar' }).click();
+  await expect(page.getByText('La papelera está vacía.')).toBeVisible();
+  await expect(metric(page, 'En la papelera')).toHaveText('0');
+});
+
+test('discards a record from the editor into the trash', async ({ page }) => {
+  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.locator('.desktop-table').getByRole('row', { name: /carol/ })
+    .getByRole('button', { name: 'Editar' }).click();
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  await expect(editor.getByRole('checkbox')).toHaveCount(0);
+  await editor.getByRole('button', { name: 'Descartar' }).click();
+  await expect(editor).toBeHidden();
+  await expect(metric(page, 'En la papelera')).toHaveText('1');
 });
 
 test('reviews a record from the audit without leaving the audit', async ({ page }) => {
