@@ -93,11 +93,7 @@ function closeEditor(): void { selected.value = null; revealed.value = false; }
 function moveToTrash(id: string): Promise<void> { return quickEdit(id, { included: false }); }
 async function trashGroup(group: DuplicateGroup): Promise<void> {
   if (!window.confirm(`Se moverán ${group.count} registros de «${group.name}» a la papelera. Podrás restaurarlos. ¿Continuar?`)) return;
-  await store.execute(async () => {
-    let state = data.value!;
-    for (const member of group.members) state = await api.edit(member.id, { included: false });
-    return state;
-  });
+  await store.execute(() => api.trash(group.members.map(member => member.id)));
   selectedGroup.value = null;
 }
 function restore(id: string): Promise<void> { return quickEdit(id, { included: true }); }

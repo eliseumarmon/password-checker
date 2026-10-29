@@ -57,6 +57,16 @@ class WorkspaceTests(unittest.TestCase):
         self.workspace.undo()
         self.assertEqual(self.workspace.get(identifier)['review'], 'verified')
 
+    def test_trash_many_is_atomic_and_one_undo_step(self):
+        ids = [r['id'] for r in self.workspace.snapshot()['records'][:3]]
+        with self.assertRaises(KeyError):
+            self.workspace.trash(ids + ['missing'])
+        self.assertEqual(self.workspace.snapshot()['stats']['excluded'], 0)
+        self.assertEqual(self.workspace.trash(ids)['stats']['excluded'], 3)
+        self.assertEqual(self.workspace.undo()['stats']['excluded'], 0)
+        with self.assertRaises(ValueError):
+            self.workspace.trash([])
+
     def test_input_files_transactional(self):
         before = self.workspace.snapshot()['stats']['total']
         try:
