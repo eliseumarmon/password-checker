@@ -15,7 +15,7 @@ Ramas encadenadas, una por funcionalidad:
 - [x] T1. S1 con test E2E.
 - [x] T2. S2 con tests E2E.
 - [x] T3. S3 con tests E2E.
-- [ ] T4. S4 con test E2E.
+- [x] T4. S4 con test E2E.
 
 ## Registro
 

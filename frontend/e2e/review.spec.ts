@@ -162,3 +162,17 @@ test('uses compact cards and rows and normal-sized checkboxes', async ({ page })
   const checkbox = (await page.getByRole('checkbox', { name: 'Solo pendientes' }).boundingBox())!;
   expect(Math.max(checkbox.width, checkbox.height)).toBeLessThanOrEqual(20);
 });
+
+test('collapses the sidebar to icons and remembers it', async ({ page }) => {
+  const aside = sidebar(page);
+  const width = async () => (await aside.boundingBox())!.width;
+  await aside.getByRole('button', { name: 'Contraer menú' }).click();
+  await expect.poll(width).toBeLessThanOrEqual(72);
+  await aside.getByRole('button', { name: /Auditoría/ }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Auditoría local');
+
+  await page.reload();
+  await expect.poll(width).toBeLessThanOrEqual(72);
+  await aside.getByRole('button', { name: 'Expandir menú' }).click();
+  await expect.poll(width).toBeGreaterThan(200);
+});
