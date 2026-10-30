@@ -14,4 +14,4 @@ Rama: `refactor/shared-display-name` (desde `main`).
 
 ## Registro
 
-- L1. La revisión hablaba de tres copias; en `main` solo quedan dos (`workspace.py` y `consolidation.py`).
+- L1. Había tres copias: `workspace.py`, `consolidation.py` y `review_report.py` («Sin nombre»); la del informe no se alcanzaba porque recibe filas consolidadas.

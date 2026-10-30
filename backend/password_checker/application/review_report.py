@@ -5,6 +5,7 @@ import re
 from collections import Counter
 
 from ..domain.accounts import masked_username
+from ..domain.credential import display_name
 from ..domain.reuse import reused_password_groups
 from ..domain.strength import Strength, assess_strength
 from ..domain.urls import parse_url, web_origin
@@ -31,7 +32,7 @@ def markdown_cell(value, limit=None):
 
 def markdown_page(row):
     """Link to website origin only: never leak URL query, path tokens or userinfo."""
-    name = markdown_cell(row.name.strip() or parse_url(row.url).host or "Sin nombre", 48)
+    name = markdown_cell(display_name(row.name, row.url), 48)
     origin = web_origin(row.url)
     return "[{}]({})".format(name, origin) if origin else name
 
