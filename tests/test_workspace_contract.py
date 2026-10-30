@@ -6,7 +6,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from backend.password_checker.domain.credential import Credential  # noqa: E402
-from backend.password_checker.workspace import Candidate, Workspace, detect_audit  # noqa: E402
+from backend.password_checker.infrastructure.bitwarden import bitwarden_csv_bytes  # noqa: E402
+from backend.password_checker.application.candidate import Candidate  # noqa: E402
+from backend.password_checker.application.review_state import detect_audit  # noqa: E402
+from backend.password_checker.application.workspace import Workspace  # noqa: E402
 
 SEPARATOR = '\n\n----- Nota adicional -----\n\n'
 
@@ -23,7 +26,7 @@ def workspace_with(*rows):
 
 class WorkspaceContractTests(unittest.TestCase):
     def test_export_bytes_use_bom_lf_and_bitwarden_columns(self):
-        exported, count = workspace_with(candidate('https://a.invalid', 'u', 'fake,pw', 'n', 'Site')).export_csv()
+        exported, count = bitwarden_csv_bytes(workspace_with(candidate('https://a.invalid', 'u', 'fake,pw', 'n', 'Site')).export_records())
         self.assertEqual(count, 1)
         self.assertEqual(exported, (
             '﻿folder,favorite,type,name,notes,fields,reprompt,login_uri,login_username,login_password,login_totp\n'

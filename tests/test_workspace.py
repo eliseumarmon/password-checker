@@ -5,7 +5,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from backend.password_checker.workspace import Workspace, detect_groups, detect_audit, Candidate
+from backend.password_checker.infrastructure.bitwarden import bitwarden_csv_bytes
+from backend.password_checker.application.candidate import Candidate
+from backend.password_checker.application.workspace import Workspace
 from auditar_contrasenas_local import Credential
 
 
@@ -40,7 +42,7 @@ class WorkspaceTests(unittest.TestCase):
         snapshot = self.workspace.snapshot()
         self.assertEqual(snapshot['stats']['included'], 4)
         self.assertEqual(snapshot['stats']['excluded'], 1)
-        exported, count = self.workspace.export_csv()
+        exported, count = bitwarden_csv_bytes(self.workspace.export_records())
         self.assertEqual(count, 4)
         self.assertIn(b'fictional-two-456', exported)
         self.assertIn(b'second note', exported)
@@ -85,22 +87,14 @@ class WorkspaceTests(unittest.TestCase):
         record = Candidate.from_source(cred('   ', 'https://a.invalid/login', 'alice', 'fictional-123456'))
         self.assertEqual(record.name, 'a.invalid')
 
-    def test_input_files_transactional(self):
-        before = self.workspace.snapshot()['stats']['total']
-        try:
-            self.workspace.import_files([('good.csv', b'name,url,username,password,note\nA,https://example.org,u,fake-123,note\n'), ('bad.csv', b'\x00')])
-        except ValueError:
-            pass
-        else:
-            self.fail('Malformed import must fail')
-        self.assertEqual(self.workspace.snapshot()['stats']['total'], before)
-
-    def test_import_detects_firefox_without_name_hint(self):
-        data = ('url,username,password,httpRealm,formActionOrigin,guid,timeCreated,timeLastUsed,timePasswordChanged\n'
-                'https://example.org/login,alice,fictional-abc-123,,,,,,\n').encode()
-        result = self.workspace.import_files([('passwords.csv', data)])
-        self.assertEqual(result['files'][0]['source'], 'firefox')
+    def test_import_replaces_records_and_keeps_file_metadata(self):
+        self.workspace.merge_exact()
+        result = self.workspace.import_files([('dir/passwords.csv', 'firefox', [cred('A', 'https://a.invalid', 'u', 'fake-123')])])
+        self.assertEqual(result['files'], [{'name': 'passwords.csv', 'source': 'firefox', 'count': 1}])
         self.assertEqual(result['stats']['total'], 1)
+        self.assertFalse(result['can_undo'])
+        with self.assertRaises(ValueError):
+            self.workspace.import_files([('empty.csv', 'chrome', [])])
 
     def test_partial_updates_cannot_change_id_or_original(self):
         identifier = self.workspace.snapshot()['records'][0]['id']

@@ -43,6 +43,15 @@ class APITests(unittest.TestCase):
         self.assertIn(b'fictional-secret-123', export.content)
         self.assertEqual(self.client.post('/api/undo').json()['stats']['included'], 2)
 
+    def test_import_is_all_files_or_none(self):
+        good = b'name,url,username,password,note\nA,https://a.invalid/,alice,fictional-123456,\n'
+        self.client.post('/api/import', files=[('files', ('chrome.csv', good, 'text/csv'))])
+        two_rows = good + b'B,https://b.invalid/,bob,fictional-654321,\n'
+        response = self.client.post('/api/import', files=[('files', ('chrome.csv', two_rows, 'text/csv')),
+                                                          ('files', ('bad.csv', b'\x00', 'text/csv'))])
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(workspace.snapshot()['stats']['total'], 1)
+
     def test_trash_many_records_in_one_request(self):
         payload = (b'name,url,username,password,note\n'
                    b'A,https://a.invalid/,alice,fictional-123456,\n'

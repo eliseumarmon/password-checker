@@ -86,9 +86,9 @@ Tras revisar las líneas indicadas en el informe, ejecuta el mismo comando con `
 | Capa | Ruta | Contenido |
 | --- | --- | --- |
 | Dominio | `backend/password_checker/domain/` | Identidad de URL y cuentas, apps Android, duplicados, conflictos, reutilización, fortaleza y fusión de notas. Sin E/S ni dependencias externas. |
-| Infraestructura | `backend/password_checker/infrastructure/` | Lectura de exportaciones CSV, formato Bitwarden y creación exclusiva de archivos privados. |
-| Aplicación | `backend/password_checker/application/` | Informe Markdown de revisión. |
-| Adaptadores | `backend/password_checker/cli.py`, `api.py`, `workspace.py` | Línea de comandos, API local y espacio de revisión de la GUI. |
+| Infraestructura | `backend/password_checker/infrastructure/` | Lectura de exportaciones CSV (también subidas desde la GUI), formato Bitwarden, cifrado de sesiones y creación exclusiva de archivos privados. |
+| Aplicación | `backend/password_checker/application/` | Espacio de revisión de la GUI (estado, deshacer, edición, papelera y fusión), lo que muestra la pantalla de revisión, el volcado de sesión y el informe Markdown. Solo depende del dominio. |
+| Adaptadores | `backend/password_checker/cli.py`, `api.py` | Línea de comandos y API local; conectan la aplicación con la infraestructura. |
 
 Las dependencias solo apuntan hacia el dominio; `tests/test_architecture.py` lo comprueba. El dominio, la infraestructura y la CLI funcionan con Python 3.9 sin dependencias.
 
