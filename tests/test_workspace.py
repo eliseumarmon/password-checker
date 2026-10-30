@@ -6,7 +6,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from backend.password_checker.infrastructure.bitwarden import bitwarden_csv_bytes
-from backend.password_checker.workspace import Workspace, Candidate
+from backend.password_checker.application.candidate import Candidate
+from backend.password_checker.application.workspace import Workspace
 from auditar_contrasenas_local import Credential
 
 

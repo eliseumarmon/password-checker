@@ -1,1 +1,1 @@
-"""Use cases built on the domain: review reports and, later, the review workspace."""
+"""Use cases built on the domain: the review workspace and the review report. Domain imports only."""

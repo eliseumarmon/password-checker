@@ -7,7 +7,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from backend.password_checker.domain.credential import Credential  # noqa: E402
 from backend.password_checker.infrastructure.bitwarden import bitwarden_csv_bytes  # noqa: E402
-from backend.password_checker.workspace import Candidate, Workspace, detect_audit  # noqa: E402
+from backend.password_checker.application.candidate import Candidate  # noqa: E402
+from backend.password_checker.application.review_state import detect_audit  # noqa: E402
+from backend.password_checker.application.workspace import Workspace  # noqa: E402
 
 SEPARATOR = '\n\n----- Nota adicional -----\n\n'
 

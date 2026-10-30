@@ -18,6 +18,8 @@ Rama: `refactor/workspace-layers`, encadenada sobre `refactor/shared-display-nam
 
 - [x] T1. `sessions.py` pasa a `infrastructure/`.
 - [x] T2. Lectura de CSV subidos y bytes de exportación en `infrastructure/`; `Workspace` recibe credenciales ya leídas y entrega las filas a exportar.
-- [ ] T3. Test de arquitectura (RED) y división de `workspace.py` en los tres módulos de `application/`.
+- [x] T3. Test de arquitectura (RED) y división de `workspace.py` en los tres módulos de `application/`.
 
 ## Registro
+- L1. `Candidate` e `identity` van en `application/candidate.py`: los usan el estado de revisión, el volcado de sesión y el workspace, y así no hay imports circulares.
+- L2. El test de importación atómica se comprobó contra una versión no atómica temporal (falla con 2 != 1).

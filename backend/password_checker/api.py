@@ -14,7 +14,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from .infrastructure.bitwarden import bitwarden_csv_bytes
 from .infrastructure.csv_reader import read_upload
 from .infrastructure.sessions import MAX_SESSION_BYTES, decrypt_session, encrypt_session
-from .workspace import Workspace
+from .application.workspace import Workspace
 
 MAX_FILE_SIZE = 5 * 1024 * 1024
 MAX_TOTAL_SIZE = 20 * 1024 * 1024
