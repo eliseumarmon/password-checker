@@ -256,3 +256,19 @@ test('shows the server reason when a download fails', async ({ page }) => {
   await page.getByRole('button', { name: 'Exportar Bitwarden' }).click();
   await expect(page.getByRole('alert')).toContainText('No hay credenciales para exportar');
 });
+
+test('shows errors above an open dialog', async ({ page }) => {
+  await sidebar(page).getByRole('button', { name: 'Ajustes' }).click();
+  await page.getByRole('button', { name: 'Abrir', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Sesión cifrada' });
+  await dialog.getByLabel(/Contraseña de sesión/).fill('fictional-session-passphrase');
+  await dialog.getByRole('button', { name: 'Abrir sesión' }).click();
+  const alert = page.getByRole('alert');
+  await expect(alert).toContainText('Selecciona el archivo cifrado');
+  // Visible is not enough: nothing (such as the dialog backdrop) may cover the message.
+  const onTop = await alert.evaluate(element => {
+    const box = element.getBoundingClientRect();
+    return element.contains(document.elementFromPoint(box.left + 8, box.top + box.height / 2));
+  });
+  expect(onTop).toBe(true);
+});
