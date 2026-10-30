@@ -5,7 +5,8 @@ import Column from 'primevue/column';
 import { api, safeWebUrl } from './api';
 import { useWorkspace } from './store';
 import TrashIcon from './TrashIcon.vue';
-import type { CredentialDetail, CredentialSummary, DuplicateGroup, FilterType, RecordEdit, Review, Screen } from './types';
+import { SCREENS, labelGroup, labelReview, labelType } from './labels';
+import type { CredentialDetail, CredentialSummary, DuplicateGroup, FilterType, RecordEdit, Screen } from './types';
 
 const store = useWorkspace();
 const screen = ref<Screen>('credentials');
@@ -116,12 +117,6 @@ function openSite(url: string): void {
   }
   window.open(href, '_blank', 'noopener,noreferrer');
 }
-function labelReview(review: Review): string {
-  return ({ pending: 'Pendiente', reviewed: 'Revisada', verified: 'Verificada', incorrect: 'No funciona' })[review];
-}
-function labelGroup(kind: DuplicateGroup['kind']): string {
-  return ({ exact: 'Copia exacta', conflict: 'Contraseñas diferentes', 'multiple-accounts': 'Varias cuentas' })[kind];
-}
 function closeSession(): void {
   sessionMode.value = null;
   sessionPassphrase.value = '';
@@ -166,10 +161,7 @@ onMounted(async () => { await store.execute(api.state); });
     <aside class="sidebar" :class="{collapsed}" aria-label="Navegación principal">
       <button class="brand" :aria-label="collapsed?'Expandir menú':'Contraer menú'" :title="collapsed?'Expandir menú':'Contraer menú'" :aria-expanded="!collapsed" @click="collapsed=!collapsed"><span class="brand-mark">◇</span><span class="label"><strong>Password Checker</strong><small>Revisión privada de credenciales</small></span></button>
       <nav>
-        <button :class="{active:screen==='credentials'}" title="Credenciales" @click="screen='credentials'"><span class="nav-icon">▤</span><span class="label">Credenciales</span></button>
-        <button :class="{active:screen==='audit'}" title="Auditoría" @click="screen='audit'"><span class="nav-icon">⬡</span><span class="label">Auditoría</span></button>
-        <button :class="{active:screen==='trash'}" :title="`Papelera (${trashed.length})`" @click="screen='trash'"><span class="nav-icon"><TrashIcon /></span><span class="label">Papelera ({{trashed.length}})</span></button>
-        <button :class="{active:screen==='settings'}" title="Ajustes" @click="screen='settings'"><span class="nav-icon">⚙</span><span class="label">Ajustes</span></button>
+        <button v-for="s in SCREENS" :key="s.id" :class="{active:screen===s.id}" :title="s.id==='trash'?`${s.label} (${trashed.length})`:s.label" @click="screen=s.id"><span class="nav-icon"><TrashIcon v-if="s.id==='trash'" /><template v-else>{{s.icon}}</template></span><span class="label">{{s.label}}<template v-if="s.id==='trash'"> ({{trashed.length}})</template></span></button>
       </nav>
       <p class="sidebar-note label">Solo en este equipo · Sin conexión externa</p>
     </aside>
@@ -177,7 +169,7 @@ onMounted(async () => { await store.execute(api.state); });
     <main class="main">
       <div class="sticky-head">
       <header class="topbar">
-        <div><h1>{{ ({ credentials: 'Credenciales', audit: 'Auditoría local', trash: 'Papelera', settings: 'Ajustes' })[screen] }}</h1><p>Los originales no se modifican · Las contraseñas permanecen ocultas</p></div>
+        <div><h1>{{ SCREENS.find(s => s.id === screen)?.title }}</h1><p>Los originales no se modifican · Las contraseñas permanecen ocultas</p></div>
         <div class="top-actions">
           <button v-if="data?.stats.total" @click="showSession('save')">Guardar sesión cifrada</button>
           <button :disabled="!data?.can_undo || store.busy" @click="store.execute(api.undo)" title="Deshacer último cambio">↶ Deshacer</button>
@@ -219,24 +211,24 @@ onMounted(async () => { await store.execute(api.state); });
             <DataTable v-else :value="visibleGroups" sortField="name" :sortOrder="1" removableSort stripedRows dataKey="id" class="desktop-table" :paginator="visibleGroups.length>30" :rows="30">
               <Column field="name" header="Sitio" sortable><template #body="{data:g}"><button class="table-link" @click="openGroup(g)">{{g.name}}</button><small class="url-truncate">{{g.url}}</small></template></Column>
               <Column field="username" header="Usuario" sortable/>
-              <Column field="type" header="Tipo" sortable><template #body="{data:g}">{{g.type==='android'?'Android':'Web'}}</template></Column>
+              <Column field="type" header="Tipo" sortable><template #body="{data:g}">{{labelType(g.type)}}</template></Column>
               <Column field="count" header="Copias" sortable/>
               <Column field="kind" header="Comparación" sortable><template #body="{data:g}"><span class="status" :class="g.kind">{{labelGroup(g.kind)}}</span></template></Column>
               <Column header="Acciones"><template #body="{data:g}"><div class="row-actions"><button @click="openGroup(g)">Comparar</button><button class="icon-button danger" aria-label="Mover grupo a la papelera" title="Mover grupo a la papelera" :disabled="store.busy" @click="trashGroup(g)"><TrashIcon /></button></div></template></Column>
             </DataTable>
-            <div class="mobile-cards"><article v-for="g in visibleGroups" :key="g.id" class="record-card" @click="openGroup(g)"><div class="row-between"><strong>{{g.name}}</strong><span class="status" :class="g.kind">{{labelGroup(g.kind)}}</span></div><p>{{g.username}}</p><p class="muted">{{g.count}} registros · {{g.type==='android'?'Android':'Web'}}</p><div class="row-actions"><button @click.stop="openGroup(g)">Comparar →</button><button class="icon-button danger" aria-label="Mover grupo a la papelera" :disabled="store.busy" @click.stop="trashGroup(g)"><TrashIcon /></button></div></article></div>
+            <div class="mobile-cards"><article v-for="g in visibleGroups" :key="g.id" class="record-card" @click="openGroup(g)"><div class="row-between"><strong>{{g.name}}</strong><span class="status" :class="g.kind">{{labelGroup(g.kind)}}</span></div><p>{{g.username}}</p><p class="muted">{{g.count}} registros · {{labelType(g.type)}}</p><div class="row-actions"><button @click.stop="openGroup(g)">Comparar →</button><button class="icon-button danger" aria-label="Mover grupo a la papelera" :disabled="store.busy" @click.stop="trashGroup(g)"><TrashIcon /></button></div></article></div>
           </template>
 
           <template v-else>
             <DataTable :value="visibleRows" dataKey="id" sortField="name" :sortOrder="1" stripedRows removableSort class="desktop-table" :paginator="visibleRows.length>30" :rows="30">
               <Column field="name" header="Sitio / App" sortable><template #body="{data:r}"><button class="table-link" @click="openRecord(r.id)">{{r.name}}</button><small class="url-truncate">{{r.url}}</small></template></Column>
               <Column field="username" header="Usuario" sortable/>
-              <Column field="type" header="Tipo" sortable><template #body="{data:r}">{{r.type==='android'?'Android':'Web'}}</template></Column>
+              <Column field="type" header="Tipo" sortable><template #body="{data:r}">{{labelType(r.type)}}</template></Column>
               <Column field="source" header="Origen" sortable/>
               <Column field="review" header="Revisión" sortable><template #body="{data:r}"><span class="status" :class="r.review">{{labelReview(r.review)}}</span></template></Column>
               <Column header="Acciones"><template #body="{data:r}"><div class="row-actions"><button @click="openRecord(r.id)">Editar</button><button class="icon-button danger" aria-label="Mover a la papelera" title="Mover a la papelera" :disabled="store.busy" @click="moveToTrash(r.id)"><TrashIcon /></button></div></template></Column>
             </DataTable>
-            <div class="mobile-cards"><article v-for="r in visibleRows" :key="r.id" class="record-card"><div class="row-between"><strong>{{r.name}}</strong><span class="status" :class="r.review">{{labelReview(r.review)}}</span></div><p>{{r.username}}</p><p class="muted">{{r.type}} · {{r.source}}</p><div class="row-actions"><button @click="openRecord(r.id)">Editar →</button><button class="icon-button danger" aria-label="Mover a la papelera" :disabled="store.busy" @click="moveToTrash(r.id)"><TrashIcon /></button></div></article></div>
+            <div class="mobile-cards"><article v-for="r in visibleRows" :key="r.id" class="record-card"><div class="row-between"><strong>{{r.name}}</strong><span class="status" :class="r.review">{{labelReview(r.review)}}</span></div><p>{{r.username}}</p><p class="muted">{{labelType(r.type)}} · {{r.source}}</p><div class="row-actions"><button @click="openRecord(r.id)">Editar →</button><button class="icon-button danger" aria-label="Mover a la papelera" :disabled="store.busy" @click="moveToTrash(r.id)"><TrashIcon /></button></div></article></div>
           </template>
         </section>
 
@@ -317,6 +309,6 @@ onMounted(async () => { await store.execute(api.state); });
         <div class="drawer-actions"><button @click="closeSession">Cancelar</button><button class="primary" :disabled="store.busy" @click="submitSession">{{sessionMode==='save'?'Descargar archivo cifrado':'Abrir sesión'}}</button></div>
       </section>
     </div>
-    <nav class="mobile-nav" aria-label="Navegación móvil"><button :class="{active:screen==='credentials'}" @click="screen='credentials'">▤<span>Credenciales</span></button><button :class="{active:screen==='audit'}" @click="screen='audit'">⬡<span>Auditoría</span></button><button :class="{active:screen==='trash'}" @click="screen='trash'"><TrashIcon /><span>Papelera</span></button><button :class="{active:screen==='settings'}" @click="screen='settings'">⚙<span>Ajustes</span></button></nav>
+    <nav class="mobile-nav" aria-label="Navegación móvil"><button v-for="s in SCREENS" :key="s.id" :class="{active:screen===s.id}" @click="screen=s.id"><TrashIcon v-if="s.id==='trash'" /><template v-else>{{s.icon}}</template><span>{{s.label}}</span></button></nav>
   </div>
 </template>
