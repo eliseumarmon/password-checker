@@ -1,13 +1,21 @@
 import type { CredentialDetail, RecordEdit, WorkspaceState } from './types';
 
+/** The server's reason when it sends one as text; validation errors (lists) keep the fallback. */
+async function failure(response: Response, fallback: string): Promise<Error> {
+  try {
+    const { detail } = await response.json() as { detail?: unknown };
+    if (typeof detail === 'string' && detail) return new Error(detail);
+  } catch { /* Preserve the generic error. */ }
+  return new Error(fallback);
+}
 async function parse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    let message = `Error HTTP ${response.status}`;
-    try { const data = await response.json() as { detail?: string }; message = data.detail || message; }
-    catch { /* Preserve the generic error. */ }
-    throw new Error(message);
-  }
+  if (!response.ok) throw await failure(response, `Error HTTP ${response.status}`);
   return response.json() as Promise<T>;
+}
+async function downloadFrom(url: string, init: RequestInit, fileName: string, fallback: string): Promise<void> {
+  const response = await fetch(url, init);
+  if (!response.ok) throw await failure(response, `${fallback} (${response.status})`);
+  download(await response.blob(), fileName);
 }
 const jsonHeaders = { 'Content-Type': 'application/json' };
 
@@ -27,24 +35,16 @@ export const api = {
   }).then(parse<WorkspaceState>),
   mergeExact: () => fetch('/api/merge-exact', { method: 'POST' }).then(parse<WorkspaceState>),
   undo: () => fetch('/api/undo', { method: 'POST' }).then(parse<WorkspaceState>),
-  saveSession: async (passphrase: string) => {
-    const response = await fetch('/api/session/save', {
-      method: 'POST', headers: jsonHeaders, body: JSON.stringify({ passphrase }),
-    });
-    if (!response.ok) throw new Error(`No se pudo guardar la sesión (${response.status})`);
-    download(await response.blob(), 'password-checker-session.pwc');
-  },
+  saveSession: (passphrase: string) => downloadFrom('/api/session/save', {
+    method: 'POST', headers: jsonHeaders, body: JSON.stringify({ passphrase }),
+  }, 'password-checker-session.pwc', 'No se pudo guardar la sesión'),
   loadSession: async (file: File, passphrase: string) => {
     const form = new FormData();
     form.append('file', file);
     form.append('passphrase', passphrase);
     return fetch('/api/session/load', { method: 'POST', body: form }).then(parse<WorkspaceState>);
   },
-  exportCsv: async () => {
-    const response = await fetch('/api/export', { cache: 'no-store' });
-    if (!response.ok) throw new Error(`No se pudo exportar (${response.status})`);
-    download(await response.blob(), 'bitwarden_import.csv');
-  },
+  exportCsv: () => downloadFrom('/api/export', { cache: 'no-store' }, 'bitwarden_import.csv', 'No se pudo exportar'),
 };
 
 function download(blob: Blob, fileName: string): void {

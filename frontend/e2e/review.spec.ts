@@ -216,3 +216,11 @@ test('opens the comparison centred and the editor above it', async ({ page }) =>
   await editor.getByRole('button', { name: 'Cancelar' }).click();
   await expect(compare).toBeVisible();
 });
+
+test('shows the server reason when a download fails', async ({ page }) => {
+  await page.route('**/api/export', route => route.fulfill({
+    status: 409, contentType: 'application/json', body: JSON.stringify({ detail: 'No hay credenciales para exportar' }),
+  }));
+  await page.getByRole('button', { name: 'Exportar Bitwarden' }).click();
+  await expect(page.getByRole('alert')).toContainText('No hay credenciales para exportar');
+});
