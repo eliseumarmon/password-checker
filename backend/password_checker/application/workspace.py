@@ -71,11 +71,10 @@ class Workspace:
             if before is None:
                 raise KeyError(identifier)
             updated = replace(before, **changes)
-            # Editing identifying/secret fields invalidates previously verified access,
-            # unless the same edit explicitly sets a new review state.
-            if (updated.review == before.review and
-                    any(getattr(before, key) != getattr(updated, key)
-                        for key in ('url', 'username', 'password'))):
+            # Editing identifying/secret fields always invalidates the review, even when
+            # the same edit sets one: the new values have not been checked yet.
+            if any(getattr(before, key) != getattr(updated, key)
+                   for key in ('url', 'username', 'password')):
                 updated = replace(updated, review='pending')
             if updated == before:
                 return self.snapshot()

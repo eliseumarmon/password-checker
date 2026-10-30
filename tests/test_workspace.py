@@ -59,13 +59,14 @@ class WorkspaceTests(unittest.TestCase):
         self.workspace.undo()
         self.assertEqual(self.workspace.get(identifier)['review'], 'verified')
 
-    def test_explicit_review_in_the_same_edit_is_kept(self):
+    def test_identity_edit_resets_review_even_when_set_in_the_same_edit(self):
         identifier = self.workspace.snapshot()['records'][0]['id']
-        self.workspace.change(identifier, {'password': 'fictional-new-123456', 'review': 'verified'})
+        for field, value in (('password', 'fictional-new-123456'), ('username', 'carol'), ('url', 'https://new.invalid')):
+            self.workspace.change(identifier, {field: value, 'review': 'verified'})
+            self.assertEqual(self.workspace.get(identifier)['review'], 'pending', field)
+        # Without an identity change, an explicit review state is kept.
+        self.workspace.change(identifier, {'note': 'checked', 'review': 'verified'})
         self.assertEqual(self.workspace.get(identifier)['review'], 'verified')
-        # The editor form resends the unchanged review: the edit still invalidates it.
-        self.workspace.change(identifier, {'password': 'fictional-other-123456', 'review': 'verified'})
-        self.assertEqual(self.workspace.get(identifier)['review'], 'pending')
 
     def test_trash_many_is_atomic_and_one_undo_step(self):
         ids = [r['id'] for r in self.workspace.snapshot()['records'][:3]]
