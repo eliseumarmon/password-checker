@@ -14,6 +14,7 @@ from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Any
 
+from .domain.accounts import duplicate_key
 from .domain.credential import Credential
 from .domain.notes import combine_notes
 from .domain.reuse import reused_password_groups
@@ -52,14 +53,19 @@ def kind_of(url: str) -> str:
     return 'android' if url.lower().startswith(('androidapp://', 'android://')) else 'web'
 
 
-def canonical_url(row: Candidate) -> Any:
-    # Compare normalized URLs, preserving paths, ports and protocols.
-    identity_url = row.url
+def identity(row: Candidate) -> Credential:
+    """The edited record as the domain sees it, for the shared duplicate rules."""
+    url = row.url
     # Keep the signed original identity unless the candidate URL was edited.
     if (row.original.url.lower().startswith('android://') and
             row.url == bitwarden_uri(row.original.url)):
-        identity_url = row.original.url
-    url = parse_url(identity_url)
+        url = row.original.url
+    return replace(row.original, url=url, username=row.username, password=row.password)
+
+
+def canonical_url(row: Candidate) -> Any:
+    # Compare normalized URLs, preserving paths, ports and protocols.
+    url = parse_url(identity(row).url)
     return None if url.invalid or url.embedded_auth else url.key
 
 
@@ -92,9 +98,10 @@ def detect_groups(rows: list[Candidate]) -> list[dict[str, Any]]:
         for r in members:
             by_user[r.username].add(r.password)
         conflict = any(len(passwords) > 1 for passwords in by_user.values())
-        same_user = len({r.username for r in members}) == 1
-        same_password = len({r.password for r in members}) == 1
-        category = 'conflict' if conflict else ('exact' if same_user and same_password else 'multiple-accounts')
+        # Exact only when merge_exact would merge the whole group.
+        keys = {duplicate_key(identity(r)) for r in members}
+        exact = len(keys) == 1 and None not in keys
+        category = 'conflict' if conflict else ('exact' if exact else 'multiple-accounts')
         result.append({
             'id': base.id, 'kind': category, 'name': base.name,
             'url': base.url, 'username': base.username, 'type': kind_of(base.url),
@@ -212,10 +219,9 @@ class Workspace:
         with self._lock:
             by_identity = defaultdict(list)
             for r in self._records.values():
-                if r.included and r.password and r.username:
-                    key = canonical_url(r)
-                    if key is not None:
-                        by_identity[(key, r.username, r.password)].append(r)
+                key = duplicate_key(identity(r)) if r.included else None
+                if key is not None:
+                    by_identity[key].append(r)
             groups = [g for g in by_identity.values() if len(g) > 1]
             if not groups:
                 return self.snapshot()

@@ -57,6 +57,12 @@ class WorkspaceTests(unittest.TestCase):
         self.workspace.undo()
         self.assertEqual(self.workspace.get(identifier)['review'], 'verified')
 
+    def test_exact_group_only_when_merge_exact_can_merge_it(self):
+        self.workspace._records = {r.id: r for r in [
+            Candidate.from_source(cred('A', 'https://a.invalid/', '', 'fictional-123456')) for _ in range(2)]}
+        self.assertNotEqual(self.workspace.snapshot()['groups'][0]['kind'], 'exact')
+        self.assertEqual(self.workspace.merge_exact()['stats']['excluded'], 0)
+
     def test_input_files_transactional(self):
         before = self.workspace.snapshot()['stats']['total']
         try:
