@@ -248,3 +248,11 @@ test('saves an encrypted session and opens it again', async ({ page }) => {
   await expect(metric(page, 'En la papelera')).toHaveText('1');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Credenciales');
 });
+
+test('shows the server reason when a download fails', async ({ page }) => {
+  await page.route('**/api/export', route => route.fulfill({
+    status: 409, contentType: 'application/json', body: JSON.stringify({ detail: 'No hay credenciales para exportar' }),
+  }));
+  await page.getByRole('button', { name: 'Exportar Bitwarden' }).click();
+  await expect(page.getByRole('alert')).toContainText('No hay credenciales para exportar');
+});
