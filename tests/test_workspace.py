@@ -81,6 +81,10 @@ class WorkspaceTests(unittest.TestCase):
         self.assertNotEqual(self.workspace.snapshot()['groups'][0]['kind'], 'exact')
         self.assertEqual(self.workspace.merge_exact()['stats']['excluded'], 0)
 
+    def test_blank_name_falls_back_like_the_cli(self):
+        record = Candidate.from_source(cred('   ', 'https://a.invalid/login', 'alice', 'fictional-123456'))
+        self.assertEqual(record.name, 'a.invalid')
+
     def test_input_files_transactional(self):
         before = self.workspace.snapshot()['stats']['total']
         try:
