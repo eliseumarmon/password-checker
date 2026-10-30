@@ -15,11 +15,11 @@ from pathlib import Path
 from typing import Any
 
 from .domain.accounts import duplicate_key
-from .domain.credential import Credential
+from .domain.credential import Credential, display_name
 from .domain.notes import combine_notes
 from .domain.reuse import reused_password_groups
 from .domain.strength import is_weak
-from .domain.urls import android_package, bitwarden_uri, parse_url
+from .domain.urls import bitwarden_uri, parse_url
 from .infrastructure.bitwarden import write_bitwarden_csv
 from .infrastructure.csv_reader import read_export
 
@@ -43,7 +43,7 @@ class Candidate:
         # The original android:// URI stays in `original`; the export follows Bitwarden.
         return cls(
             id=secrets.token_hex(12), original=row,
-            name=row.name or android_package(row.url) or parse_url(row.url).host or 'Acceso sin nombre',
+            name=display_name(row.name, row.url),
             url=bitwarden_uri(row.url), username=row.username,
             password=row.password, note=row.note,
         )

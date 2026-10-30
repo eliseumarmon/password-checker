@@ -10,11 +10,11 @@ from collections import Counter, defaultdict
 from typing import Any, Dict, List, Sequence, Tuple
 
 from .accounts import account_key, duplicate_key, host_account, origin_account
-from .credential import Credential
+from .credential import Credential, display_name
 from .notes import combine_notes
 from .reuse import reused_password_groups
 from .strength import MIN_LENGTH, RECOMMENDED_LENGTH, is_obviously_weak
-from .urls import android_package, bitwarden_uri, is_android_source, parse_url
+from .urls import bitwarden_uri, is_android_source, parse_url
 
 Group = List[Credential]
 
@@ -39,9 +39,7 @@ def group_exact_duplicates(rows: Sequence[Credential]) -> List[Group]:
 def merge_group(records: Group) -> Credential:
     """Preserva notas distintas sin exponerlas en los informes."""
     first = records[0]
-    chosen = next((r.name for r in records if r.name.strip()), "")
-    if not chosen:
-        chosen = android_package(first.url) or parse_url(first.url).host or "Acceso sin nombre"
+    chosen = display_name(next((r.name for r in records if r.name.strip()), ""), first.url)
     return Credential(first.source, first.line, chosen, bitwarden_uri(first.url),
                       first.username, first.password, combine_notes(r.note for r in records))
 
