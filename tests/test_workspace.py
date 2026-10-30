@@ -77,6 +77,18 @@ class WorkspaceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.workspace.trash([])
 
+    def test_trash_of_records_already_in_the_trash_adds_no_undo_step(self):
+        ids = [r['id'] for r in self.workspace.snapshot()['records'][:3]]
+        self.workspace.trash(ids[:2])
+        self.assertEqual(self.workspace.trash(ids[:2] + ids[:2])['stats']['excluded'], 2)
+        # Mixed batch: one already trashed, one repeated, one new; one undo step for the new one.
+        self.assertEqual(self.workspace.trash([ids[1], ids[2], ids[2]])['stats']['excluded'], 3)
+        self.assertEqual(self.workspace.undo()['stats']['excluded'], 2)
+        # The redundant call added no step: the next undo restores the first trash.
+        state = self.workspace.undo()
+        self.assertEqual(state['stats']['excluded'], 0)
+        self.assertFalse(state['can_undo'])
+
     def test_exact_group_only_when_merge_exact_can_merge_it(self):
         self.workspace._records = {r.id: r for r in [
             Candidate.from_source(cred('A', 'https://a.invalid/', '', 'fictional-123456')) for _ in range(2)]}
