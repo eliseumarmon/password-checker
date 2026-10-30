@@ -142,9 +142,11 @@ def main(argv=None):
                        if args.apply else args.report)
         # Dry-run solo escribe un informe cuando se solicita explicitamente.
         if report_path:
-            # The inputs always exist, so the existence check below also protects them.
-            if args.apply and Path(report_path).resolve() == Path(args.output).resolve():
-                raise ValueError("El informe no puede coincidir con el CSV de salida")
+            targets = [Path(path).resolve() for path in files.values()]
+            if args.apply:
+                targets.append(Path(args.output).resolve())
+            if Path(report_path).resolve() in targets:
+                raise ValueError("El informe no puede coincidir con ningun CSV de entrada o salida")
             if Path(report_path).exists():
                 raise ValueError("El informe ya existe: {}".format(report_path))
         if args.apply and Path(args.output).exists():
