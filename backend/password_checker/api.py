@@ -1,7 +1,6 @@
 """Loopback-only HTTP adapter; no secrets in logs, storage or URLs."""
 from __future__ import annotations
 
-import io
 from pathlib import Path
 from typing import Optional
 from urllib.parse import urlsplit
@@ -12,6 +11,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from .infrastructure.bitwarden import bitwarden_csv_bytes
+from .infrastructure.csv_reader import read_upload
 from .infrastructure.sessions import MAX_SESSION_BYTES, decrypt_session, encrypt_session
 from .workspace import Workspace
 
@@ -76,7 +77,9 @@ async def import_files(files: list[UploadFile] = File(...)):
             raise HTTPException(413, 'El archivo o el conjunto supera el límite de tamaño')
         incoming.append((Path(uploaded.filename or 'import.csv').name, data))
     try:
-        return workspace.import_files(incoming)
+        # Parse every file before touching the workspace: all files or none.
+        parsed = [(name, *read_upload(name, data)) for name, data in incoming]
+        return workspace.import_files(parsed)
     except (ValueError, UnicodeError, OSError) as error:
         raise HTTPException(422, str(error)) from None
 
@@ -157,7 +160,7 @@ async def load_session(file: UploadFile = File(...), passphrase: str = Form(...)
 @app.get('/api/export')
 def export_csv():
     try:
-        content, count = workspace.export_csv()
+        content, count = bitwarden_csv_bytes(workspace.export_records())
     except ValueError as error:
         raise HTTPException(409, str(error)) from None
     return Response(content, media_type='text/csv; charset=utf-8', headers={

@@ -5,8 +5,6 @@ Original credentials are immutable; candidate edits never change imports.
 """
 from __future__ import annotations
 
-import csv
-import io
 import secrets
 import threading
 from collections import defaultdict
@@ -20,8 +18,6 @@ from .domain.notes import combine_notes
 from .domain.reuse import reused_password_groups
 from .domain.strength import is_weak
 from .domain.urls import bitwarden_uri, parse_url
-from .infrastructure.bitwarden import write_bitwarden_csv
-from .infrastructure.csv_reader import read_export
 
 ALLOWED_REVIEW = frozenset({'pending', 'reviewed', 'verified', 'incorrect'})
 
@@ -140,21 +136,11 @@ class Workspace:
         if len(self._history) > 30:
             self._history.pop(0)
 
-    def import_files(self, files: list[tuple[str, bytes]], repair_extra_notes: bool = False) -> dict[str, Any]:
-        """Parse all files or none, from memory: no plaintext temporary files."""
-        candidates = []
-        metadata = []
-        for file_name, content in files:
-            if b'\x00' in content:
-                raise ValueError('Archivo con bytes nulos; se rechaza la importación')
-            header = next(csv.reader(io.StringIO(content.decode('utf-8-sig', errors='strict'))), [])
-            keys = {h.strip().casefold().replace('_', '') for h in header}
-            source = 'firefox' if 'httprealm' in keys else ('brave' if 'brave' in file_name.lower() else 'chrome')
-            # Parse directly from a Unicode stream: no explicit plaintext temp file.
-            stream = io.StringIO(content.decode('utf-8-sig', errors='strict'), newline='')
-            parsed = read_export(source, stream, repair_extra_notes=repair_extra_notes)
-            candidates.extend(Candidate.from_source(row) for row in parsed)
-            metadata.append({'name': Path(file_name).name, 'source': source, 'count': len(parsed)})
+    def import_files(self, files: list[tuple[str, str, list[Credential]]]) -> dict[str, Any]:
+        """Replace the workspace with already parsed files: (file name, source, credentials)."""
+        candidates = [Candidate.from_source(row) for _, _, rows in files for row in rows]
+        metadata = [{'name': Path(file_name).name, 'source': source, 'count': len(rows)}
+                    for file_name, source, rows in files]
         if not candidates:
             raise ValueError('No se encontraron credenciales válidas')
         with self._lock:
@@ -255,14 +241,12 @@ class Workspace:
             self._records = self._history.pop()
             return self.snapshot()
 
-    def export_csv(self) -> tuple[bytes, int]:
+    def export_records(self) -> list[Candidate]:
         with self._lock:
             records = [r for r in self._records.values() if r.included]
             if not records:
                 raise ValueError('No hay credenciales para exportar')
-            buffer = io.StringIO(newline='')
-            count = write_bitwarden_csv(buffer, records)
-            return buffer.getvalue().encode('utf-8-sig'), count
+            return records
 
     def serialize(self) -> dict[str, Any]:
         """Copy the full candidate state for encryption without writing plaintext."""

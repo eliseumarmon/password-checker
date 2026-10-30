@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 import csv
-from typing import Dict, Iterable, Protocol, TextIO
+import io
+from typing import Dict, Iterable, Protocol, TextIO, Tuple
 
 BITWARDEN_FIELDS = (
     "folder", "favorite", "type", "name", "notes", "fields", "reprompt",
@@ -37,3 +38,10 @@ def write_bitwarden_csv(file: TextIO, items: Iterable[LoginRecord]) -> int:
         writer.writerow(bitwarden_row(item))
         count += 1
     return count
+
+
+def bitwarden_csv_bytes(items: Iterable[LoginRecord]) -> Tuple[bytes, int]:
+    """In-memory export, UTF-8 with BOM; return the bytes and the credential count."""
+    buffer = io.StringIO(newline="")
+    count = write_bitwarden_csv(buffer, items)
+    return buffer.getvalue().encode("utf-8-sig"), count

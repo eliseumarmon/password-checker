@@ -6,6 +6,7 @@ or an already-open text stream, so callers never need a plaintext temp file.
 from __future__ import annotations
 
 import csv
+import io
 import re
 from contextlib import nullcontext
 from pathlib import Path
@@ -133,3 +134,14 @@ def read_export(source, filename, repair_extra_notes=False, diagnostics=None):
                 continue
             rows.append(Credential(source, start_line, name, url, username, password, note))
     return rows
+
+
+def read_upload(file_name, content):
+    """Read an uploaded export from memory as (source, credentials): no plaintext temp file."""
+    if b"\x00" in content:
+        raise ValueError("Archivo con bytes nulos; se rechaza la importación")
+    text = content.decode("utf-8-sig", errors="strict")
+    header = next(csv.reader(io.StringIO(text)), [])
+    keys = {column_key(h) for h in header}
+    source = "firefox" if "httprealm" in keys else ("brave" if "brave" in file_name.lower() else "chrome")
+    return source, read_export(source, io.StringIO(text, newline=""))

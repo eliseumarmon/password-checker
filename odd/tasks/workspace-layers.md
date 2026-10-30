@@ -17,7 +17,7 @@ Rama: `refactor/workspace-layers`, encadenada sobre `refactor/shared-display-nam
 ## Tareas
 
 - [x] T1. `sessions.py` pasa a `infrastructure/`.
-- [ ] T2. Lectura de CSV subidos y bytes de exportación en `infrastructure/`; `Workspace` recibe credenciales ya leídas y entrega las filas a exportar.
+- [x] T2. Lectura de CSV subidos y bytes de exportación en `infrastructure/`; `Workspace` recibe credenciales ya leídas y entrega las filas a exportar.
 - [ ] T3. Test de arquitectura (RED) y división de `workspace.py` en los tres módulos de `application/`.
 
 ## Registro
