@@ -256,7 +256,7 @@ class PasswordCheckerTests(unittest.TestCase):
         output = self.root / 'bitwarden.csv'
         result = self.run_cli('--report', str(self.chrome))
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn('ya existe', result.stderr)
+        self.assertIn('no puede coincidir', result.stderr)
         result = self.run_cli('--apply', '--output', str(output), '--report', str(output))
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse(output.exists())
