@@ -91,8 +91,12 @@ class Workspace:
             missing = [i for i in identifiers if i not in self._records]
             if missing:
                 raise KeyError(missing[0])
+            # Records already in the trash (or repeated ids) need no change and no undo step.
+            pending = [i for i in dict.fromkeys(identifiers) if self._records[i].included]
+            if not pending:
+                return self.snapshot()
             self._checkpoint()
-            for identifier in identifiers:
+            for identifier in pending:
                 self._records[identifier] = replace(self._records[identifier], included=False)
             return self.snapshot()
 

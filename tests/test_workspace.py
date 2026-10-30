@@ -77,6 +77,13 @@ class WorkspaceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.workspace.trash([])
 
+    def test_trash_of_records_already_in_the_trash_adds_no_undo_step(self):
+        ids = [r['id'] for r in self.workspace.snapshot()['records'][:2]]
+        self.workspace.trash(ids)
+        state = self.workspace.trash(ids + ids)
+        self.assertEqual(state['stats']['excluded'], 2)
+        self.assertEqual(len(self.workspace._history), 1)
+
     def test_exact_group_only_when_merge_exact_can_merge_it(self):
         self.workspace._records = {r.id: r for r in [
             Candidate.from_source(cred('A', 'https://a.invalid/', '', 'fictional-123456')) for _ in range(2)]}
