@@ -57,6 +57,14 @@ class WorkspaceTests(unittest.TestCase):
         self.workspace.undo()
         self.assertEqual(self.workspace.get(identifier)['review'], 'verified')
 
+    def test_explicit_review_in_the_same_edit_is_kept(self):
+        identifier = self.workspace.snapshot()['records'][0]['id']
+        self.workspace.change(identifier, {'password': 'fictional-new-123456', 'review': 'verified'})
+        self.assertEqual(self.workspace.get(identifier)['review'], 'verified')
+        # The editor form resends the unchanged review: the edit still invalidates it.
+        self.workspace.change(identifier, {'password': 'fictional-other-123456', 'review': 'verified'})
+        self.assertEqual(self.workspace.get(identifier)['review'], 'pending')
+
     def test_input_files_transactional(self):
         before = self.workspace.snapshot()['stats']['total']
         try:
