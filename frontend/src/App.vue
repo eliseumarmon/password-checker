@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import DataTable from 'primevue/datatable';
-import Column from 'primevue/column';
 import { api } from './api';
 import { useWorkspace } from './store';
 import TrashIcon from './TrashIcon.vue';
 import CompareDialog from './components/CompareDialog.vue';
 import EditorDialog from './components/EditorDialog.vue';
 import SessionDialog from './components/SessionDialog.vue';
-import { SCREENS, labelGroup, labelReview, labelType } from './labels';
+import WelcomePanel from './components/WelcomePanel.vue';
+import GroupsTable from './components/GroupsTable.vue';
+import RecordsTable from './components/RecordsTable.vue';
+import AuditView from './components/AuditView.vue';
+import TrashView from './components/TrashView.vue';
+import SettingsView from './components/SettingsView.vue';
+import { SCREENS } from './labels';
 import type { CredentialDetail, CredentialSummary, DuplicateGroup, FilterType, RecordEdit, Screen, SessionInput } from './types';
 
 const store = useWorkspace();
@@ -17,7 +21,6 @@ const subtab = ref<'duplicates' | 'all'>('duplicates');
 const filterType = ref<FilterType>('all');
 const query = ref('');
 const pendingOnly = ref(false);
-const dragging = ref(false);
 const selectedGroup = ref<DuplicateGroup | null>(null);
 const selected = ref<CredentialDetail | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -58,10 +61,6 @@ async function loadFileList(files: FileList | File[]): Promise<void> {
   await store.execute(() => api.importFiles(selectedFiles));
   selectedGroup.value = null; selected.value = null; subtab.value = 'duplicates'; screen.value = 'credentials';
   if (fileInput.value) fileInput.value.value = '';
-}
-function onDrop(event: DragEvent): void {
-  dragging.value = false;
-  if (event.dataTransfer?.files) void loadFileList(event.dataTransfer.files);
 }
 function openGroup(group: DuplicateGroup): void {
   selectedGroup.value = group; selected.value = null;
@@ -159,77 +158,22 @@ onMounted(async () => { await store.execute(api.state); });
         <div class="metric"><span>En la papelera</span><strong>{{data.stats.excluded}}</strong></div>
       </div>
       </div>
-      <section v-if="!data?.stats.total" class="welcome card">
-        <h2>Empieza importando tus contraseñas</h2>
-        <p>Arrastra varios CSV de Chrome, Brave y Firefox. Se compararán antes de fusionar nada.</p>
-        <div class="dropzone" :class="{dragging}" @dragenter.prevent="dragging=true" @dragover.prevent @dragleave.prevent="dragging=false" @drop.prevent="onDrop">
-          <span class="big-icon">⇧</span><strong>Arrastra aquí los CSV</strong>
-          <span>o utiliza el selector de archivos</span>
-          <button class="primary" :disabled="store.busy" @click="fileInput?.click()">Elegir archivos</button>
-          <button @click="showSession('load')">Abrir sesión cifrada anterior</button>
-          <input ref="fileInput" type="file" accept=".csv,text/csv" multiple hidden @change="loadFileList(($event.target as HTMLInputElement).files || [])" />
-        </div>
-        <p class="hint">Los CSV contienen contraseñas en texto plano. No los incluyas en repositorios ni carpetas compartidas.</p>
-      </section>
+      <input ref="fileInput" type="file" accept=".csv,text/csv" multiple hidden @change="loadFileList(($event.target as HTMLInputElement).files || [])" />
+      <WelcomePanel v-if="!data?.stats.total" :busy="store.busy" @pick="fileInput?.click()" @drop="loadFileList" @session="showSession('load')" />
 
       <template v-else>
         <section v-if="screen==='credentials'" class="workspace card">
           <div class="section-heading"><div><h2>Explorar y consolidar</h2><p>Analiza los registros antes de elegir cuáles exportar.</p></div>
             <div class="heading-actions"><button @click="fileInput?.click()">Importar otros CSV</button><button :disabled="store.busy" @click="merge">Fusionar copias exactas</button></div>
-            <input ref="fileInput" hidden type="file" multiple accept=".csv,text/csv" @change="loadFileList(($event.target as HTMLInputElement).files || [])" />
           </div>
           <div class="tabs" role="tablist"><button :class="{selected:subtab==='duplicates'}" @click="subtab='duplicates'">Duplicados ({{groups.length}})</button><button :class="{selected:subtab==='all'}" @click="subtab='all'">Todas ({{activeRecords.length}})</button></div>
           <div class="filters"><input v-model="query" aria-label="Buscar credenciales" placeholder="Buscar por nombre, URL o usuario" /><select v-model="filterType" aria-label="Filtrar tipo"><option value="all">Web y Android</option><option value="web">Solo web</option><option value="android">Solo Android</option></select><label class="check"><input v-model="pendingOnly" type="checkbox" /> Solo pendientes</label></div>
-
-          <template v-if="subtab==='duplicates'">
-            <p v-if="!visibleGroups.length" class="empty">No hay grupos que coincidan con los filtros.</p>
-            <DataTable v-else :value="visibleGroups" sortField="name" :sortOrder="1" removableSort stripedRows dataKey="id" class="desktop-table" :paginator="visibleGroups.length>30" :rows="30">
-              <Column field="name" header="Sitio" sortable><template #body="{data:g}"><button class="table-link" @click="openGroup(g)">{{g.name}}</button><small class="url-truncate">{{g.url}}</small></template></Column>
-              <Column field="username" header="Usuario" sortable/>
-              <Column field="type" header="Tipo" sortable><template #body="{data:g}">{{labelType(g.type)}}</template></Column>
-              <Column field="count" header="Copias" sortable/>
-              <Column field="kind" header="Comparación" sortable><template #body="{data:g}"><span class="status" :class="g.kind">{{labelGroup(g.kind)}}</span></template></Column>
-              <Column header="Acciones"><template #body="{data:g}"><div class="row-actions"><button @click="openGroup(g)">Comparar</button><button class="icon-button danger" aria-label="Mover grupo a la papelera" title="Mover grupo a la papelera" :disabled="store.busy" @click="trashGroup(g)"><TrashIcon /></button></div></template></Column>
-            </DataTable>
-            <div class="mobile-cards"><article v-for="g in visibleGroups" :key="g.id" class="record-card" @click="openGroup(g)"><div class="row-between"><strong>{{g.name}}</strong><span class="status" :class="g.kind">{{labelGroup(g.kind)}}</span></div><p>{{g.username}}</p><p class="muted">{{g.count}} registros · {{labelType(g.type)}}</p><div class="row-actions"><button @click.stop="openGroup(g)">Comparar →</button><button class="icon-button danger" aria-label="Mover grupo a la papelera" :disabled="store.busy" @click.stop="trashGroup(g)"><TrashIcon /></button></div></article></div>
-          </template>
-
-          <template v-else>
-            <DataTable :value="visibleRows" dataKey="id" sortField="name" :sortOrder="1" stripedRows removableSort class="desktop-table" :paginator="visibleRows.length>30" :rows="30">
-              <Column field="name" header="Sitio / App" sortable><template #body="{data:r}"><button class="table-link" @click="openRecord(r.id)">{{r.name}}</button><small class="url-truncate">{{r.url}}</small></template></Column>
-              <Column field="username" header="Usuario" sortable/>
-              <Column field="type" header="Tipo" sortable><template #body="{data:r}">{{labelType(r.type)}}</template></Column>
-              <Column field="source" header="Origen" sortable/>
-              <Column field="review" header="Revisión" sortable><template #body="{data:r}"><span class="status" :class="r.review">{{labelReview(r.review)}}</span></template></Column>
-              <Column header="Acciones"><template #body="{data:r}"><div class="row-actions"><button @click="openRecord(r.id)">Editar</button><button class="icon-button danger" aria-label="Mover a la papelera" title="Mover a la papelera" :disabled="store.busy" @click="moveToTrash(r.id)"><TrashIcon /></button></div></template></Column>
-            </DataTable>
-            <div class="mobile-cards"><article v-for="r in visibleRows" :key="r.id" class="record-card"><div class="row-between"><strong>{{r.name}}</strong><span class="status" :class="r.review">{{labelReview(r.review)}}</span></div><p>{{r.username}}</p><p class="muted">{{labelType(r.type)}} · {{r.source}}</p><div class="row-actions"><button @click="openRecord(r.id)">Editar →</button><button class="icon-button danger" aria-label="Mover a la papelera" :disabled="store.busy" @click="moveToTrash(r.id)"><TrashIcon /></button></div></article></div>
-          </template>
+          <GroupsTable v-if="subtab==='duplicates'" :groups="visibleGroups" :busy="store.busy" @open="openGroup" @trash="trashGroup" />
+          <RecordsTable v-else :rows="visibleRows" :busy="store.busy" @edit="openRecord" @trash="moveToTrash" />
         </section>
-
-        <section v-else-if="screen==='audit'" class="workspace card">
-          <h2>Revisión de seguridad offline</h2><p>Las brechas de datos no se consultan. Las advertencias son locales y pueden solaparse.</p>
-          <div class="audit-grid"><div class="audit-block"><h3>Contraseñas reutilizadas</h3><p class="audit-count">{{data.audit.reused.length}} grupos</p><details v-for="(ids,i) in data.audit.reused" :key="i"><summary>{{ids.length}} registros comparten contraseña</summary><div v-for="id in ids" :key="id" class="audit-item"><span>{{recById.get(id)?.name}} — {{recById.get(id)?.username}}</span><button @click="openRecord(id)">Revisar</button></div></details><p v-if="!data.audit.reused.length" class="muted">Sin reutilizaciones detectadas.</p></div>
-          <div class="audit-block"><h3>Contraseñas poco seguras</h3><p class="audit-count">{{data.audit.weak.length}} credenciales</p><div v-for="id in data.audit.weak" :key="id" class="audit-item"><span>{{recById.get(id)?.name}} — {{recById.get(id)?.username}}</span><button @click="openRecord(id)">Revisar</button></div></div>
-          <div class="audit-block"><h3>Datos incompletos</h3><p class="audit-count">{{data.audit.incomplete.length}} credenciales</p><div v-for="id in data.audit.incomplete" :key="id" class="audit-item"><span>{{recById.get(id)?.name}} — {{recById.get(id)?.username}}</span><button @click="openRecord(id)">Revisar</button></div></div>
-          <div class="audit-block"><h3>Contraseñas vulneradas</h3><p class="audit-count muted">No comprobadas</p><p>La comprobación de filtraciones requeriría una integración futura.</p></div></div>
-        </section>
-
-        <section v-else-if="screen==='trash'" class="workspace card">
-          <h2>Credenciales descartadas</h2><p>No se exportan. Restaura las que quieras recuperar.</p>
-          <p v-if="!trashed.length" class="empty">La papelera está vacía.</p>
-          <template v-else>
-            <DataTable :value="trashed" dataKey="id" sortField="name" :sortOrder="1" stripedRows removableSort class="desktop-table" :paginator="trashed.length>30" :rows="30">
-              <Column field="name" header="Sitio / App" sortable><template #body="{data:r}"><strong>{{r.name}}</strong><small class="url-truncate">{{r.url}}</small></template></Column>
-              <Column field="username" header="Usuario" sortable/>
-              <Column field="source" header="Origen" sortable/>
-              <Column header="Acciones"><template #body="{data:r}"><button :disabled="store.busy" @click="restore(r.id)">Restaurar</button></template></Column>
-            </DataTable>
-            <div class="mobile-cards"><article v-for="r in trashed" :key="r.id" class="record-card"><strong>{{r.name}}</strong><p>{{r.username}}</p><p class="muted">{{r.source}}</p><button :disabled="store.busy" @click="restore(r.id)">Restaurar</button></article></div>
-          </template>
-        </section>
-
-        <section v-else class="workspace card"><h2>Ajustes y privacidad</h2><p>Aplicación local, sin telemetría ni fuentes externas.</p><div class="settings-row"><strong>Guardar y reanudar sesión cifrada</strong><span>Archivo local .pwc cifrado con Argon2id + AES-256-GCM</span><div><button @click="showSession('save')">Guardar</button> <button @click="showSession('load')">Abrir</button></div></div><div class="settings-row"><strong>Modo móvil con ADB reverse</strong><span>Compatible con loopback, sujeto a configuración de ADB.</span></div><div class="settings-row"><strong>Exportación</strong><span>Formato Bitwarden (CSV) · Confirma antes de descargar.</span></div></section>
+        <AuditView v-else-if="screen==='audit'" :audit="data.audit" :records="recById" @review="openRecord" />
+        <TrashView v-else-if="screen==='trash'" :rows="trashed" :busy="store.busy" @restore="restore" />
+        <SettingsView v-else @session="showSession" />
       </template>
     </main>
 

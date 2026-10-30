@@ -12,10 +12,11 @@ Rama: `refactor/split-app-vue` (desde `main`; no toca el backend).
 
 - [x] T1. `labels.ts` con etiquetas y pantallas; barra lateral y móvil desde la misma lista.
 - [x] T2. E2E de guardar y abrir sesión cifrada (red de seguridad); diálogos de comparar, editar y sesión como componentes.
-- [ ] T3. Pantallas (grupos, todas, auditoría, papelera, ajustes) como componentes; un solo selector de archivos.
+- [x] T3. Pantallas (grupos, todas, auditoría, papelera, ajustes) como componentes; un solo selector de archivos.
 
 ## Registro
 
 - L1. La tarjeta móvil de «Todas» mostraba el tipo en minúsculas (`web`); ahora usa la misma etiqueta que la tabla (`Web`).
 - L2. Playwright guarda las descargas sin extensión; el E2E de sesión vuelve a subir el archivo con su nombre sugerido (`.pwc`), que el backend exige.
 - L3. Las contraseñas de sesión viven solo en `SessionDialog` y desaparecen al cerrarlo; se eliminó la variable `note` sin uso.
+- L4. `docs/implementacion-v0.1.md` aún lista «dividir App.vue» como pendiente; esa línea también cambia en `refactor/workspace-layers`, así que se actualiza al fusionar ambas para no crear un conflicto.
