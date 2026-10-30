@@ -150,7 +150,6 @@ onMounted(async () => { await store.execute(api.state); });
           <button class="primary" :disabled="!data?.stats.included || store.busy" @click="exportNow">Exportar Bitwarden</button>
         </div>
       </header>
-      <div v-if="store.error" class="error" role="alert">{{store.error}} <button @click="store.error=''" aria-label="Cerrar aviso">×</button></div>
       <div v-if="data?.stats.total" class="metrics">
         <div class="metric"><span>Credenciales</span><strong>{{data.stats.total}}</strong></div>
         <div class="metric"><span>Duplicados y conflictos</span><strong>{{data.groups.length}}</strong></div>
@@ -179,6 +178,8 @@ onMounted(async () => { await store.execute(api.state); });
 
     <CompareDialog v-if="selectedGroup" :group="selectedGroup" :busy="store.busy" @close="selectedGroup=null" @edit="openRecord" @trash="moveToTrash" />
     <EditorDialog v-if="selected" :record="selected" :busy="store.busy" @close="closeEditor" @save="save" @trash="moveToTrash" @restore="restore" />
+    <!-- Outside the sticky header, which is its own stacking layer, so it stays above dialogs. -->
+    <div v-if="store.error" class="error" role="alert">{{store.error}} <button @click="store.error=''" aria-label="Cerrar aviso">×</button></div>
     <SessionDialog v-if="sessionMode" :mode="sessionMode" :busy="store.busy" @close="closeSession" @submit="submitSession" />
     <nav class="mobile-nav" aria-label="Navegación móvil"><button v-for="s in SCREENS" :key="s.id" :class="{active:screen===s.id}" @click="screen=s.id"><TrashIcon v-if="s.id==='trash'" /><template v-else>{{s.icon}}</template><span>{{s.label}}</span></button></nav>
   </div>

@@ -158,6 +158,7 @@ Acción transversal visible: **Guardar sesión cifrada** (cuando haya una sesió
 8. **Desglose de auditoría:** grupos por contraseña reutilizada con número de cuentas, pero **sin el valor de la contraseña en el encabezado**.
 9. **Modal de exportación:** resultados incluidos/excluidos, conflictos pendientes, destino y formato Bitwarden; exige confirmación explícita.
 10. **Bloqueo de sesión:** tras inactividad configurada; oculta la UI y exige reabrir la sesión cifrada cuando proceda.
+11. **Aviso de error:** flotante arriba y centrado, siempre por encima de diálogos abiertos; muestra el motivo del servidor y se cierra con «×».
 
 ## 7. Diseño de datos sensibles
 
