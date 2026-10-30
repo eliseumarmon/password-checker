@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from .sessions import MAX_SESSION_BYTES, decrypt_session, encrypt_session
+from .infrastructure.sessions import MAX_SESSION_BYTES, decrypt_session, encrypt_session
 from .workspace import Workspace
 
 MAX_FILE_SIZE = 5 * 1024 * 1024

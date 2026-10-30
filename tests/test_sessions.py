@@ -7,7 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 try:
-    from backend.password_checker.sessions import encrypt_session, decrypt_session
+    from backend.password_checker.infrastructure.sessions import encrypt_session, decrypt_session
     from backend.password_checker.workspace import Workspace, Candidate
     from auditar_contrasenas_local import Credential
 except ImportError:
