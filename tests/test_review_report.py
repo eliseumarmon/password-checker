@@ -35,6 +35,15 @@ class ReviewReportTests(unittest.TestCase):
         self.assertEqual(cells['[Moderate](https://moderate.invalid/)'], ('Media', 'Contraseña de 12-13 caracteres'))
         self.assertEqual(cells['[Strong](https://strong.invalid/)'], ('Baja', 'Sin incidencias detectadas'))
 
+    def test_blank_names_fall_back_to_package_host_or_placeholder(self):
+        cells = report_rows(
+            ('  ', 'https://blank.invalid/login', 'u1', 'fake-1234567890', ''),
+            ('', 'android://FAKE@com.example.blank/', 'u2', 'fake-1234567891', ''),
+            (' ', '', 'u3', 'fake-1234567892', ''))
+        self.assertIn('[blank.invalid](https://blank.invalid/)', cells)
+        self.assertIn('com.example.blank', cells)
+        self.assertIn('Acceso sin nombre', cells)
+
     def test_url_findings_and_unlinked_unsafe_urls(self):
         cells = report_rows(
             ('Plain', 'http://plain.invalid/login', 'u1', 'fake-1234567890', ''),
