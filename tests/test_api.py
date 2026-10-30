@@ -43,6 +43,16 @@ class APITests(unittest.TestCase):
         self.assertIn(b'fictional-secret-123', export.content)
         self.assertEqual(self.client.post('/api/undo').json()['stats']['included'], 2)
 
+    def test_trash_many_records_in_one_request(self):
+        payload = (b'name,url,username,password,note\n'
+                   b'A,https://a.invalid/,alice,fictional-123456,\n'
+                   b'B,https://b.invalid/,bob,fictional-654321,\n')
+        state = self.client.post('/api/import', files=[('files', ('chrome.csv', payload, 'text/csv'))]).json()
+        ids = [r['id'] for r in state['records']]
+        self.assertEqual(self.client.post('/api/records/trash', json={'ids': ids}).json()['stats']['excluded'], 2)
+        self.assertEqual(self.client.post('/api/records/trash', json={'ids': ['missing']}).status_code, 404)
+        self.assertEqual(self.client.post('/api/records/trash', json={'ids': []}).status_code, 422)
+
     def test_save_and_restore_session(self):
         payload = b'name,url,username,password,note\nA,https://example.org/login,alice,fictional-123456,\n'
         imported = self.client.post('/api/import', files=[('files', ('chrome.csv', payload, 'text/csv'))]).json()

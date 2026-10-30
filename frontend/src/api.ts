@@ -22,6 +22,9 @@ export const api = {
   edit: (id: string, data: RecordEdit) => fetch(`/api/records/${encodeURIComponent(id)}`, {
     method: 'PATCH', headers: jsonHeaders, body: JSON.stringify(data),
   }).then(parse<WorkspaceState>),
+  trash: (ids: string[]) => fetch('/api/records/trash', {
+    method: 'POST', headers: jsonHeaders, body: JSON.stringify({ ids }),
+  }).then(parse<WorkspaceState>),
   mergeExact: () => fetch('/api/merge-exact', { method: 'POST' }).then(parse<WorkspaceState>),
   undo: () => fetch('/api/undo', { method: 'POST' }).then(parse<WorkspaceState>),
   saveSession: async (passphrase: string) => {

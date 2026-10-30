@@ -102,6 +102,19 @@ def edit_record(record_id: str, edit: EditRecord):
         raise HTTPException(422, str(error)) from None
 
 
+class TrashRecords(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    ids: list[str] = Field(min_length=1, max_length=1000)
+
+
+@app.post('/api/records/trash')
+def trash_records(request: TrashRecords):
+    try:
+        return workspace.trash(request.ids)
+    except KeyError:
+        raise HTTPException(404, 'Credencial no encontrada') from None
+
+
 @app.post('/api/merge-exact')
 def merge_exact():
     return workspace.merge_exact()

@@ -209,6 +209,19 @@ class Workspace:
             self._records[identifier] = updated
             return self.snapshot()
 
+    def trash(self, identifiers: list[str]) -> dict[str, Any]:
+        """Move several records to the trash all at once, as one undo step."""
+        if not identifiers:
+            raise ValueError('No hay credenciales que mover a la papelera')
+        with self._lock:
+            missing = [i for i in identifiers if i not in self._records]
+            if missing:
+                raise KeyError(missing[0])
+            self._checkpoint()
+            for identifier in identifiers:
+                self._records[identifier] = replace(self._records[identifier], included=False)
+            return self.snapshot()
+
     def merge_exact(self) -> dict[str, Any]:
         """Explicit, reversible merge only; different passwords never vanish."""
         with self._lock:
