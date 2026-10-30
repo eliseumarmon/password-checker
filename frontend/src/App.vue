@@ -2,11 +2,14 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
-import { api, safeWebUrl } from './api';
+import { api } from './api';
 import { useWorkspace } from './store';
 import TrashIcon from './TrashIcon.vue';
+import CompareDialog from './components/CompareDialog.vue';
+import EditorDialog from './components/EditorDialog.vue';
+import SessionDialog from './components/SessionDialog.vue';
 import { SCREENS, labelGroup, labelReview, labelType } from './labels';
-import type { CredentialDetail, CredentialSummary, DuplicateGroup, FilterType, RecordEdit, Screen } from './types';
+import type { CredentialDetail, CredentialSummary, DuplicateGroup, FilterType, RecordEdit, Screen, SessionInput } from './types';
 
 const store = useWorkspace();
 const screen = ref<Screen>('credentials');
@@ -17,14 +20,8 @@ const pendingOnly = ref(false);
 const dragging = ref(false);
 const selectedGroup = ref<DuplicateGroup | null>(null);
 const selected = ref<CredentialDetail | null>(null);
-const form = ref<RecordEdit>({});
-const revealed = ref(false);
-const note = ref('');
 const fileInput = ref<HTMLInputElement | null>(null);
 const sessionMode = ref<'save' | 'load' | null>(null);
-const sessionPassphrase = ref('');
-const sessionConfirmation = ref('');
-const sessionFile = ref<File | null>(null);
 // Per-viewer convenience only: storage may be unavailable, so failures are ignored.
 const SIDEBAR_KEY = 'pc.sidebarCollapsed';
 const collapsed = ref(readCollapsed());
@@ -67,20 +64,14 @@ function onDrop(event: DragEvent): void {
   if (event.dataTransfer?.files) void loadFileList(event.dataTransfer.files);
 }
 function openGroup(group: DuplicateGroup): void {
-  selectedGroup.value = group; selected.value = null; revealed.value = false;
+  selectedGroup.value = group; selected.value = null;
 }
 async function openRecord(id: string): Promise<void> {
-  try {
-    selected.value = await api.detail(id);
-    form.value = { name: selected.value.name, url: selected.value.url,
-      username: selected.value.username, password: selected.value.password,
-      note: selected.value.note, review: selected.value.review };
-    revealed.value = false;
-  } catch (error) { errorMessage(error); }
+  try { selected.value = await api.detail(id); } catch (error) { errorMessage(error); }
 }
-async function save(): Promise<void> {
+async function save(form: RecordEdit): Promise<void> {
   if (!selected.value) return;
-  await store.execute(() => api.edit(selected.value!.id, form.value));
+  await store.execute(() => api.edit(selected.value!.id, form));
   if (!store.error) { selected.value = null; selectedGroup.value = null; }
 }
 async function quickEdit(id: string, payload: RecordEdit): Promise<void> {
@@ -90,7 +81,7 @@ async function quickEdit(id: string, payload: RecordEdit): Promise<void> {
     if (selected.value?.id === id) selected.value = null;
   }
 }
-function closeEditor(): void { selected.value = null; revealed.value = false; }
+function closeEditor(): void { selected.value = null; }
 function moveToTrash(id: string): Promise<void> { return quickEdit(id, { included: false }); }
 async function trashGroup(group: DuplicateGroup): Promise<void> {
   if (!window.confirm(`Se moverán ${group.count} registros de «${group.name}» a la papelera. Podrás restaurarlos. ¿Continuar?`)) return;
@@ -109,39 +100,23 @@ async function exportNow(): Promise<void> {
   if (!window.confirm(`Se exportarán ${data.value.stats.included} credenciales. ${unresolved} grupos presentan contraseñas conflictivas. Bitwarden no eliminará duplicados automáticamente. ¿Generar CSV?`)) return;
   try { await api.exportCsv(); } catch (error) { errorMessage(error); }
 }
-function openSite(url: string): void {
-  const href = safeWebUrl(url);
-  if (!href) return;
-  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(href) && /Android/i.test(navigator.userAgent)) {
-    if (!window.confirm('Esta dirección local apunta a este teléfono, no al ordenador. ¿Abrir de todas formas?')) return;
-  }
-  window.open(href, '_blank', 'noopener,noreferrer');
-}
-function closeSession(): void {
-  sessionMode.value = null;
-  sessionPassphrase.value = '';
-  sessionConfirmation.value = '';
-  sessionFile.value = null;
-}
-function showSession(mode: 'save' | 'load'): void {
-  closeSession();
-  sessionMode.value = mode;
-}
-async function submitSession(): Promise<void> {
+function closeSession(): void { sessionMode.value = null; }
+function showSession(mode: 'save' | 'load'): void { sessionMode.value = mode; }
+async function submitSession({ passphrase, confirmation, file }: SessionInput): Promise<void> {
   store.error = '';
   try {
-    if (sessionPassphrase.value.length < 12) {
+    if (passphrase.length < 12) {
       throw new Error('Utiliza una contraseña de sesión de al menos 12 caracteres.');
     }
     if (sessionMode.value === 'save') {
-      if (sessionPassphrase.value !== sessionConfirmation.value) {
+      if (passphrase !== confirmation) {
         throw new Error('Las contraseñas de sesión no coinciden.');
       }
-      await api.saveSession(sessionPassphrase.value);
+      await api.saveSession(passphrase);
     } else if (sessionMode.value === 'load') {
-      if (!sessionFile.value) throw new Error('Selecciona el archivo cifrado .pwc.');
+      if (!file) throw new Error('Selecciona el archivo cifrado .pwc.');
       if (data.value?.stats.total && !window.confirm('Abrir otra sesión reemplazará los cambios que estén en memoria. ¿Continuar?')) return;
-      await store.execute(() => api.loadSession(sessionFile.value!, sessionPassphrase.value));
+      await store.execute(() => api.loadSession(file, passphrase));
       if (store.error) return;
       screen.value = 'credentials';
       subtab.value = 'duplicates';
@@ -152,7 +127,7 @@ async function submitSession(): Promise<void> {
 }
 
 
-watch(screen, () => { selected.value = null; selectedGroup.value = null; revealed.value = false; });
+watch(screen, () => { selected.value = null; selectedGroup.value = null; });
 onMounted(async () => { await store.execute(api.state); });
 </script>
 
@@ -258,57 +233,9 @@ onMounted(async () => { await store.execute(api.state); });
       </template>
     </main>
 
-    <div v-if="selectedGroup" class="overlay modal-overlay" @click.self="selectedGroup=null">
-      <section class="compare-dialog card" role="dialog" aria-modal="true" aria-label="Comparar duplicados">
-        <div class="drawer-top"><h2>Comparar registros</h2><button aria-label="Cerrar panel" @click="selectedGroup=null">✕</button></div>
-          <p>{{labelGroup(selectedGroup.kind)}} · {{selectedGroup.count}} registros. Ninguna contraseña se elimina por defecto.</p>
-          <div class="compare-grid">
-            <div v-for="(r,i) in selectedGroup.members" :key="r.id" class="compare-card">
-              <div class="row-between"><strong>{{r.source}} · línea {{r.line}}</strong><span class="status" :class="r.review">{{labelReview(r.review)}}</span></div>
-              <p>{{r.name}} · {{r.username}}</p><p class="muted" :title="r.url">{{r.url}}</p>
-              <div class="compare-flags"><span>URL {{r.match_url?'✓':'≠'}}</span><span>Usuario {{r.match_username?'✓':'≠'}}</span><span>Clave {{r.match_password?'✓':'≠'}}</span></div>
-              <div class="compare-actions"><button @click="openRecord(r.id)">Ver / editar</button><button v-if="r.included" class="danger" :disabled="store.busy" @click="moveToTrash(r.id)"><TrashIcon /> Descartar</button></div>
-            </div>
-          </div>
-          <p class="hint">Las coincidencias se comparan respecto al primer registro del grupo. Lo descartado va a la papelera y se puede restaurar.</p>
-      </section>
-    </div>
-    <div v-if="selected" class="overlay modal-overlay" @click.self="closeEditor">
-      <section class="editor-dialog card" role="dialog" aria-modal="true" aria-label="Editar credencial">
-        <div class="drawer-top"><h2>Editar credencial</h2><button aria-label="Cerrar" @click="closeEditor">✕</button></div>
-          <div class="editor-fields editor-grid">
-            <label>Nombre<input v-model="form.name" autocomplete="off" /></label>
-            <label>URL o paquete Android<input v-model="form.url" autocomplete="off" spellcheck="false" /></label>
-            <button v-if="safeWebUrl(form.url || '')" @click="openSite(form.url || '')">↗ Abrir sitio en pestaña nueva</button>
-            <p v-else class="muted">Las URI de Android no son enlaces web. Comprueba la app manualmente en el teléfono.</p>
-            <label>Usuario<input v-model="form.username" autocomplete="off" /></label>
-            <label>Contraseña <span class="secret-input"><input v-model="form.password" :type="revealed?'text':'password'" autocomplete="new-password" spellcheck="false" /><button :aria-label="revealed?'Ocultar contraseña':'Mostrar contraseña'" @click="revealed=!revealed">{{revealed?'Ocultar':'Mostrar'}}</button></span></label>
-            <label>Notas<textarea v-model="form.note" rows="5"></textarea></label>
-            <label>Estado de revisión<select v-model="form.review"><option value="pending">Pendiente</option><option value="reviewed">Revisada (sin verificar acceso)</option><option value="verified">Verificada manualmente</option><option value="incorrect">No funciona</option></select></label>
-            <p class="hint">Editar esta contraseña guardada NO cambia la contraseña real del servicio.</p>
-            <p class="muted">Origen inmutable: {{selected.source}} · línea {{selected.line}}</p>
-          </div>
-          <div class="drawer-actions"><button v-if="selected.included" class="danger push-left" :disabled="store.busy" @click="moveToTrash(selected.id)"><TrashIcon /> Descartar</button><button v-else class="push-left" :disabled="store.busy" @click="restore(selected.id)">Restaurar</button><button @click="closeEditor">Cancelar</button><button class="primary" :disabled="store.busy" @click="save">Guardar cambios</button></div>
-      </section>
-    </div>
-    <div v-if="sessionMode" class="overlay modal-overlay" @click.self="closeSession">
-      <section class="session-dialog card" role="dialog" aria-modal="true" aria-label="Sesión cifrada">
-        <div class="drawer-top"><h2>{{sessionMode==='save'?'Guardar sesión cifrada':'Abrir sesión anterior'}}</h2><button aria-label="Cerrar" @click="closeSession">✕</button></div>
-        <p v-if="sessionMode==='save'">Descarga un archivo cifrado para continuar la revisión otro día, incluso desde otro equipo. No podremos recuperar la contraseña que elijas.</p>
-        <p v-else>Selecciona el archivo .pwc y escribe la contraseña con la que lo guardaste.</p>
-        <label v-if="sessionMode==='load'" class="session-field">Archivo cifrado
-          <input type="file" accept=".pwc" @change="sessionFile=($event.target as HTMLInputElement).files?.[0] || null" />
-        </label>
-        <label class="session-field">Contraseña de sesión (mínimo 12 caracteres)
-          <input v-model="sessionPassphrase" type="password" autocomplete="off" />
-        </label>
-        <label v-if="sessionMode==='save'" class="session-field">Confirmar contraseña
-          <input v-model="sessionConfirmation" type="password" autocomplete="off" />
-        </label>
-        <p class="hint">La contraseña de sesión nunca se guarda en el navegador ni se envía a Internet.</p>
-        <div class="drawer-actions"><button @click="closeSession">Cancelar</button><button class="primary" :disabled="store.busy" @click="submitSession">{{sessionMode==='save'?'Descargar archivo cifrado':'Abrir sesión'}}</button></div>
-      </section>
-    </div>
+    <CompareDialog v-if="selectedGroup" :group="selectedGroup" :busy="store.busy" @close="selectedGroup=null" @edit="openRecord" @trash="moveToTrash" />
+    <EditorDialog v-if="selected" :record="selected" :busy="store.busy" @close="closeEditor" @save="save" @trash="moveToTrash" @restore="restore" />
+    <SessionDialog v-if="sessionMode" :mode="sessionMode" :busy="store.busy" @close="closeSession" @submit="submitSession" />
     <nav class="mobile-nav" aria-label="Navegación móvil"><button v-for="s in SCREENS" :key="s.id" :class="{active:screen===s.id}" @click="screen=s.id"><TrashIcon v-if="s.id==='trash'" /><template v-else>{{s.icon}}</template><span>{{s.label}}</span></button></nav>
   </div>
 </template>

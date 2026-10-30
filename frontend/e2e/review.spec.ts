@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 // Fictional credentials only, built in memory: real exports never touch the repo.
@@ -215,4 +216,35 @@ test('opens the comparison centred and the editor above it', async ({ page }) =>
   const editor = page.getByRole('dialog', { name: 'Editar credencial' });
   await editor.getByRole('button', { name: 'Cancelar' }).click();
   await expect(compare).toBeVisible();
+});
+
+test('saves an encrypted session and opens it again', async ({ page }) => {
+  const passphrase = 'fictional-session-passphrase';
+  await page.getByRole('button', { name: 'Fusionar copias exactas' }).click();
+  await expect(metric(page, 'En la papelera')).toHaveText('1');
+
+  await page.getByRole('button', { name: 'Guardar sesión cifrada' }).click();
+  const saveDialog = page.getByRole('dialog', { name: 'Sesión cifrada' });
+  await saveDialog.getByLabel(/Contraseña de sesión/).fill(passphrase);
+  await saveDialog.getByLabel('Confirmar contraseña').fill(passphrase + '-typo');
+  await saveDialog.getByRole('button', { name: 'Descargar archivo cifrado' }).click();
+  await expect(page.getByRole('alert')).toContainText('no coinciden');
+  await saveDialog.getByLabel('Confirmar contraseña').fill(passphrase);
+  const download = page.waitForEvent('download');
+  await saveDialog.getByRole('button', { name: 'Descargar archivo cifrado' }).click();
+  const saved = await download;
+  const file = { name: saved.suggestedFilename(), mimeType: 'application/octet-stream', buffer: await readFile(await saved.path()) };
+  await expect(saveDialog).toBeHidden();
+
+  await page.getByRole('button', { name: /Deshacer/ }).click();
+  await expect(metric(page, 'En la papelera')).toHaveText('0');
+  await sidebar(page).getByRole('button', { name: 'Ajustes' }).click();
+  await page.getByRole('button', { name: 'Abrir', exact: true }).click();
+  const loadDialog = page.getByRole('dialog', { name: 'Sesión cifrada' });
+  await loadDialog.getByLabel('Archivo cifrado').setInputFiles(file);
+  await loadDialog.getByLabel(/Contraseña de sesión/).fill(passphrase);
+  await loadDialog.getByRole('button', { name: 'Abrir sesión' }).click();
+  await expect(loadDialog).toBeHidden();
+  await expect(metric(page, 'En la papelera')).toHaveText('1');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Credenciales');
 });
