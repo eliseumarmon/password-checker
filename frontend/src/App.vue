@@ -159,7 +159,7 @@ onMounted(async () => { await store.execute(api.state); });
       </div>
       </div>
       <input ref="fileInput" type="file" accept=".csv,text/csv" multiple hidden @change="loadFileList(($event.target as HTMLInputElement).files || [])" />
-      <WelcomePanel v-if="!data?.stats.total" :busy="store.busy" @pick="fileInput?.click()" @drop="loadFileList" @session="showSession('load')" />
+      <WelcomePanel v-if="!data?.stats.total" :busy="store.busy" @pick="fileInput?.click()" @files-dropped="loadFileList" @open-session-requested="showSession('load')" />
 
       <template v-else>
         <section v-if="screen==='credentials'" class="workspace card">
@@ -173,7 +173,7 @@ onMounted(async () => { await store.execute(api.state); });
         </section>
         <AuditView v-else-if="screen==='audit'" :audit="data.audit" :records="recById" @review="openRecord" />
         <TrashView v-else-if="screen==='trash'" :rows="trashed" :busy="store.busy" @restore="restore" />
-        <SettingsView v-else @session="showSession" />
+        <SettingsView v-else @session-mode-requested="showSession" />
       </template>
     </main>
 

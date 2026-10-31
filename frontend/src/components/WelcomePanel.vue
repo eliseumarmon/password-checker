@@ -2,12 +2,12 @@
 import { ref } from 'vue';
 
 defineProps<{ busy: boolean }>();
-const emit = defineEmits<{ pick: []; drop: [files: FileList]; session: [] }>();
+const emit = defineEmits<{ pick: []; filesDropped: [files: FileList]; openSessionRequested: [] }>();
 
 const dragging = ref(false);
 function onDrop(event: DragEvent): void {
   dragging.value = false;
-  if (event.dataTransfer?.files) emit('drop', event.dataTransfer.files);
+  if (event.dataTransfer?.files) emit('filesDropped', event.dataTransfer.files);
 }
 </script>
 
@@ -19,7 +19,7 @@ function onDrop(event: DragEvent): void {
       <span class="big-icon">⇧</span><strong>Arrastra aquí los CSV</strong>
       <span>o utiliza el selector de archivos</span>
       <button class="primary" :disabled="busy" @click="$emit('pick')">Elegir archivos</button>
-      <button @click="$emit('session')">Abrir sesión cifrada anterior</button>
+      <button @click="$emit('openSessionRequested')">Abrir sesión cifrada anterior</button>
     </div>
     <p class="hint">Los CSV contienen contraseñas en texto plano. No los incluyas en repositorios ni carpetas compartidas.</p>
   </section>
