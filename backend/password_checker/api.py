@@ -20,6 +20,7 @@ from .application.workspace import Workspace
 MAX_FILE_SIZE = 5 * 1024 * 1024
 MAX_TOTAL_SIZE = 20 * 1024 * 1024
 MAX_FILES = 15
+MAX_TRASH_RECORD_IDS = 1000
 
 app = FastAPI(title='Password Checker', docs_url=None, redoc_url=None, openapi_url=None)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=['127.0.0.1', 'localhost'])
@@ -108,7 +109,7 @@ def edit_record(record_id: str, edit: EditRecord):
 
 class TrashRecords(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    ids: list[str] = Field(min_length=1, max_length=1000)
+    ids: list[str] = Field(min_length=1, max_length=MAX_TRASH_RECORD_IDS)
 
 
 @app.post('/api/records/trash')

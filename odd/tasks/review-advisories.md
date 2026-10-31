@@ -17,7 +17,7 @@ Ya resueltos y fuera de esta lista: papelera sin cambios (`247e830`), regla de �
 
 - [x] T1. Mínimo de 12 caracteres de la contraseña de sesión repetido en `App.vue` y en la etiqueta de `SessionDialog.vue`: constante compartida. (R2-session-min-length-split, trozo 4)
 - [x] T2. Tamaño de página 30 repetido en `GroupsTable`, `RecordsTable` y `TrashView`: constante compartida. (R2-page-size-constant, trozo 5)
-- [ ] T3. Límite de 1000 IDs de `TrashRecords` sin nombre, y la comprobación de lista vacía de `Workspace.trash` no se alcanza desde la API: constante con nombre y comentario de qué capa valida. (R4-001, R2-trash-limits-and-dead-guard, trozo 1)
+- [x] T3. Límite de 1000 IDs de `TrashRecords` sin nombre, y la comprobación de lista vacía de `Workspace.trash` no se alcanza desde la API: constante con nombre y comentario de qué capa valida. (R4-001, R2-trash-limits-and-dead-guard, trozo 1)
 - [ ] T4. Límites de validación de sesión (100 000 registros, 15 archivos, 100 000 caracteres, 1024 en nombres) como números sueltos en `session_snapshot.py`: constantes con nombre, enlazadas a los límites de subida de la API. (R2-001, trozo 3)
 
 ### Nombres (S2)

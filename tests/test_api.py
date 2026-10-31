@@ -62,6 +62,18 @@ class APITests(unittest.TestCase):
         self.assertEqual(self.client.post('/api/records/trash', json={'ids': ['missing']}).status_code, 404)
         self.assertEqual(self.client.post('/api/records/trash', json={'ids': []}).status_code, 422)
 
+    def test_trash_request_id_count_boundary(self):
+        payload = b'name,url,username,password,note\nA,https://a.invalid/,alice,fictional-123456,\n'
+        imported = self.client.post('/api/import', files=[('files', ('chrome.csv', payload, 'text/csv'))])
+        self.assertEqual(imported.status_code, 200, imported.text)
+        identifier = imported.json()['records'][0]['id']
+        self.assertEqual(self.client.post('/api/records/trash', json={'ids': []}).status_code, 422)
+        self.assertEqual(self.client.post('/api/records/trash', json={'ids': [identifier] * 1001}).status_code, 422)
+        self.assertEqual(workspace.snapshot()['stats']['excluded'], 0)
+        accepted = self.client.post('/api/records/trash', json={'ids': [identifier] * 1000})
+        self.assertEqual(accepted.status_code, 200, accepted.text)
+        self.assertEqual(accepted.json()['stats']['excluded'], 1)
+
     def test_save_and_restore_session(self):
         payload = b'name,url,username,password,note\nA,https://example.org/login,alice,fictional-123456,\n'
         imported = self.client.post('/api/import', files=[('files', ('chrome.csv', payload, 'text/csv'))]).json()

@@ -84,6 +84,7 @@ class Workspace:
 
     def trash(self, identifiers: list[str]) -> dict[str, Any]:
         """Move several records to the trash all at once, as one undo step."""
+        # The HTTP model rejects empty batches; direct application callers need this guard too.
         if not identifiers:
             raise ValueError('No hay credenciales que mover a la papelera')
         with self._lock:
