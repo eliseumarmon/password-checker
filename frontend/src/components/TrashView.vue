@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
+import { PAGE_SIZE } from '../limits';
 import type { CredentialSummary } from '../types';
 
 defineProps<{ rows: CredentialSummary[]; busy: boolean }>();
@@ -12,7 +13,7 @@ defineEmits<{ restore: [id: string] }>();
     <h2>Credenciales descartadas</h2><p>No se exportan. Restaura las que quieras recuperar.</p>
     <p v-if="!rows.length" class="empty">La papelera está vacía.</p>
     <template v-else>
-      <DataTable :value="rows" dataKey="id" sortField="name" :sortOrder="1" stripedRows removableSort class="desktop-table" :paginator="rows.length>30" :rows="30">
+      <DataTable :value="rows" dataKey="id" sortField="name" :sortOrder="1" stripedRows removableSort class="desktop-table" :paginator="rows.length>PAGE_SIZE" :rows="PAGE_SIZE">
         <Column field="name" header="Sitio / App" sortable><template #body="{data:r}"><strong>{{r.name}}</strong><small class="url-truncate">{{r.url}}</small></template></Column>
         <Column field="username" header="Usuario" sortable/>
         <Column field="source" header="Origen" sortable/>

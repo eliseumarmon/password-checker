@@ -25,6 +25,38 @@ async function importFixtures(page: Page) {
   await expect(page.getByRole('button', { name: 'Todas (6)' })).toBeVisible();
 }
 
+function paginationCsv(count: number, duplicates = false): string {
+  const rows = Array.from({ length: count }, (_, index) => {
+    const number = String(index).padStart(2, '0');
+    return `Site ${number},https://site-${number}.invalid/,user-${number},fake-password-123456,`;
+  });
+  return ['name,url,username,password,note', ...rows.flatMap(row => duplicates ? [row, row] : [row])].join('\n');
+}
+
+async function seedPaginationRows(page: Page, count: number, duplicates = false, trash = false): Promise<void> {
+  const imported = await page.request.post('/api/import', {
+    multipart: { files: { name: 'pagination.csv', mimeType: 'text/csv', buffer: Buffer.from(paginationCsv(count, duplicates)) } },
+  });
+  expect(imported.ok()).toBe(true);
+  if (trash) {
+    const ids = (await imported.json()).records.map((record: { id: string }) => record.id);
+    const moved = await page.request.post('/api/records/trash', { data: { ids } });
+    expect(moved.ok()).toBe(true);
+  }
+  await page.reload();
+}
+
+async function expectThirtyRowsPerPage(page: Page, count: number): Promise<void> {
+  const table = page.locator('.desktop-table');
+  await expect(table.locator('tbody tr')).toHaveCount(30);
+  const paginator = table.locator('.p-paginator');
+  await expect(paginator).toHaveCount(count === 31 ? 1 : 0);
+  if (count === 31) {
+    await paginator.locator('.p-paginator-next').click();
+    await expect(table.locator('tbody tr')).toHaveCount(1);
+  }
+}
+
 function metric(page: Page, label: string): Locator {
   return page.locator('.metric', { hasText: label }).locator('strong');
 }
@@ -65,6 +97,30 @@ test('imports several CSV files and groups duplicates and conflicts', async ({ p
   const table = page.locator('.desktop-table');
   await expect(table.getByRole('row', { name: /Conflict/ })).toBeVisible();
   await expect(table.getByRole('row', { name: /Example/ })).toBeVisible();
+});
+
+test('paginates duplicate groups after 30', async ({ page }) => {
+  for (const count of [30, 31]) {
+    await seedPaginationRows(page, count, true);
+    await expect(page.getByRole('button', { name: `Duplicados (${count})` })).toBeVisible();
+    await expectThirtyRowsPerPage(page, count);
+  }
+});
+
+test('paginates records after 30', async ({ page }) => {
+  for (const count of [30, 31]) {
+    await seedPaginationRows(page, count);
+    await page.getByRole('button', { name: `Todas (${count})` }).click();
+    await expectThirtyRowsPerPage(page, count);
+  }
+});
+
+test('paginates trashed records after 30', async ({ page }) => {
+  for (const count of [30, 31]) {
+    await seedPaginationRows(page, count, false, true);
+    await sidebar(page).getByRole('button', { name: /Papelera/ }).click();
+    await expectThirtyRowsPerPage(page, count);
+  }
 });
 
 test('shows Android apps in Bitwarden format', async ({ page }) => {

@@ -3,6 +3,7 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import TrashIcon from '../TrashIcon.vue';
 import { labelReview, labelType } from '../labels';
+import { PAGE_SIZE } from '../limits';
 import type { CredentialSummary } from '../types';
 
 defineProps<{ rows: CredentialSummary[]; busy: boolean }>();
@@ -10,7 +11,7 @@ defineEmits<{ edit: [id: string]; trash: [id: string] }>();
 </script>
 
 <template>
-  <DataTable :value="rows" dataKey="id" sortField="name" :sortOrder="1" stripedRows removableSort class="desktop-table" :paginator="rows.length>30" :rows="30">
+  <DataTable :value="rows" dataKey="id" sortField="name" :sortOrder="1" stripedRows removableSort class="desktop-table" :paginator="rows.length>PAGE_SIZE" :rows="PAGE_SIZE">
     <Column field="name" header="Sitio / App" sortable><template #body="{data:r}"><button class="table-link" @click="$emit('edit', r.id)">{{r.name}}</button><small class="url-truncate">{{r.url}}</small></template></Column>
     <Column field="username" header="Usuario" sortable/>
     <Column field="type" header="Tipo" sortable><template #body="{data:r}">{{labelType(r.type)}}</template></Column>

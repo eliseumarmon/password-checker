@@ -3,6 +3,7 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import TrashIcon from '../TrashIcon.vue';
 import { labelGroup, labelType } from '../labels';
+import { PAGE_SIZE } from '../limits';
 import type { DuplicateGroup } from '../types';
 
 defineProps<{ groups: DuplicateGroup[]; busy: boolean }>();
@@ -11,7 +12,7 @@ defineEmits<{ open: [group: DuplicateGroup]; trash: [group: DuplicateGroup] }>()
 
 <template>
   <p v-if="!groups.length" class="empty">No hay grupos que coincidan con los filtros.</p>
-  <DataTable v-else :value="groups" sortField="name" :sortOrder="1" removableSort stripedRows dataKey="id" class="desktop-table" :paginator="groups.length>30" :rows="30">
+  <DataTable v-else :value="groups" sortField="name" :sortOrder="1" removableSort stripedRows dataKey="id" class="desktop-table" :paginator="groups.length>PAGE_SIZE" :rows="PAGE_SIZE">
     <Column field="name" header="Sitio" sortable><template #body="{data:g}"><button class="table-link" @click="$emit('open', g)">{{g.name}}</button><small class="url-truncate">{{g.url}}</small></template></Column>
     <Column field="username" header="Usuario" sortable/>
     <Column field="type" header="Tipo" sortable><template #body="{data:g}">{{labelType(g.type)}}</template></Column>
