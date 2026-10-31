@@ -18,11 +18,14 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 VERSION = 1
 AAD = b'password-checker/workspace/session-v1'
 MAX_SESSION_BYTES = 25 * 1024 * 1024
+MIN_SESSION_PASSPHRASE_LENGTH = 12
+MAX_SESSION_PASSPHRASE_LENGTH = 1024
 
 
 def _key(passphrase: str, salt: bytes) -> bytes:
-    if not 12 <= len(passphrase) <= 1024:
-        raise ValueError('La contraseña de la sesión debe tener entre 12 y 1024 caracteres')
+    if not MIN_SESSION_PASSPHRASE_LENGTH <= len(passphrase) <= MAX_SESSION_PASSPHRASE_LENGTH:
+        raise ValueError('La contraseña de la sesión debe tener entre {} y {} caracteres'.format(
+            MIN_SESSION_PASSPHRASE_LENGTH, MAX_SESSION_PASSPHRASE_LENGTH))
     return hash_secret_raw(
         secret=passphrase.encode('utf-8'), salt=salt,
         time_cost=3, memory_cost=65536, parallelism=1,

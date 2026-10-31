@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { MIN_SESSION_PASSPHRASE_LENGTH } from '../limits';
 import type { SessionInput } from '../types';
 
 defineProps<{ mode: 'save' | 'load'; busy: boolean }>();
@@ -20,7 +21,7 @@ const file = ref<File | null>(null);
       <label v-if="mode==='load'" class="session-field">Archivo cifrado
         <input type="file" accept=".pwc" @change="file=($event.target as HTMLInputElement).files?.[0] || null" />
       </label>
-      <label class="session-field">Contraseña de sesión (mínimo 12 caracteres)
+      <label class="session-field">Contraseña de sesión (mínimo {{ MIN_SESSION_PASSPHRASE_LENGTH }} caracteres)
         <input v-model="passphrase" type="password" autocomplete="off" />
       </label>
       <label v-if="mode==='save'" class="session-field">Confirmar contraseña

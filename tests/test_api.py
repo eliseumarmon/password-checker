@@ -82,6 +82,15 @@ class APITests(unittest.TestCase):
         self.assertEqual(restored.status_code, 200, restored.text)
         self.assertEqual(restored.json()['stats']['verified'], 1)
 
+    def test_session_passphrase_length_boundary(self):
+        payload = b'name,url,username,password,note\nA,https://a.invalid/,alice,fictional-123456,\n'
+        imported = self.client.post('/api/import', files=[('files', ('chrome.csv', payload, 'text/csv'))])
+        self.assertEqual(imported.status_code, 200, imported.text)
+        self.assertEqual(self.client.post('/api/session/save', json={'passphrase': 'x' * 11}).status_code, 422)
+        accepted = self.client.post('/api/session/save', json={'passphrase': 'x' * 12})
+        self.assertEqual(accepted.status_code, 200, accepted.text)
+        self.assertEqual(self.client.post('/api/session/save', json={'passphrase': 'x' * 1025}).status_code, 422)
+
     def test_cross_origin_rejected_and_no_cache(self):
         response = self.client.get('/api/workspace', headers={'Origin': 'https://evil.example'})
         self.assertEqual(response.status_code, 403)

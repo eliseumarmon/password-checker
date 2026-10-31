@@ -13,7 +13,8 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from .infrastructure.bitwarden import bitwarden_csv_bytes
 from .infrastructure.csv_reader import read_upload
-from .infrastructure.sessions import MAX_SESSION_BYTES, decrypt_session, encrypt_session
+from .infrastructure.sessions import (MAX_SESSION_BYTES, MAX_SESSION_PASSPHRASE_LENGTH,
+                                      MIN_SESSION_PASSPHRASE_LENGTH, decrypt_session, encrypt_session)
 from .application.workspace import Workspace
 
 MAX_FILE_SIZE = 5 * 1024 * 1024
@@ -132,7 +133,8 @@ def undo():
 
 
 class SessionPassphrase(BaseModel):
-    passphrase: str = Field(min_length=12, max_length=1024)
+    passphrase: str = Field(min_length=MIN_SESSION_PASSPHRASE_LENGTH,
+                            max_length=MAX_SESSION_PASSPHRASE_LENGTH)
 
 
 @app.post('/api/session/save')

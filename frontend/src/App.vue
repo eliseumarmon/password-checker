@@ -13,6 +13,7 @@ import AuditView from './components/AuditView.vue';
 import TrashView from './components/TrashView.vue';
 import SettingsView from './components/SettingsView.vue';
 import { SCREENS } from './labels';
+import { MIN_SESSION_PASSPHRASE_LENGTH } from './limits';
 import type { CredentialDetail, CredentialSummary, DuplicateGroup, FilterType, RecordEdit, Screen, SessionInput } from './types';
 
 const store = useWorkspace();
@@ -104,8 +105,8 @@ function showSession(mode: 'save' | 'load'): void { sessionMode.value = mode; }
 async function submitSession({ passphrase, confirmation, file }: SessionInput): Promise<void> {
   store.error = '';
   try {
-    if (passphrase.length < 12) {
-      throw new Error('Utiliza una contraseña de sesión de al menos 12 caracteres.');
+    if (passphrase.length < MIN_SESSION_PASSPHRASE_LENGTH) {
+      throw new Error(`Utiliza una contraseña de sesión de al menos ${MIN_SESSION_PASSPHRASE_LENGTH} caracteres.`);
     }
     if (sessionMode.value === 'save') {
       if (passphrase !== confirmation) {

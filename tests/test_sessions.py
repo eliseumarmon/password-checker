@@ -56,6 +56,12 @@ class SessionTests(unittest.TestCase):
             self.workspace.restore(invalid)
         self.assertEqual(self.workspace.get(self.record_id)['review'], 'pending')
 
+    def test_passphrase_length_boundary_in_cipher(self):
+        for length in (11, 1025):
+            with self.subTest(length=length), self.assertRaises(ValueError):
+                encrypt_session(self.workspace.serialize(), 'x' * length)
+        self.assertTrue(encrypt_session(self.workspace.serialize(), 'x' * 12))
+
 
 if __name__ == '__main__':
     unittest.main()

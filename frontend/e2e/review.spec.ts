@@ -249,6 +249,24 @@ test('saves an encrypted session and opens it again', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Credenciales');
 });
 
+test('shows and enforces the session password minimum', async ({ page }) => {
+  await page.getByRole('button', { name: 'Guardar sesión cifrada' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Sesión cifrada' });
+  const passphrase = dialog.getByLabel(/Contraseña de sesión/);
+  await expect(passphrase).toHaveAttribute('type', 'password');
+  await expect(dialog.getByText('Contraseña de sesión (mínimo 12 caracteres)')).toBeVisible();
+  await passphrase.fill('x'.repeat(11));
+  await dialog.getByLabel('Confirmar contraseña').fill('x'.repeat(11));
+  await dialog.getByRole('button', { name: 'Descargar archivo cifrado' }).click();
+  await expect(page.getByRole('alert')).toContainText('al menos 12 caracteres');
+  await passphrase.fill('x'.repeat(12));
+  await dialog.getByLabel('Confirmar contraseña').fill('x'.repeat(12));
+  const download = page.waitForEvent('download');
+  await dialog.getByRole('button', { name: 'Descargar archivo cifrado' }).click();
+  await download;
+  await expect(dialog).toBeHidden();
+});
+
 test('shows the server reason when a download fails', async ({ page }) => {
   await page.route('**/api/export', route => route.fulfill({
     status: 409, contentType: 'application/json', body: JSON.stringify({ detail: 'No hay credenciales para exportar' }),
