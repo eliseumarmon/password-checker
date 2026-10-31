@@ -24,7 +24,7 @@ export interface WorkspaceState {
   records: CredentialSummary[]; groups: DuplicateGroup[];
   audit: { reused: string[][]; weak: string[]; incomplete: string[]; breaches: 'not_checked' };
   stats: { total: number; included: number; excluded: number; reviewed: number; verified: number };
-  can_undo: boolean; session_saved: false;
+  can_undo: boolean;
 }
 export interface SessionInput { passphrase: string; confirmation: string; file: File | null }
 export type RecordEdit = Partial<Pick<CredentialDetail, 'name' | 'url' | 'username' | 'password' | 'note' | 'included' | 'review'>>;
