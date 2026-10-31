@@ -15,11 +15,11 @@ from .infrastructure.bitwarden import bitwarden_csv_bytes
 from .infrastructure.csv_reader import read_upload
 from .infrastructure.sessions import (MAX_SESSION_BYTES, MAX_SESSION_PASSPHRASE_LENGTH,
                                       MIN_SESSION_PASSPHRASE_LENGTH, decrypt_session, encrypt_session)
+from .application.limits import MAX_WORKSPACE_FILES
 from .application.workspace import Workspace
 
 MAX_FILE_SIZE = 5 * 1024 * 1024
 MAX_TOTAL_SIZE = 20 * 1024 * 1024
-MAX_FILES = 15
 MAX_TRASH_RECORD_IDS = 1000
 
 app = FastAPI(title='Password Checker', docs_url=None, redoc_url=None, openapi_url=None)
@@ -66,8 +66,8 @@ def get_workspace():
 
 @app.post('/api/import')
 async def import_files(files: list[UploadFile] = File(...)):
-    if not 1 <= len(files) <= MAX_FILES:
-        raise HTTPException(400, 'Selecciona entre 1 y 15 archivos')
+    if not 1 <= len(files) <= MAX_WORKSPACE_FILES:
+        raise HTTPException(400, f'Selecciona entre 1 y {MAX_WORKSPACE_FILES} archivos')
     total = 0
     incoming = []
     for uploaded in files:

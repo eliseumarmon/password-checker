@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DOMAIN_MODULES = ('accounts', 'consolidation', 'credential', 'notes', 'reuse', 'strength', 'urls')
-APPLICATION_MODULES = ('candidate', 'review_report', 'review_state', 'session_snapshot', 'workspace')
+APPLICATION_MODULES = ('candidate', 'limits', 'review_report', 'review_state', 'session_snapshot', 'workspace')
 
 
 def loaded_modules(module):
