@@ -20,7 +20,7 @@ from .review_state import detail, review_state
 from .session_snapshot import from_payload, to_payload
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True)
 class ImportedFile:
     """Complete parsed file; the caller supplies a valid base name."""
 

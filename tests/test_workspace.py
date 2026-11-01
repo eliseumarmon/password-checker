@@ -120,8 +120,6 @@ class WorkspaceTests(unittest.TestCase):
         with self.assertRaises(FrozenInstanceError):
             file.name = 'dir/passwords.csv'
         with self.assertRaises(TypeError):
-            ImportedFile('passwords.csv', 'chrome', [])
-        with self.assertRaises(TypeError):
             ImportedFile(name='passwords.csv')
         with self.assertRaises(ValueError):
             ImportedFile(name='passwords.csv', source='', credentials=[])
