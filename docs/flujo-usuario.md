@@ -4,7 +4,7 @@ Este documento describe el flujo implementado y reúne propuestas de validación
 
 ## Flujo disponible
 
-1. Exporta CSV de Chrome, Brave o Firefox y abre la aplicación local siguiendo la [guía de instalación](../README-GUI.md). Los CSV contienen contraseñas en texto plano: guárdalos en un lugar privado.
+1. Exporta CSV de Chrome, Brave o Firefox y abre la aplicación local siguiendo la [guía de instalación](../README.md#instalación-y-ejecución). Los CSV contienen contraseñas en texto plano: guárdalos en un lugar privado.
 2. Selecciona o arrastra hasta 15 CSV. El servidor admite hasta 5 MiB por archivo y 20 MiB en total. Una importación válida reemplaza la sesión activa tras confirmación; si falla alguno de los archivos, no se aplica ninguno. No existe una vista previa antes de importar.
 3. En **Duplicados**, abre un grupo para comparar nombre, usuario, URL, origen, línea y coincidencias de URL, usuario y contraseña. La contraseña no aparece en el comparador. Abre cada ficha para ver o editar sus campos y estado de revisión. **Todas** permite buscar, filtrar y abrir registros individuales.
 4. Las credenciales se conservan al importar. Puedes mover registros a la papelera y restaurarlos, o usar **Fusionar copias exactas** tras confirmar: se combinan sus notas y las copias sobrantes pasan a la papelera. Las variantes con contraseñas diferentes no se fusionan automáticamente. Hay hasta 30 operaciones para deshacer en la sesión activa.

@@ -96,5 +96,20 @@ class CsvUploadTests(unittest.TestCase):
         self.assertEqual(rows[0].note, 'Firefox HTTP realm: Private')
 
 
+class UploadReaderTests(unittest.TestCase):
+    def test_detects_firefox_without_name_hint(self):
+        data = ('url,username,password,httpRealm,formActionOrigin,guid,timeCreated,timeLastUsed,timePasswordChanged\n'
+                'https://example.org/login,alice,fictional-abc-123,,,,,,\n').encode()
+        source, rows = read_upload('passwords.csv', data)
+        self.assertEqual(source, 'firefox')
+        self.assertEqual(len(rows), 1)
+
+    def test_brave_by_file_name_and_null_bytes_rejected(self):
+        data = b'name,url,username,password,note\nA,https://example.org,u,fake-123,\n'
+        self.assertEqual(read_upload('Brave Passwords.csv', data)[0], 'brave')
+        with self.assertRaises(ValueError):
+            read_upload('chrome.csv', b'\x00')
+
+
 if __name__ == '__main__':
     unittest.main()

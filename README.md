@@ -2,18 +2,41 @@
 
 Herramienta local para revisar exportaciones CSV de Chrome, Brave y Firefox y preparar su importación en Bitwarden. La interfaz usa FastAPI y Vue, funciona en Windows y Linux y no requiere acceso a Internet durante la revisión.
 
-## Uso
+## Instalación y ejecución
 
-Instala y arranca la aplicación siguiendo la [guía de la interfaz](README-GUI.md). Importa las exportaciones CSV, revisa duplicados y conflictos, edita o excluye las credenciales necesarias y descarga el CSV para importar como **Bitwarden (csv)**. La fusión de duplicados se realiza solo cuando se solicita.
+Se necesita Python 3.12+, Node.js 22+ y npm. Desde la raíz del repositorio:
 
-La revisión permanece en memoria. Para reanudarla más tarde, guarda manualmente una sesión cifrada `.pwc` y conserva su contraseña. El archivo incluye credenciales y notas; trátalo como un respaldo sensible.
+```bash
+python -m venv .venv
+# Linux: source .venv/bin/activate
+# Windows PowerShell: .venv\Scripts\Activate.ps1
+python -m pip install -r backend/requirements.txt
+cd frontend
+npm install
+npm run build
+cd ..
+python app.py
+```
 
-## Seguridad
+Abre `http://127.0.0.1:8000` en el mismo ordenador. El servidor escucha en loopback; no lo expongas en `0.0.0.0`, ya que maneja contraseñas.
+
+Para desarrollo, ejecuta `python app.py` y, en otra terminal, `cd frontend && npm run dev`. Vite crea un proxy de `/api` y muestra la interfaz en `http://127.0.0.1:5173`.
+
+## Uso y sesiones
+
+Importa las exportaciones CSV, revisa duplicados y conflictos, edita o excluye las credenciales necesarias y descarga el CSV para importar como **Bitwarden (csv)**. La fusión de duplicados se realiza solo cuando se solicita.
+
+La revisión permanece en memoria y el guardado es manual. Para continuar otro día, pulsa **Guardar sesión cifrada** e introduce una contraseña nueva de al menos 12 caracteres; descarga y conserva `password-checker-session.pwc`. Para reanudar, pulsa **Abrir sesión cifrada anterior**, selecciona el archivo y escribe la misma contraseña. El archivo utiliza Argon2id y AES-256-GCM y contiene las credenciales y notas originales: protégelo como un respaldo sensible. No hay recuperación si olvidas la contraseña. Las modificaciones sin guardar se pierden al cerrar el backend y el historial de deshacer no se conserva al reabrir.
+
+## Seguridad y limitaciones
 
 - Los CSV de entrada y salida contienen contraseñas en texto plano. No los compartas, subas al repositorio ni guardes en carpetas sincronizadas o copias inseguras.
-- Las contraseñas se ocultan al abrir las fichas y no aparecen en las listas generales. Los datos se intercambian localmente entre el navegador y el servidor.
-- La aplicación conserva las variantes conflictivas para revisión. No determina si una contraseña funciona ni consulta filtraciones.
+- Las contraseñas se ocultan al abrir las fichas y no aparecen en las listas generales. Los datos se intercambian entre el navegador y el servidor del mismo equipo; no se requiere Internet durante la revisión ni se realiza seguimiento.
+- El lector CSV procesa los datos en memoria sin escribir archivos temporales explícitos. Durante subidas HTTP grandes, el parser multipart del framework puede utilizar almacenamiento temporal; evita discos y carpetas sincronizados para el entorno de trabajo.
+- La aplicación conserva las variantes conflictivas para revisión. No determina si una contraseña funciona, no automatiza inicios de sesión ni consulta filtraciones.
 - Después de importar, comprueba las entradas en Bitwarden, conserva un respaldo seguro mientras confirmas que todo funciona y elimina las copias CSV en texto plano.
+
+Consulta el [estado de implementación](docs/implementacion-v0.1.md), la [guía visual propuesta](docs/guia-visual.md) y el [flujo de usuario](docs/flujo-usuario.md).
 
 ## Formatos y criterios
 
