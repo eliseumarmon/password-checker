@@ -130,6 +130,28 @@ test('shows Android apps in Bitwarden format', async ({ page }) => {
   await expect(row).toContainText('Android');
 });
 
+test('shows each credential type on mobile cards', async ({ page }) => {
+  await page.setViewportSize({ width: 600, height: 800 });
+  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  const cards = page.locator('.mobile-cards .record-card');
+  const web = cards.filter({ has: page.getByText('carol', { exact: true }) });
+  const android = cards.filter({ has: page.getByText('eve', { exact: true }) });
+
+  await expect(page.locator('.desktop-table')).toBeHidden();
+  await expect(web.locator('p.muted')).toBeVisible();
+  await expect(web.locator('p.muted')).toHaveText(/^Web · /);
+  await expect(android.locator('p.muted')).toBeVisible();
+  await expect(android.locator('p.muted')).toHaveText(/^Android · /);
+
+  const typeFilter = page.getByLabel('Filtrar tipo');
+  await typeFilter.selectOption({ label: 'Solo Android' });
+  await expect(android).toBeVisible();
+  await expect(web).toHaveCount(0);
+  await typeFilter.selectOption({ label: 'Solo web' });
+  await expect(web).toBeVisible();
+  await expect(android).toHaveCount(0);
+});
+
 test('keeps table cells readable on the dark theme', async ({ page }) => {
   await page.getByRole('button', { name: 'Todas (6)' }).click();
   const row = page.locator('.desktop-table tbody tr').first();
