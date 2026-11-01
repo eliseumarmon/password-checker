@@ -1,9 +1,10 @@
 export type Review = 'pending' | 'reviewed' | 'verified' | 'incorrect';
 export type Screen = 'credentials' | 'audit' | 'trash' | 'settings';
-export type FilterType = 'all' | 'web' | 'android';
+export type CredentialType = 'web' | 'android';
+export type FilterType = 'all' | CredentialType;
 
 export interface CredentialSummary {
-  id: string; name: string; url: string; username: string; type: 'web' | 'android';
+  id: string; name: string; url: string; username: string; type: CredentialType;
   source: string; line: number; included: boolean; review: Review;
   http: boolean; invalid_uri: boolean; embedded_auth: boolean; host: string;
 }
@@ -16,7 +17,7 @@ export interface GroupMember extends CredentialSummary {
 }
 export interface DuplicateGroup {
   id: string; kind: 'exact' | 'conflict' | 'multiple-accounts';
-  name: string; url: string; username: string; type: 'web' | 'android';
+  name: string; url: string; username: string; type: CredentialType;
   members: GroupMember[]; count: number; pending: boolean;
 }
 export interface WorkspaceState {
