@@ -48,9 +48,13 @@ class APITests(unittest.TestCase):
         response = self.client.post('/api/import', files=[
             ('files', ('brave/passwords.csv', payload, 'text/csv')),
             ('files', ('dir/Brave Passwords.csv', payload, 'text/csv')),
+            ('files', (r'brave\passwords.csv', payload, 'text/csv')),
+            ('files', (r'dir/subdir\Brave Passwords.csv', payload, 'text/csv')),
         ])
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(response.json()['files'], [
+            {'name': 'passwords.csv', 'source': 'chrome', 'count': 1},
+            {'name': 'Brave Passwords.csv', 'source': 'brave', 'count': 1},
             {'name': 'passwords.csv', 'source': 'chrome', 'count': 1},
             {'name': 'Brave Passwords.csv', 'source': 'brave', 'count': 1},
         ])
