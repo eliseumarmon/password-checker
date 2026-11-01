@@ -103,14 +103,14 @@ class WorkspaceTests(unittest.TestCase):
 
     def test_import_replaces_records_and_keeps_file_metadata(self):
         self.workspace.merge_exact()
-        result = self.workspace.import_files([ImportedFile('passwords.csv', 'firefox', [cred('A', 'https://a.invalid', 'u', 'fake-123')])])
+        result = self.workspace.import_files([ImportedFile('dir/passwords.csv', 'firefox', [cred('A', 'https://a.invalid', 'u', 'fake-123')])])
         self.assertEqual(result['files'], [{'name': 'passwords.csv', 'source': 'firefox', 'count': 1}])
         self.assertEqual(result['stats']['total'], 1)
         self.assertFalse(result['can_undo'])
         with self.assertRaises(ValueError):
             self.workspace.import_files([ImportedFile('empty.csv', 'chrome', [])])
 
-    def test_imported_file_is_complete_immutable_and_has_base_name(self):
+    def test_imported_file_is_complete_immutable_and_normalizes_name(self):
         rows = [cred('A', 'https://a.invalid', 'u', 'fake-123')]
         file = ImportedFile('passwords.csv', 'chrome', rows)
         rows.clear()
@@ -121,8 +121,8 @@ class WorkspaceTests(unittest.TestCase):
             ImportedFile('passwords.csv')
         with self.assertRaises(ValueError):
             ImportedFile('passwords.csv', '', [])
-        with self.assertRaises(ValueError):
-            ImportedFile('dir/passwords.csv', 'chrome', [])
+        self.assertEqual(ImportedFile('dir/passwords.csv', 'chrome', []).name, 'passwords.csv')
+        self.assertEqual(ImportedFile('.', 'chrome', []).name, '')
 
     def test_partial_updates_cannot_change_id_or_original(self):
         identifier = self.workspace.snapshot()['records'][0]['id']

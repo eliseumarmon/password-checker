@@ -8,6 +8,7 @@ from __future__ import annotations
 import threading
 from collections import defaultdict
 from dataclasses import dataclass, replace
+from pathlib import Path
 from typing import Any, Sequence
 
 from ..domain.accounts import duplicate_key
@@ -20,15 +21,19 @@ from .session_snapshot import from_payload, to_payload
 
 @dataclass(frozen=True)
 class ImportedFile:
-    """Complete parsed file; callers must supply a base name, without directories."""
+    """Complete parsed file with a normalized base name."""
 
     name: str
     source: str
     credentials: Sequence[Credential]
 
     def __post_init__(self) -> None:
-        if not isinstance(self.name, str) or '/' in self.name:
-            raise ValueError('El nombre del archivo debe ser un nombre base')
+        if not isinstance(self.name, str):
+            raise ValueError('Nombre de archivo no válido')
+        # The API already supplies a base name for source detection. Direct callers
+        # may supply a path, which is normalized here before storing metadata.
+        if '/' in self.name or self.name == '.':
+            object.__setattr__(self, 'name', Path(self.name).name)
         if self.source not in ('chrome', 'brave', 'firefox'):
             raise ValueError('Origen de archivo no válido')
         object.__setattr__(self, 'credentials', tuple(self.credentials))
