@@ -22,9 +22,10 @@ Abrir `http://127.0.0.1:8000` en el mismo ordenador. El proceso solo escucha en 
 
 Desarrollo: ejecutar `python app.py` y, en otra terminal, `cd frontend && npm run dev`; Vite crea un proxy de `/api` y muestra la interfaz en `http://127.0.0.1:5173`.
 
-Pruebas del backend (con las dependencias de `backend/requirements.txt` instaladas):
+Pruebas del backend, desde la raíz del repositorio:
 
 ```bash
+python -m pip install -r backend/requirements-dev.txt
 python -m unittest discover -s tests -v
 ```
 
