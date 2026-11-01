@@ -24,7 +24,7 @@ Ya resueltos y fuera de esta lista: papelera sin cambios (`247e830`), regla de �
 
 - [x] T5. Se eliminaron `_restored` y `session_saved` por no tener consumidores; el formato `.pwc` permanece intacto. (R2-002, trozo 3)
 - [x] T6. `WelcomePanel` y `SettingsView` comparten `sessionRequested(mode)`; el evento de archivos arrastrados es `filesDropped(FileList)`. (R2-session-emit-shape, R2-drop-event-name, trozo 5)
-- [ ] T7. `labelType` declara `'web' | 'android'` a mano: derivarlo de `types.ts`. (R2-labeltype-literal-union, trozo 4)
+- [x] T7. `CredentialType` define una vez `'web' | 'android'` para `CredentialSummary`, `DuplicateGroup`, `FilterType` y `labelType`. (R2-labeltype-literal-union, trozo 4)
 - [ ] T8. El selector de estado de revisión del editor repite textos que ya están en `labels.ts` (y uno difiere): centralizar o anotar por qué difieren. (R2-review-options-duplicate-labels, trozo 4)
 - [ ] T9. `SCREENS` trata la papelera como caso especial en tres sitios (icono vacío, título y contador): marcarlo en la propia lista. (R2-trash-special-case, trozo 4)
 - [ ] T10. La forma `(nombre, origen, credenciales)` de la importación solo existe por posición entre `api.py` y `Workspace.import_files`, y el nombre base del archivo se normaliza dos veces: tupla con nombre y una sola normalización. (R2-004, trozo 2)
