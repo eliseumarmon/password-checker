@@ -1,6 +1,6 @@
 # Interfaz local de Password Checker (primera versión)
 
-La CLI `auditar_contrasenas_local.py` sigue disponible sin cambios. Esta interfaz es un primer incremento de la arquitectura FastAPI + Vue 3 + TypeScript + PrimeVue.
+Esta interfaz utiliza FastAPI + Vue 3 + TypeScript + PrimeVue.
 
 ## Instalar
 

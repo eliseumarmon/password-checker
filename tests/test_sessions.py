@@ -10,7 +10,7 @@ try:
     from backend.password_checker.infrastructure.sessions import encrypt_session, decrypt_session
     from backend.password_checker.application.candidate import Candidate
     from backend.password_checker.application.workspace import Workspace
-    from auditar_contrasenas_local import Credential
+    from backend.password_checker.domain.credential import Credential
 except ImportError:
     encrypt_session = None
 

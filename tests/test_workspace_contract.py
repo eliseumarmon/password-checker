@@ -55,7 +55,7 @@ class WorkspaceContractTests(unittest.TestCase):
         self.assertEqual(audit['reused'], [[shared_a.id, shared_b.id, same_account.id]])
         self.assertIn(empty.id, audit['incomplete'])
 
-    def test_audit_reuse_uses_the_same_origin_rule_as_the_cli(self):
+    def test_audit_reuse_uses_origin_rule(self):
         local_a = candidate('http://127.0.0.1:8080/', 'admin', 'fake-local-123456')
         local_b = candidate('http://127.0.0.1:9090/', 'admin', 'fake-local-123456')
         login = candidate('https://github.com/login', 'alice', 'fake-same-123456')

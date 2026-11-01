@@ -1,6 +1,6 @@
 """In-memory review workspace: state, undo history and review use cases.
 
-Rules come from the shared domain package, so the CLI and the GUI agree.
+Rules come from the domain package.
 No HTTP, file or encryption dependencies: the API adapter reads and writes those.
 """
 from __future__ import annotations

@@ -33,5 +33,5 @@ def shared_password_groups(items: Sequence[T],
 
 
 def reused_password_groups(items: Sequence[T]) -> List[List[T]]:
-    """The single reuse rule shared by the CLI, the report and the GUI audit."""
+    """The reuse rule used by the workspace audit."""
     return shared_password_groups(items, origin_account)

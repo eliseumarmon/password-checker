@@ -5,8 +5,8 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DOMAIN_MODULES = ('accounts', 'consolidation', 'credential', 'notes', 'reuse', 'strength', 'urls')
-APPLICATION_MODULES = ('candidate', 'limits', 'review_report', 'review_state', 'session_snapshot', 'workspace')
+DOMAIN_MODULES = ('accounts', 'credential', 'notes', 'reuse', 'strength', 'urls')
+APPLICATION_MODULES = ('candidate', 'limits', 'review_state', 'session_snapshot', 'workspace')
 
 
 def loaded_modules(module):
@@ -19,8 +19,8 @@ def loaded_modules(module):
 class ArchitectureTests(unittest.TestCase):
     def test_domain_has_no_adapter_or_framework_dependencies(self):
         forbidden = ('backend.password_checker.infrastructure', 'backend.password_checker.application',
-                     'backend.password_checker.cli', 'backend.password_checker.api',
-                     'auditar_contrasenas_local', 'fastapi', 'starlette', 'pydantic',
+                     'backend.password_checker.api',
+                     'fastapi', 'starlette', 'pydantic',
                      'cryptography', 'argon2', 'csv')
         for name in DOMAIN_MODULES:
             loaded = loaded_modules('backend.password_checker.domain.' + name)
@@ -28,8 +28,8 @@ class ArchitectureTests(unittest.TestCase):
             self.assertEqual(leaked, [], name)
 
     def test_application_depends_only_on_the_domain(self):
-        forbidden = ('backend.password_checker.infrastructure', 'backend.password_checker.cli',
-                     'backend.password_checker.api', 'auditar_contrasenas_local', 'fastapi', 'starlette',
+        forbidden = ('backend.password_checker.infrastructure',
+                     'backend.password_checker.api', 'fastapi', 'starlette',
                      'pydantic', 'cryptography', 'argon2', 'csv')
         for name in APPLICATION_MODULES:
             loaded = loaded_modules('backend.password_checker.application.' + name)

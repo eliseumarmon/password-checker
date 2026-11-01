@@ -93,8 +93,8 @@ def read_export(source, filename, repair_extra_notes=False, diagnostics=None):
                 if url_idx is not None and not supported_uri(values[url_idx]):
                     raise ValueError("{}: linea {}: URI fuera de su columna o invalida; se cancela para proteger la contrasena.".format(source, line))
                 if not (repair_extra_notes and note_last and source in ("chrome", "brave")):
-                    hint = (" Revisa comas sin comillas en notas; prueba --repair-extra-notes"
-                            " solo si confirmas que las comas pertenecen a notas."
+                    hint = (" Revisa comas sin comillas en notas; vuelve a exportar el archivo"
+                            " y comprueba las columnas en privado."
                             if note_last and source in ("chrome", "brave") else
                             " Comprueba la exportacion CSV original y su separador.")
                     raise ValueError("{}: linea {}: {} columnas, esperadas {}.{}".format(

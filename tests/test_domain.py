@@ -6,7 +6,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from backend.password_checker.domain.accounts import account_key, duplicate_key, masked_username, origin_account  # noqa: E402
-from backend.password_checker.domain.consolidation import consolidate  # noqa: E402
 from backend.password_checker.domain.credential import Credential  # noqa: E402
 from backend.password_checker.domain.notes import NOTE_SEPARATOR, combine_notes  # noqa: E402
 from backend.password_checker.domain.reuse import shared_password_groups  # noqa: E402
@@ -124,48 +123,6 @@ class ReuseTests(unittest.TestCase):
             [shared_a, shared_b, same_account, same_account_copy, no_account, empty],
             lambda c: (parse_url(c.url).host, c.username) if c.username else None)
         self.assertEqual(groups, [[shared_a, shared_b]])
-
-
-class ConsolidationTests(unittest.TestCase):
-    def test_merges_exact_duplicates_and_keeps_conflicts(self):
-        rows = [cred('https://example.org/login', 'alice', 'fake-current-123', 'first'),
-                cred('https://example.org/login', 'alice', 'fake-current-123', 'second', source='brave'),
-                cred('https://example.org/login', 'alice', 'fake-old-1234567')]
-        merged, stats = consolidate(rows)
-        self.assertEqual(len(merged), 2)
-        self.assertEqual(merged[0].note, 'first' + NOTE_SEPARATOR + 'second')
-        self.assertEqual(stats['duplicates'], 1)
-        self.assertEqual(len(stats['conflicts']), 1)
-        self.assertEqual({r.password for r in stats['conflicts'][0]}, {'fake-current-123', 'fake-old-1234567'})
-
-    def test_reuse_separates_local_ports_but_not_paths_of_one_site(self):
-        _, stats = consolidate([cred('http://127.0.0.1:8080/', 'admin', 'fake-local-123456'),
-                                cred('http://127.0.0.1:9090/', 'admin', 'fake-local-123456')])
-        self.assertEqual((stats['reused_groups'], stats['reused_accounts']), (1, 2))
-        _, stats = consolidate([cred('https://github.com/login', 'alice', 'fake-same-123456'),
-                                cred('https://github.com/session', 'alice', 'fake-same-123456')])
-        self.assertEqual((stats['reused_groups'], stats['reused_accounts']), (0, 0))
-
-    def test_reuse_and_related_metrics(self):
-        rows = [cred('https://a.invalid/login', 'alice', 'fake-shared-123456'),
-                cred('https://a.invalid/other', 'alice', 'fake-shared-123456'),
-                cred('https://b.invalid', 'bob', 'fake-shared-123456'),
-                cred('https://c.invalid', 'carol', 'fake-unique-123456')]
-        _, stats = consolidate(rows)
-        # Same domain + user on two paths is one reuse account, but a possible relation.
-        self.assertEqual(stats['reused_groups'], 1)
-        self.assertEqual(stats['reused_accounts'], 2)
-        self.assertEqual(len(stats['possible_related']), 1)
-        self.assertEqual(len(stats['possible_related'][0]), 2)
-
-    def test_android_source_follows_bitwarden_chrome_importer(self):
-        merged, stats = consolidate([cred('android://SIGN@Com.Example.App/', 'eve', 'fake-app-123456', 'mine', name=''),
-                                     cred('android://SIGN@com.example.other/', 'eve', 'fake-app-654321', '', name='')])
-        self.assertEqual(merged[0].url, 'androidapp://Com.Example.App')
-        self.assertEqual(merged[0].name, 'Com.Example.App')
-        self.assertEqual(merged[0].note, 'mine')
-        self.assertEqual(merged[1].note, '')
-        self.assertEqual(stats['android_apps'], 2)
 
 
 if __name__ == '__main__':

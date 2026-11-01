@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from auditar_contrasenas_local import read_export
+from backend.password_checker.infrastructure.csv_reader import read_export
 
 
 class StreamReaderTests(unittest.TestCase):

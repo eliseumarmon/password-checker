@@ -10,7 +10,7 @@ from backend.password_checker.infrastructure.bitwarden import bitwarden_csv_byte
 from backend.password_checker.application.candidate import Candidate
 from backend.password_checker.application.limits import MAX_SNAPSHOT_FILE_NAME_CHARS
 from backend.password_checker.application.workspace import ImportedFile, Workspace
-from auditar_contrasenas_local import Credential
+from backend.password_checker.domain.credential import Credential
 
 
 def cred(name, url, user, password, source='chrome', note=''):
@@ -98,7 +98,7 @@ class WorkspaceTests(unittest.TestCase):
         self.assertNotEqual(self.workspace.snapshot()['groups'][0]['kind'], 'exact')
         self.assertEqual(self.workspace.merge_exact()['stats']['excluded'], 0)
 
-    def test_blank_name_falls_back_like_the_cli(self):
+    def test_blank_name_falls_back_to_site(self):
         record = Candidate.from_source(cred('   ', 'https://a.invalid/login', 'alice', 'fictional-123456'))
         self.assertEqual(record.name, 'a.invalid')
 
