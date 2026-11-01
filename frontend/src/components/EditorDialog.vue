@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue';
 import TrashIcon from '../TrashIcon.vue';
 import { safeWebUrl } from '../api';
+import { labelReview } from '../labels';
 import type { CredentialDetail, RecordEdit } from '../types';
 
 const props = defineProps<{ record: CredentialDetail; busy: boolean }>();
@@ -37,7 +38,7 @@ function openSite(url: string): void {
         <label>Usuario<input v-model="form.username" autocomplete="off" /></label>
         <label>Contraseña <span class="secret-input"><input v-model="form.password" :type="revealed?'text':'password'" autocomplete="new-password" spellcheck="false" /><button :aria-label="revealed?'Ocultar contraseña':'Mostrar contraseña'" @click="revealed=!revealed">{{revealed?'Ocultar':'Mostrar'}}</button></span></label>
         <label>Notas<textarea v-model="form.note" rows="5"></textarea></label>
-        <label>Estado de revisión<select v-model="form.review"><option value="pending">Pendiente</option><option value="reviewed">Revisada (sin verificar acceso)</option><option value="verified">Verificada manualmente</option><option value="incorrect">No funciona</option></select></label>
+        <label>Estado de revisión<select v-model="form.review"><option value="pending">{{labelReview('pending')}}</option><option value="reviewed">{{labelReview('reviewed')}} (sin verificar acceso)</option><option value="verified">{{labelReview('verified')}} manualmente</option><option value="incorrect">{{labelReview('incorrect')}}</option></select></label>
         <p class="hint">Editar esta contraseña guardada NO cambia la contraseña real del servicio.</p>
         <p class="muted">Origen inmutable: {{record.source}} · línea {{record.line}}</p>
       </div>
