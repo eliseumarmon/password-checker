@@ -77,13 +77,13 @@ async def import_files(files: list[UploadFile] = File(...)):
         total += len(data)
         if len(data) > MAX_FILE_SIZE or total > MAX_TOTAL_SIZE:
             raise HTTPException(413, 'El archivo o el conjunto supera el límite de tamaño')
-        incoming.append((ImportedFile(uploaded.filename or 'import.csv'), data))
+        incoming.append((Path(uploaded.filename or 'import.csv').name, data))
     try:
         # Parse every file before touching the workspace: all files or none.
         parsed = []
-        for file, data in incoming:
-            file.source, file.credentials = read_upload(file.name, data)
-            parsed.append(file)
+        for name, data in incoming:
+            source, credentials = read_upload(name, data)
+            parsed.append(ImportedFile(name=name, source=source, credentials=credentials))
         return workspace.import_files(parsed)
     except (ValueError, UnicodeError, OSError) as error:
         raise HTTPException(422, str(error)) from None

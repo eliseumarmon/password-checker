@@ -7,9 +7,8 @@ from __future__ import annotations
 
 import threading
 from collections import defaultdict
-from dataclasses import dataclass, field, replace
-from pathlib import Path
-from typing import Any
+from dataclasses import dataclass, replace
+from typing import Any, Sequence
 
 from ..domain.accounts import duplicate_key
 from ..domain.credential import Credential
@@ -19,16 +18,20 @@ from .review_state import detail, review_state
 from .session_snapshot import from_payload, to_payload
 
 
-@dataclass
+@dataclass(frozen=True)
 class ImportedFile:
-    """Parsed file and its base name, shared by import adapters and the workspace."""
+    """Complete parsed file; callers must supply a base name, without directories."""
 
     name: str
-    source: str = ""
-    credentials: list[Credential] = field(default_factory=list)
+    source: str
+    credentials: Sequence[Credential]
 
     def __post_init__(self) -> None:
-        self.name = Path(self.name).name
+        if not isinstance(self.name, str) or '/' in self.name:
+            raise ValueError('El nombre del archivo debe ser un nombre base')
+        if self.source not in ('chrome', 'brave', 'firefox'):
+            raise ValueError('Origen de archivo no válido')
+        object.__setattr__(self, 'credentials', tuple(self.credentials))
 
 
 class Workspace:
