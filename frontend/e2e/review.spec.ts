@@ -191,12 +191,16 @@ test('trashes a row from its quick action and restores it from the trash', async
   await expect(page.getByRole('button', { name: 'Todas (5)' })).toBeVisible();
   await expect(page.locator('.desktop-table')).not.toContainText('carol');
 
-  await sidebar(page).getByRole('button', { name: /Papelera/ }).click();
+  const trashButton = sidebar(page).getByRole('button', { name: 'Papelera (1)' });
+  await expect(trashButton).toHaveAttribute('title', 'Papelera (1)');
+  await expect(trashButton.locator('svg')).toBeVisible();
+  await trashButton.click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Papelera');
   const row = page.locator('.desktop-table').getByRole('row', { name: /carol/ });
   await row.getByRole('button', { name: 'Restaurar' }).click();
   await expect(page.getByText('La papelera está vacía.')).toBeVisible();
   await expect(metric(page, 'En la papelera')).toHaveText('0');
+  await expect(sidebar(page).getByRole('button', { name: 'Papelera (0)' })).toHaveAttribute('title', 'Papelera (0)');
 });
 
 test('discards a record from the editor into the trash', async ({ page }) => {
@@ -256,7 +260,12 @@ test('shows only cards, not the table, on narrow screens', async ({ page }) => {
   await page.setViewportSize({ width: 600, height: 800 });
   await expect(page.locator('.desktop-table')).toBeHidden();
   await expect(page.locator('.mobile-cards .record-card').first()).toBeVisible();
-  await expect(page.getByRole('navigation', { name: 'Navegación móvil' })).toBeVisible();
+  const mobileNav = page.getByRole('navigation', { name: 'Navegación móvil' });
+  await expect(mobileNav).toBeVisible();
+  const trashButton = mobileNav.getByRole('button', { name: 'Papelera' });
+  await expect(trashButton.locator('svg')).toBeVisible();
+  await trashButton.click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Papelera');
 });
 
 test('trashes a whole duplicate group in one undoable step', async ({ page }) => {
