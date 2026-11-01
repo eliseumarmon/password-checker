@@ -358,6 +358,60 @@ test('shows the server reason when a download fails', async ({ page }) => {
   await expect(page.getByRole('alert')).toContainText('No hay credenciales para exportar');
 });
 
+for (const { name, body, contentType, secret } of [
+  { name: 'object detail', body: JSON.stringify({ detail: { password: 'fictional-secret-object' } }), contentType: 'application/json', secret: 'fictional-secret-object' },
+  { name: 'list detail', body: JSON.stringify({ detail: ['fictional-secret-list'] }), contentType: 'application/json', secret: 'fictional-secret-list' },
+  { name: 'non-JSON response', body: 'fictional-secret-plain-text', contentType: 'text/plain', secret: 'fictional-secret-plain-text' },
+]) {
+  test(`shows a generic export error for ${name}`, async ({ page }) => {
+    const downloads: string[] = [];
+    page.on('download', download => downloads.push(download.suggestedFilename()));
+    await page.route('**/api/export', route => route.fulfill({ status: 503, contentType, body }));
+
+    await page.getByRole('button', { name: 'Exportar Bitwarden' }).click();
+    const alert = page.getByRole('alert');
+    await expect(alert).toContainText('No se pudo exportar (503)');
+    await expect(alert).not.toContainText(secret);
+    // Observe late download events for a bounded period after the error appears.
+    await page.waitForTimeout(500);
+    expect(downloads).toEqual([]);
+  });
+}
+
+test('keeps session details for retry when saving fails', async ({ page }) => {
+  const passphrase = 'fictional-session-passphrase';
+  const downloads: string[] = [];
+  page.on('download', download => downloads.push(download.suggestedFilename()));
+  await page.route('**/api/session/save', route => route.fulfill({
+    status: 503, contentType: 'application/json', body: JSON.stringify({ detail: { passphrase } }),
+  }), { times: 1 });
+
+  await page.getByRole('button', { name: 'Guardar sesión cifrada' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Sesión cifrada' });
+  const password = dialog.getByLabel(/Contraseña de sesión/);
+  const confirmation = dialog.getByLabel('Confirmar contraseña');
+  await password.fill(passphrase);
+  await confirmation.fill(passphrase);
+  await dialog.getByRole('button', { name: 'Descargar archivo cifrado' }).click();
+
+  const alert = page.getByRole('alert');
+  await expect(alert).toContainText('No se pudo guardar la sesión (503)');
+  await expect(alert).not.toContainText(passphrase);
+  // Keep observing until after the error, before starting the successful retry.
+  await page.waitForTimeout(500);
+  expect(downloads).toEqual([]);
+  await expect(dialog).toBeVisible();
+  await expect(password).toHaveValue(passphrase);
+  await expect(confirmation).toHaveValue(passphrase);
+
+  const download = page.waitForEvent('download');
+  await dialog.getByRole('button', { name: 'Descargar archivo cifrado' }).click();
+  expect((await download).suggestedFilename()).toBe('password-checker-session.pwc');
+  await expect(dialog).toBeHidden();
+  expect(downloads).toEqual(['password-checker-session.pwc']);
+  await expect(page.getByRole('alert')).toHaveCount(0);
+});
+
 test('shows errors above an open dialog', async ({ page }) => {
   await sidebar(page).getByRole('button', { name: 'Ajustes' }).click();
   await page.getByRole('button', { name: 'Abrir', exact: true }).click();
