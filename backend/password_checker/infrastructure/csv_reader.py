@@ -24,12 +24,8 @@ def column_key(value):
     return re.sub(r"[\s_-]+", "", value.strip().casefold())
 
 
-def read_export(source, filename, repair_extra_notes=False, diagnostics=None):
-    """Lee una exportacion, validando anchura sin perder columnas silenciosamente.
-
-    Solo repara comas no escapadas de una columna *note* final con permiso
-    explicito. CSV con comillas bien formadas se lee de forma nativa.
-    """
+def read_export(source, filename, diagnostics=None):
+    """Lee una exportacion, validando anchura sin perder columnas silenciosamente."""
     if hasattr(filename, "read"):
         file_context = nullcontext(filename)
     else:
@@ -59,8 +55,6 @@ def read_export(source, filename, repair_extra_notes=False, diagnostics=None):
         if not any(k in keys for k in URL_COLUMNS):
             raise ValueError("Falta columna de URL en {}".format(source))
         expected = len(headers)
-        # En CSV del navegador, una nota sin comillas puede contener comas.
-        # No sabemos si la coma estaba en la contrasena, por eso opt-in.
         note_last = expected > 0 and column_key(headers[-1]) in NOTE_COLUMNS
         url_idx = next((keys[k] for k in URL_COLUMNS if k in keys), None)
         name_idx = next((keys[k] for k in NAME_COLUMNS if k in keys), None)
@@ -92,16 +86,12 @@ def read_export(source, filename, repair_extra_notes=False, diagnostics=None):
             if len(values) > expected:
                 if url_idx is not None and not supported_uri(values[url_idx]):
                     raise ValueError("{}: linea {}: URI fuera de su columna o invalida; se cancela para proteger la contrasena.".format(source, line))
-                if not (repair_extra_notes and note_last and source in ("chrome", "brave")):
-                    hint = (" Revisa comas sin comillas en notas; vuelve a exportar el archivo"
-                            " y comprueba las columnas en privado."
-                            if note_last and source in ("chrome", "brave") else
-                            " Comprueba la exportacion CSV original y su separador.")
-                    raise ValueError("{}: linea {}: {} columnas, esperadas {}.{}".format(
-                        source, line, len(values), expected, hint))
-                values = values[:expected - 1] + [",".join(values[expected - 1:])]
-                if diagnostics is not None:
-                    diagnostics.append((source, line, "nota reconstruida desde columnas extra"))
+                hint = (" Revisa comas sin comillas en notas; vuelve a exportar el archivo"
+                        " y comprueba las columnas en privado."
+                        if note_last and source in ("chrome", "brave") else
+                        " Comprueba la exportacion CSV original y su separador.")
+                raise ValueError("{}: linea {}: {} columnas, esperadas {}.{}".format(
+                    source, line, len(values), expected, hint))
             elif len(values) < expected:
                 # Ausencia del unico ultimo campo 'note' se interpreta como
                 # nota vacia. No completar otras ausencias ambiguas.

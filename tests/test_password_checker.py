@@ -78,12 +78,7 @@ class PasswordCheckerTests(unittest.TestCase):
                 read_export('chrome', self.chrome)
             self.assertNotIn('fake-PW', str(error.exception))
 
-    def test_note_repair_and_missing_trailing_note(self):
-        self.chrome.write_text('name,url,username,password,note\nSite,https://test.invalid,alice,fake-PW,note,extra\n', encoding='utf-8')
-        diagnostics = []
-        rows = read_export('chrome', self.chrome, repair_extra_notes=True, diagnostics=diagnostics)
-        self.assertEqual((rows[0].password, rows[0].note), ('fake-PW', 'note,extra'))
-        self.assertTrue(diagnostics)
+    def test_missing_trailing_note_is_completed(self):
         self.chrome.write_text('name,url,username,password,note\nSite,https://test.invalid,alice,fake-PW\n', encoding='utf-8')
         diagnostics = []
         self.assertEqual(read_export('chrome', self.chrome, diagnostics=diagnostics)[0].note, '')
@@ -95,10 +90,10 @@ class PasswordCheckerTests(unittest.TestCase):
         row = read_export('chrome', self.chrome)[0]
         self.assertEqual((row.password, row.note), ('fake,with,commas', 'note,commas'))
 
-    def test_repair_rejects_misaligned_uri(self):
+    def test_rejects_misaligned_uri(self):
         self.chrome.write_text('name,url,username,password,note\nRed,social,mensajero,android://FAKE@com.example.social/,user42,fake-password-123,\n', encoding='utf-8')
         with self.assertRaises(ValueError) as error:
-            read_export('chrome', self.chrome, repair_extra_notes=True)
+            read_export('chrome', self.chrome)
         self.assertIn('URI fuera de su columna', str(error.exception))
         self.assertNotIn('fake-password-123', str(error.exception))
 
