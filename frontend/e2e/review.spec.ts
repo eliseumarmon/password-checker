@@ -354,6 +354,118 @@ test('saves an encrypted session and opens it again', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Credenciales');
 });
 
+test('clears save session passwords after cancelling and reopening', async ({ page }) => {
+  const open = page.getByRole('button', { name: 'Guardar sesión cifrada' });
+  const dialog = page.getByRole('dialog', { name: 'Sesión cifrada' });
+  await open.click();
+  await dialog.getByLabel(/Contraseña de sesión/).fill('fictional-session-passphrase');
+  await dialog.getByLabel('Confirmar contraseña').fill('fictional-session-confirmation');
+  await dialog.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(dialog).toHaveCount(0);
+
+  await open.click();
+  await expect(dialog.getByLabel(/Contraseña de sesión/)).toHaveValue('');
+  await expect(dialog.getByLabel('Confirmar contraseña')).toHaveValue('');
+});
+
+test('clears load session password and file after closing and reopening', async ({ page }) => {
+  const loadRequests: string[] = [];
+  page.on('request', request => {
+    if (request.url().endsWith('/api/session/load')) loadRequests.push(request.url());
+  });
+  await sidebar(page).getByRole('button', { name: 'Ajustes' }).click();
+  const open = page.getByRole('button', { name: 'Abrir', exact: true });
+  const dialog = page.getByRole('dialog', { name: 'Sesión cifrada' });
+  await open.click();
+  const file = dialog.getByLabel('Archivo cifrado');
+  await file.setInputFiles({ name: 'fictional-session.pwc', mimeType: 'application/octet-stream', buffer: Buffer.from('fictional encrypted session') });
+  await dialog.getByLabel(/Contraseña de sesión/).fill('fictional-session-passphrase');
+  await expect(file).toHaveValue(/fictional-session\.pwc$/);
+  await dialog.getByRole('button', { name: 'Cerrar' }).click();
+  await expect(dialog).toHaveCount(0);
+
+  await open.click();
+  await expect(dialog.getByLabel(/Contraseña de sesión/)).toHaveValue('');
+  await expect(file).toHaveValue('');
+  expect(await file.evaluate((input: HTMLInputElement) => input.files?.length)).toBe(0);
+  await dialog.getByLabel(/Contraseña de sesión/).fill('fictional-session-passphrase');
+  await dialog.getByRole('button', { name: 'Abrir sesión' }).click();
+  await expect(page.getByRole('alert')).toContainText('Selecciona el archivo cifrado');
+  expect(loadRequests).toEqual([]);
+});
+
+test('clears session fields after closing with the backdrop', async ({ page }) => {
+  await sidebar(page).getByRole('button', { name: 'Ajustes' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Sesión cifrada' });
+  const password = dialog.getByLabel(/Contraseña de sesión/);
+  const confirmation = dialog.getByLabel('Confirmar contraseña');
+  const file = dialog.getByLabel('Archivo cifrado');
+  const backdrop = page.locator('.modal-overlay');
+
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click();
+  await password.fill('fictional-save-passphrase');
+  await confirmation.fill('fictional-save-confirmation');
+  await backdrop.click({ position: { x: 5, y: 5 } });
+  await expect(dialog).toHaveCount(0);
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click();
+  await expect(password).toHaveValue('');
+  await expect(confirmation).toHaveValue('');
+  await dialog.getByRole('button', { name: 'Cancelar' }).click();
+
+  await page.getByRole('button', { name: 'Abrir', exact: true }).click();
+  await password.fill('fictional-load-passphrase');
+  await file.setInputFiles({ name: 'fictional-session.pwc', mimeType: 'application/octet-stream', buffer: Buffer.from('fictional encrypted session') });
+  await backdrop.click({ position: { x: 5, y: 5 } });
+  await expect(dialog).toHaveCount(0);
+  await page.getByRole('button', { name: 'Abrir', exact: true }).click();
+  await expect(password).toHaveValue('');
+  await expect(file).toHaveValue('');
+  expect(await file.evaluate((input: HTMLInputElement) => input.files?.length)).toBe(0);
+});
+
+test('keeps session fields empty when switching between save and load', async ({ page }) => {
+  await page.route('**/api/session/save', route => route.fulfill({
+    status: 503, contentType: 'application/json', body: JSON.stringify({ detail: 'Fallo ficticio' }),
+  }), { times: 1 });
+  await sidebar(page).getByRole('button', { name: 'Ajustes' }).click();
+  const save = page.getByRole('button', { name: 'Guardar', exact: true });
+  const load = page.getByRole('button', { name: 'Abrir', exact: true });
+  const dialog = page.getByRole('dialog', { name: 'Sesión cifrada' });
+  const password = dialog.getByLabel(/Contraseña de sesión/);
+  const confirmation = dialog.getByLabel('Confirmar contraseña');
+  const file = dialog.getByLabel('Archivo cifrado');
+
+  await save.click();
+  await password.fill('fictional-save-passphrase');
+  await confirmation.fill('fictional-save-passphrase');
+  await dialog.getByRole('button', { name: 'Descargar archivo cifrado' }).click();
+  await expect(page.getByRole('alert')).toContainText('Fallo ficticio');
+  await expect(password).toHaveValue('fictional-save-passphrase');
+  await expect(confirmation).toHaveValue('fictional-save-passphrase');
+  await dialog.getByRole('button', { name: 'Cancelar' }).click();
+  await load.click();
+  await expect(password).toHaveValue('');
+  await expect(file).toHaveValue('');
+  await dialog.getByRole('button', { name: 'Cancelar' }).click();
+  await save.click();
+  await expect(password).toHaveValue('');
+  await expect(confirmation).toHaveValue('');
+  await dialog.getByRole('button', { name: 'Cancelar' }).click();
+
+  await load.click();
+  await password.fill('fictional-load-passphrase');
+  await file.setInputFiles({ name: 'fictional-session.pwc', mimeType: 'application/octet-stream', buffer: Buffer.from('fictional encrypted session') });
+  await dialog.getByRole('button', { name: 'Cancelar' }).click();
+  await save.click();
+  await expect(password).toHaveValue('');
+  await expect(confirmation).toHaveValue('');
+  await dialog.getByRole('button', { name: 'Cancelar' }).click();
+  await load.click();
+  await expect(password).toHaveValue('');
+  await expect(file).toHaveValue('');
+  expect(await file.evaluate((input: HTMLInputElement) => input.files?.length)).toBe(0);
+});
+
 test('shows and enforces the session password minimum', async ({ page }) => {
   await page.getByRole('button', { name: 'Guardar sesión cifrada' }).click();
   const dialog = page.getByRole('dialog', { name: 'Sesión cifrada' });

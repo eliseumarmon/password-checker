@@ -34,7 +34,7 @@ Ya resueltos y fuera de esta lista: papelera sin cambios (`247e830`), regla de �
 - [x] T11. Importar arrastrando CSV a la bienvenida y con «Importar otros CSV». (R3-single-file-input-untested, trozo 5)
 - [x] T12. Errores de descarga con `detail` que no es texto, cuerpo que no es JSON y fallo al guardar sesión. (R3-001, trozo 6)
 - [x] T13. La tarjeta móvil de «Todas» muestra `Web`/`Android`. (R3-mobile-type-label, trozo 4)
-- [ ] T14. El diálogo de sesión se abre vacío tras cerrarlo con datos escritos. (R3-session-secret-reset-untested, trozo 4)
+- [x] T14. El diálogo de sesión se abre vacío tras cerrarlo con datos escritos. (R3-session-secret-reset-untested, trozo 4)
 - [ ] T15. Detección de Firefox con variantes de cabecera (`http_realm`, espacios). (R2-002, R3-header-key-normalization, trozo 2)
 
 ### Interfaz (S3)
