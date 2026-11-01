@@ -154,6 +154,24 @@ test('keeps drawer actions visible and saves edits', async ({ page }) => {
   await expect(page.locator('.desktop-table')).toContainText('Conflict renamed');
 });
 
+test('preserves review options and saves the selected state', async ({ page }) => {
+  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  const row = page.locator('.desktop-table').getByRole('row', { name: /carol/ });
+  await row.getByRole('button', { name: 'Editar' }).click();
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  const select = editor.getByLabel('Estado de revisión');
+  await expect(select.locator('option')).toHaveText([
+    'Pendiente', 'Revisada (sin verificar acceso)', 'Verificada manualmente', 'No funciona',
+  ]);
+  await expect(select).toHaveValue('pending');
+  await select.selectOption('verified');
+  await editor.getByRole('button', { name: 'Guardar cambios' }).click();
+  await expect(editor).toBeHidden();
+  await expect(row).toContainText('Verificada');
+  await row.getByRole('button', { name: 'Editar' }).click();
+  await expect(select).toHaveValue('verified');
+});
+
 test('merges exact copies into the trash and can undo it', async ({ page }) => {
   await page.getByRole('button', { name: 'Fusionar copias exactas' }).click();
   await expect(metric(page, 'En la papelera')).toHaveText('1');
