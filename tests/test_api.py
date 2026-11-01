@@ -77,6 +77,8 @@ class APITests(unittest.TestCase):
     def test_save_and_restore_session(self):
         payload = b'name,url,username,password,note\nA,https://example.org/login,alice,fictional-123456,\n'
         imported = self.client.post('/api/import', files=[('files', ('chrome.csv', payload, 'text/csv'))]).json()
+        self.assertNotIn('session_saved', imported)
+        self.assertNotIn('session_saved', self.client.get('/api/workspace').json())
         identifier = imported['records'][0]['id']
         self.client.patch('/api/records/' + identifier, json={'review': 'verified'})
         passphrase = 'fictional-session-passphrase-12345'
@@ -93,6 +95,8 @@ class APITests(unittest.TestCase):
                                     files={'file': ('session.pwc', saved.content, 'application/octet-stream')})
         self.assertEqual(restored.status_code, 200, restored.text)
         self.assertEqual(restored.json()['stats']['verified'], 1)
+        self.assertNotIn('session_saved', restored.json())
+        self.assertNotIn('session_saved', self.client.get('/api/workspace').json())
 
     def test_session_passphrase_length_boundary(self):
         payload = b'name,url,username,password,note\nA,https://a.invalid/,alice,fictional-123456,\n'

@@ -86,7 +86,7 @@ def detect_audit(rows: list[Candidate]) -> dict[str, Any]:
 
 
 def review_state(records: list[Candidate], files: list[dict[str, Any]],
-                 can_undo: bool, session_saved: bool) -> dict[str, Any]:
+                 can_undo: bool) -> dict[str, Any]:
     active = [r for r in records if r.included]
     return {
         'files': list(files),
@@ -100,5 +100,4 @@ def review_state(records: list[Candidate], files: list[dict[str, Any]],
             'verified': sum(r.review == 'verified' for r in records),
         },
         'can_undo': can_undo,
-        'session_saved': session_saved,
     }

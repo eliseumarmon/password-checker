@@ -27,7 +27,6 @@ class Workspace:
         self._records: dict[str, Candidate] = {}
         self._files: list[dict[str, Any]] = []
         self._history: list[dict[str, Candidate]] = []
-        self._restored = False
 
     def _checkpoint(self) -> None:
         self._history.append(self._records.copy())
@@ -45,13 +44,12 @@ class Workspace:
             self._records = {r.id: r for r in candidates}
             self._files = metadata
             self._history.clear()
-            self._restored = False
             return self.snapshot()
 
     def snapshot(self) -> dict[str, Any]:
         with self._lock:
             return review_state(list(self._records.values()), self._files,
-                                bool(self._history), self._restored)
+                                bool(self._history))
 
     def get(self, identifier: str) -> dict[str, Any]:
         with self._lock:
@@ -147,5 +145,4 @@ class Workspace:
             self._records = records
             self._files = files
             self._history.clear()
-            self._restored = True
             return self.snapshot()
