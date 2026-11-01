@@ -6,34 +6,34 @@ No HTTP, file or encryption dependencies: the API adapter reads and writes those
 from __future__ import annotations
 
 import threading
+import unicodedata
 from collections import defaultdict
 from dataclasses import dataclass, replace
-from pathlib import Path
 from typing import Any, Sequence
 
 from ..domain.accounts import duplicate_key
 from ..domain.credential import Credential
 from ..domain.notes import combine_notes
 from .candidate import ALLOWED_REVIEW, Candidate, identity
+from .limits import MAX_SNAPSHOT_FILE_NAME_CHARS
 from .review_state import detail, review_state
 from .session_snapshot import from_payload, to_payload
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class ImportedFile:
-    """Complete parsed file with a normalized base name."""
+    """Complete parsed file; the caller supplies a valid base name."""
 
     name: str
     source: str
     credentials: Sequence[Credential]
 
     def __post_init__(self) -> None:
-        if not isinstance(self.name, str):
+        if (not isinstance(self.name, str) or not self.name.strip()
+                or self.name in ('.', '..') or '/' in self.name or '\\' in self.name
+                or len(self.name) > MAX_SNAPSHOT_FILE_NAME_CHARS
+                or any(unicodedata.category(char) == 'Cc' for char in self.name)):
             raise ValueError('Nombre de archivo no válido')
-        # The API already supplies a base name for source detection. Direct callers
-        # may supply a path, which is normalized here before storing metadata.
-        if '/' in self.name or self.name == '.':
-            object.__setattr__(self, 'name', Path(self.name).name)
         if self.source not in ('chrome', 'brave', 'firefox'):
             raise ValueError('Origen de archivo no válido')
         object.__setattr__(self, 'credentials', tuple(self.credentials))

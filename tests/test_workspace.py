@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from backend.password_checker.infrastructure.bitwarden import bitwarden_csv_bytes
 from backend.password_checker.application.candidate import Candidate
+from backend.password_checker.application.limits import MAX_SNAPSHOT_FILE_NAME_CHARS
 from backend.password_checker.application.workspace import ImportedFile, Workspace
 from auditar_contrasenas_local import Credential
 
@@ -103,26 +104,34 @@ class WorkspaceTests(unittest.TestCase):
 
     def test_import_replaces_records_and_keeps_file_metadata(self):
         self.workspace.merge_exact()
-        result = self.workspace.import_files([ImportedFile('dir/passwords.csv', 'firefox', [cred('A', 'https://a.invalid', 'u', 'fake-123')])])
+        result = self.workspace.import_files([ImportedFile(name='passwords.csv', source='firefox', credentials=[cred('A', 'https://a.invalid', 'u', 'fake-123')])])
         self.assertEqual(result['files'], [{'name': 'passwords.csv', 'source': 'firefox', 'count': 1}])
         self.assertEqual(result['stats']['total'], 1)
         self.assertFalse(result['can_undo'])
         with self.assertRaises(ValueError):
-            self.workspace.import_files([ImportedFile('empty.csv', 'chrome', [])])
+            self.workspace.import_files([ImportedFile(name='empty.csv', source='chrome', credentials=[])])
 
-    def test_imported_file_is_complete_immutable_and_normalizes_name(self):
+    def test_imported_file_is_complete_immutable_and_validates_name(self):
         rows = [cred('A', 'https://a.invalid', 'u', 'fake-123')]
-        file = ImportedFile('passwords.csv', 'chrome', rows)
+        file = ImportedFile(name=' passwords.csv ', source='chrome', credentials=rows)
         rows.clear()
+        self.assertEqual(file.name, ' passwords.csv ')
         self.assertEqual(len(file.credentials), 1)
         with self.assertRaises(FrozenInstanceError):
             file.name = 'dir/passwords.csv'
         with self.assertRaises(TypeError):
-            ImportedFile('passwords.csv')
+            ImportedFile('passwords.csv', 'chrome', [])
+        with self.assertRaises(TypeError):
+            ImportedFile(name='passwords.csv')
         with self.assertRaises(ValueError):
-            ImportedFile('passwords.csv', '', [])
-        self.assertEqual(ImportedFile('dir/passwords.csv', 'chrome', []).name, 'passwords.csv')
-        self.assertEqual(ImportedFile('.', 'chrome', []).name, '')
+            ImportedFile(name='passwords.csv', source='', credentials=[])
+        for name in ('', '  ', '.', '..', 'dir/passwords.csv', r'dir\passwords.csv',
+                     'bad\x00.csv', 'bad\x7f.csv', 'bad\x85.csv',
+                     'x' * (MAX_SNAPSHOT_FILE_NAME_CHARS + 1)):
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                ImportedFile(name=name, source='chrome', credentials=[])
+        longest = 'x' * MAX_SNAPSHOT_FILE_NAME_CHARS
+        self.assertEqual(ImportedFile(name=longest, source='chrome', credentials=[]).name, longest)
 
     def test_partial_updates_cannot_change_id_or_original(self):
         identifier = self.workspace.snapshot()['records'][0]['id']

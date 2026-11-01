@@ -55,6 +55,16 @@ class APITests(unittest.TestCase):
             {'name': 'Brave Passwords.csv', 'source': 'brave', 'count': 1},
         ])
 
+    def test_import_rejects_name_too_long_for_session_metadata(self):
+        payload = b'name,url,username,password,note\nA,https://a.invalid/,alice,fictional-123456,\n'
+        accepted_name = 'x' * 1020 + '.csv'
+        accepted = self.client.post('/api/import', files=[('files', (accepted_name, payload, 'text/csv'))])
+        self.assertEqual(accepted.status_code, 200, accepted.text)
+        before = workspace.snapshot()
+        rejected = self.client.post('/api/import', files=[('files', ('x' + accepted_name, payload, 'text/csv'))])
+        self.assertEqual(rejected.status_code, 422, rejected.text)
+        self.assertEqual(workspace.snapshot(), before)
+
     def test_import_is_all_files_or_none(self):
         good = b'name,url,username,password,note\nA,https://a.invalid/,alice,fictional-123456,\n'
         self.client.post('/api/import', files=[('files', ('chrome.csv', good, 'text/csv'))])
