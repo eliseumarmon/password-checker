@@ -1,4 +1,4 @@
-import type { CredentialSummary, DuplicateGroup, Review, Screen } from './types';
+import type { CredentialType, DuplicateGroup, Review, Screen } from './types';
 
 export const SCREENS: { id: Screen; icon: string; label: string; title: string }[] = [
   { id: 'credentials', icon: '▤', label: 'Credenciales', title: 'Credenciales' },
@@ -15,6 +15,6 @@ export function labelGroup(kind: DuplicateGroup['kind']): string {
   return ({ exact: 'Copia exacta', conflict: 'Contraseñas diferentes', 'multiple-accounts': 'Varias cuentas' })[kind];
 }
 
-export function labelType(type: CredentialSummary['type']): string {
+export function labelType(type: CredentialType): string {
   return type === 'android' ? 'Android' : 'Web';
 }
