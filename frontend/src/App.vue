@@ -136,7 +136,7 @@ onMounted(async () => { await store.execute(api.state); });
     <aside class="sidebar" :class="{collapsed}" aria-label="Navegación principal">
       <button class="brand" :aria-label="collapsed?'Expandir menú':'Contraer menú'" :title="collapsed?'Expandir menú':'Contraer menú'" :aria-expanded="!collapsed" @click="collapsed=!collapsed"><span class="brand-mark">◇</span><span class="label"><strong>Password Checker</strong><small>Revisión privada de credenciales</small></span></button>
       <nav>
-        <button v-for="s in SCREENS" :key="s.id" :class="{active:screen===s.id}" :title="s.isTrash?`${s.label} (${trashed.length})`:s.label" @click="screen=s.id"><span class="nav-icon"><TrashIcon v-if="s.isTrash" /><template v-else>{{s.icon}}</template></span><span class="label">{{s.label}}<template v-if="s.isTrash"> ({{trashed.length}})</template></span></button>
+        <button v-for="s in SCREENS" :key="s.id" :class="{active:screen===s.id}" :title="s.showCount?`${s.label} (${trashed.length})`:s.label" @click="screen=s.id"><span class="nav-icon"><TrashIcon v-if="s.icon.kind==='trash'" /><template v-else>{{s.icon.text}}</template></span><span class="label">{{s.label}}<template v-if="s.showCount"> ({{trashed.length}})</template></span></button>
       </nav>
       <p class="sidebar-note label">Solo en este equipo · Sin conexión externa</p>
     </aside>
@@ -182,6 +182,6 @@ onMounted(async () => { await store.execute(api.state); });
     <!-- Outside the sticky header, which is its own stacking layer, so it stays above dialogs. -->
     <div v-if="store.error" class="error" role="alert">{{store.error}} <button @click="store.error=''" aria-label="Cerrar aviso">×</button></div>
     <SessionDialog v-if="sessionMode" :mode="sessionMode" :busy="store.busy" @close="closeSession" @submit="submitSession" />
-    <nav class="mobile-nav" aria-label="Navegación móvil"><button v-for="s in SCREENS" :key="s.id" :class="{active:screen===s.id}" @click="screen=s.id"><TrashIcon v-if="s.isTrash" /><template v-else>{{s.icon}}</template><span>{{s.label}}</span></button></nav>
+    <nav class="mobile-nav" aria-label="Navegación móvil"><button v-for="s in SCREENS" :key="s.id" :class="{active:screen===s.id}" @click="screen=s.id"><TrashIcon v-if="s.icon.kind==='trash'" /><template v-else>{{s.icon.text}}</template><span>{{s.label}}</span></button></nav>
   </div>
 </template>

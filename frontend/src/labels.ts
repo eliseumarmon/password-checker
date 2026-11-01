@@ -1,10 +1,12 @@
 import type { CredentialType, DuplicateGroup, Review, Screen } from './types';
 
-export const SCREENS: { id: Screen; icon: string; label: string; title: string; isTrash: boolean }[] = [
-  { id: 'credentials', isTrash: false, icon: '▤', label: 'Credenciales', title: 'Credenciales' },
-  { id: 'audit', isTrash: false, icon: '⬡', label: 'Auditoría', title: 'Auditoría local' },
-  { id: 'trash', isTrash: true, icon: '', label: 'Papelera', title: 'Papelera' },
-  { id: 'settings', isTrash: false, icon: '⚙', label: 'Ajustes', title: 'Ajustes' },
+type ScreenIcon = { kind: 'glyph'; text: string } | { kind: 'trash' };
+
+export const SCREENS: { id: Screen; icon: ScreenIcon; label: string; title: string; showCount: boolean }[] = [
+  { id: 'credentials', icon: { kind: 'glyph', text: '▤' }, label: 'Credenciales', title: 'Credenciales', showCount: false },
+  { id: 'audit', icon: { kind: 'glyph', text: '⬡' }, label: 'Auditoría', title: 'Auditoría local', showCount: false },
+  { id: 'trash', icon: { kind: 'trash' }, label: 'Papelera', title: 'Papelera', showCount: true },
+  { id: 'settings', icon: { kind: 'glyph', text: '⚙' }, label: 'Ajustes', title: 'Ajustes', showCount: false },
 ];
 
 export function labelReview(review: Review): string {
