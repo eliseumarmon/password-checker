@@ -1,8 +1,8 @@
 # Password Checker — Guía visual y de interacción
 
-> **Propuesta de diseño v0.1 · 29 de octubre de 2026 · Pendiente de aprobación.**
+> **Propuesta de diseño v0.1 · 29 de octubre de 2026.**
 >
-> Este documento define la experiencia prevista, **no declara funcionalidad implementada**. Se complementa con [Flujo de usuario y validación](flujo-usuario.md).
+> Las secciones siguientes describen propuestas y criterios de diseño, no una lista de funciones disponibles. Consulta el [estado de implementación](implementacion-v0.1.md) y el [flujo disponible](flujo-usuario.md) para conocer el comportamiento actual. La sesión cifrada manual sí está implementada; no hay bloqueo automático ni vista previa detallada de exportación.
 
 ## 1. Concepto estético
 
@@ -162,8 +162,8 @@ Acción transversal visible: **Guardar sesión cifrada** (cuando haya una sesió
 
 ## 7. Diseño de datos sensibles
 
-- **No guardar credenciales en `localStorage`, `sessionStorage`, `IndexedDB` ni cachés del navegador**. Mantener sesión activa en el proceso local; se requerirá modelo de amenazas y controles del servidor antes de implementarlo.
-- Una sesión para reanudar debe persistirse **cifrada con criptografía estándar autenticada y derivación robusta de clave**, con frase de paso elegida por el usuario. No inventar cifrado; no guardar la frase en el proyecto. Es una **propuesta de requisito**, no una funcionalidad existente.
+- **No guardar credenciales en `localStorage`, `sessionStorage`, `IndexedDB` ni cachés del navegador**. La sesión activa reside en el proceso local; la preferencia de menú contraído se guarda en `localStorage` sin credenciales.
+- Una sesión para reanudar debe persistirse **cifrada con criptografía estándar autenticada y derivación robusta de clave**, con frase de paso elegida por el usuario. No inventar cifrado; no guardar la frase en el proyecto. El guardado manual de sesión cifrada ya está implementado.
 - No guardar contraseñas en trazas, logs, informes Markdown, telemetría ni URLs. Escapar todos los datos CSV antes de pintarlos en el DOM (el CSV es entrada no confiable). Proteger contra peticiones de otras páginas al servicio local.
 - No hacer peticiones a Internet para iconos, fuentes, analítica, imágenes o JS; las pruebas de acceso web solo ocurren tras clic explícito en el enlace.
 - No añadir botón «Comprobar todas las cuentas automáticamente»: evita bloqueos, CAPTCHAs y exposición de credenciales.
@@ -193,4 +193,4 @@ Acción transversal visible: **Guardar sesión cifrada** (cuando haya una sesió
 - Sincronización con Bitwarden mediante API; primera etapa es CSV.
 - Iconos/favicons descargados de servicios externos.
 
-**Estado:** diseño propuesto para aprobación, sin implementación de UI ni cambios de comportamiento aprobados por esta guía.
+**Estado:** propuesta de diseño; consulta el [estado de implementación](implementacion-v0.1.md) para distinguir las funciones disponibles de las pendientes.

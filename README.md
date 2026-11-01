@@ -33,7 +33,7 @@ El dominio en `backend/password_checker/domain/` contiene las reglas puras. `app
 python -m unittest discover -s tests -v
 ```
 
-Las pruebas utilizan credenciales ficticias. Para las pruebas E2E de la interfaz:
+Instala antes las dependencias del backend indicadas en la guía de instalación. Las pruebas utilizan credenciales ficticias. Para las pruebas E2E de la interfaz:
 
 ```bash
 cd frontend

@@ -7,32 +7,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from backend.password_checker.infrastructure.csv_reader import read_export
+from backend.password_checker.infrastructure.csv_reader import read_upload
 
 
-class PasswordCheckerTests(unittest.TestCase):
+class CsvUploadTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         self.chrome = self.root / 'chrome.csv'
-        self.brave = self.root / 'brave.csv'
-        self.firefox = self.root / 'firefox.csv'
-        self._csv(self.chrome,
-                  ['name', 'url', 'username', 'password', 'note'],
-                  [['GitHub', 'https://github.com/login', 'alice', 'fake-correct-123456', 'nota, con coma\n y salto de linea'],
-                   ['GitHub', 'https://github.com/login', 'alice', 'fake-old-123456789', 'vieja'],
-                   ['Otro', 'https://service.invalid', 'bob', 'fake-correct-123456', '']])
-        self._csv(self.brave,
-                  ['name', 'url', 'username', 'password', 'note'],
-                  [['GH', 'https://github.com/login', 'alice', 'fake-correct-123456', 'otra nota']])
-        self._csv(self.firefox,
-                  ['url', 'username', 'password', 'httpRealm', 'formActionOrigin', 'guid',
-                   'timeCreated', 'timeLastUsed', 'timePasswordChanged'],
-                  [['https://github.com/login', 'alice', 'fake-correct-123456', '',
-                    'https://github.com', 'guid-ficticio', '1710000', '1720000', '1730000'],
-                   ['https://basic.invalid/path', 'bob', 'fake-strong-123456', 'Area privada',
-                    '', 'guid-ficticio-2', '1710001', '1720001', '1730001']])
 
     @staticmethod
     def _csv(path, headers, rows):
@@ -46,18 +29,16 @@ class PasswordCheckerTests(unittest.TestCase):
             'name,url,username,password,note\n'
             'Red social,mensajero,android://FAKE@com.example.social/,user42,fake-password-123,\n',
             encoding='utf-8')
-        diagnostics = []
-        rows = read_export('chrome', self.chrome, diagnostics=diagnostics)
+        rows = read_upload('chrome.csv', self.chrome.read_bytes())[1]
         self.assertEqual(rows[0].name, 'Red social,mensajero')
         self.assertEqual(rows[0].username, 'user42')
         self.assertEqual(rows[0].password, 'fake-password-123')
-        self.assertEqual(len(diagnostics), 1)
 
     def test_android_uri_no_title_comma(self):
         uri = 'android://FAKE@com.example.shop/'
         self._csv(self.chrome, ['name','url','username','password','note'],
                   [['Shop',uri,'user42','fake-password-123','']])
-        rows = read_export('chrome', self.chrome)
+        rows = read_upload('chrome.csv', self.chrome.read_bytes())[1]
         self.assertEqual(rows[0].url, uri)
         self.assertEqual(rows[0].password, 'fake-password-123')
 
@@ -66,7 +47,7 @@ class PasswordCheckerTests(unittest.TestCase):
             'name,url,username,password,note\n'
             'Red social,mensajero,android://FAKE@com.example.social/,user42,fake-password-123\n',
             encoding='utf-8')
-        rows = read_export('chrome', self.chrome)
+        rows = read_upload('chrome.csv', self.chrome.read_bytes())[1]
         self.assertEqual(rows[0].name, 'Red social,mensajero')
         self.assertEqual(rows[0].note, '')
 
@@ -75,32 +56,44 @@ class PasswordCheckerTests(unittest.TestCase):
                     'Site,https://test.invalid,alice'):
             self.chrome.write_text('name,url,username,password,note\n' + row + '\n', encoding='utf-8')
             with self.assertRaises(ValueError) as error:
-                read_export('chrome', self.chrome)
+                read_upload('chrome.csv', self.chrome.read_bytes())[1]
             self.assertNotIn('fake-PW', str(error.exception))
 
     def test_missing_trailing_note_is_completed(self):
         self.chrome.write_text('name,url,username,password,note\nSite,https://test.invalid,alice,fake-PW\n', encoding='utf-8')
-        diagnostics = []
-        self.assertEqual(read_export('chrome', self.chrome, diagnostics=diagnostics)[0].note, '')
-        self.assertTrue(diagnostics)
+        self.assertEqual(read_upload('chrome.csv', self.chrome.read_bytes())[1][0].note, '')
 
     def test_comma_in_quoted_password(self):
         self._csv(self.chrome, ['name', 'url', 'username', 'password', 'note'],
                   [['Site', 'https://test.invalid', 'alice', 'fake,with,commas', 'note,commas']])
-        row = read_export('chrome', self.chrome)[0]
+        row = read_upload('chrome.csv', self.chrome.read_bytes())[1][0]
         self.assertEqual((row.password, row.note), ('fake,with,commas', 'note,commas'))
 
     def test_rejects_misaligned_uri(self):
         self.chrome.write_text('name,url,username,password,note\nRed,social,mensajero,android://FAKE@com.example.social/,user42,fake-password-123,\n', encoding='utf-8')
         with self.assertRaises(ValueError) as error:
-            read_export('chrome', self.chrome)
+            read_upload('chrome.csv', self.chrome.read_bytes())[1]
         self.assertIn('URI fuera de su columna', str(error.exception))
         self.assertNotIn('fake-password-123', str(error.exception))
 
     def test_semicolon_diagnostic(self):
         self.chrome.write_text('name;url;username;password;note\nSite;https://test.invalid;alice;abc;note\n', encoding='utf-8')
         with self.assertRaisesRegex(ValueError, 'punto y coma'):
-            read_export('chrome', self.chrome)
+            read_upload('chrome.csv', self.chrome.read_bytes())[1]
+
+    def test_bom_quoted_comma_and_multiline_note(self):
+        data = ('name,url,username,password,note\n'
+                'Ejemplo,https://example.invalid/login,user,"fake,secret","linea 1\nlinea 2"\n')
+        source, rows = read_upload('chrome.csv', data.encode('utf-8-sig'))
+        self.assertEqual(source, 'chrome')
+        self.assertEqual((rows[0].password, rows[0].note), ('fake,secret', 'linea 1\nlinea 2'))
+
+    def test_firefox_realm_is_preserved_in_note(self):
+        data = (b'url,username,password,httpRealm,formActionOrigin,guid,timeCreated,timeLastUsed,timePasswordChanged\n'
+                b'https://basic.invalid/path,bob,fake-secret,Private,,,,,\n')
+        source, rows = read_upload('export.csv', data)
+        self.assertEqual(source, 'firefox')
+        self.assertEqual(rows[0].note, 'Firefox HTTP realm: Private')
 
 
 if __name__ == '__main__':

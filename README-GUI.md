@@ -22,7 +22,7 @@ Abrir `http://127.0.0.1:8000` en el mismo ordenador. El proceso solo escucha en 
 
 Desarrollo: ejecutar `python app.py` y, en otra terminal, `cd frontend && npm run dev`; Vite crea un proxy de `/api` y muestra la interfaz en `http://127.0.0.1:5173`.
 
-Pruebas del motor sin instalar la interfaz:
+Pruebas del backend (con las dependencias de `backend/requirements.txt` instaladas):
 
 ```bash
 python -m unittest discover -s tests -v
@@ -43,4 +43,4 @@ Durante la revisión, pulsa **Guardar sesión cifrada** e introduce una contrase
 - `Exportar Bitwarden` descarga un CSV en texto plano; elimina su copia cuando hayas verificado la migración.
 - No hay comprobación de filtraciones de datos ni automatización de logins.
 
-Ver [estado de implementación](docs/implementacion-v0.1.md), [guía visual](docs/guia-visual.md) y [flujo de usuario](docs/flujo-usuario.md).
+Ver [estado de implementación](docs/implementacion-v0.1.md), [guía visual propuesta](docs/guia-visual.md) y [flujo de usuario](docs/flujo-usuario.md).

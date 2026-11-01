@@ -1,28 +1,24 @@
-# Primer incremento funcional (v0.1)
+# Estado de implementación
 
-**Estado:** funcionalidad implementada, no equivale a completar toda la propuesta de UX. No se ha probado todavía con personas ni con contraseñas reales.
+La aplicación es una interfaz local FastAPI + Vue 3 para revisar credenciales y exportarlas en formato Bitwarden. Requiere Python 3.12 o posterior. No se han realizado pruebas observadas con personas ni con contraseñas reales.
 
 ## Implementado
 
-- FastAPI exclusivamente en `127.0.0.1:8000`, origen comprobado, host permitido, sin telemetría, cabeceras `no-store`.
-- Vue 3 + TypeScript + PrimeVue, diseño oscuro adaptable a móvil y escritorio.
-- Selección múltiple de CSV; importación transaccional; compatibilidad mediante el parser existente.
-- Credenciales de origen inmutables y candidatos editables; claves ocultas al iniciar cada editor.
-- Vista de duplicados y conflictos, con comparador URL/usuario/contraseña y procedencia.
-- Ordenar y buscar en tabla, filtrar web/Android, solo pendientes, editar todos los campos.
-- Auditoría offline de reutilización, debilidad básica y campos incompletos. Filtraciones **no comprobadas**.
-- Revisada/verificada/incorrecta, edición de contraseña invalida verificación, exclusión reversible, deshacer (30 operaciones).
-- Guardado voluntario de sesión cifrada `.pwc` con Argon2id + AES-256-GCM, integridad autenticada y reapertura sin pérdida de progreso.
-- Fusión de copias exactas **solo bajo petición** y CSV Bitwarden descargado tras confirmación.
+- `app.py` inicia el servidor en `127.0.0.1:8000`. La API valida origen y host y envía cabeceras `no-store`. La interfaz no utiliza telemetría ni fuentes externas.
+- La importación admite hasta 15 CSV, 5 MiB por archivo y 20 MiB en total. Se aplica de forma transaccional y reemplaza la sesión anterior tras confirmación en la interfaz.
+- Los originales se mantienen inmutables; los candidatos se pueden editar, marcar como pendientes, revisados, verificados o incorrectos, descartar y restaurar. Cambiar la identidad o la contraseña invalida la verificación. El historial en memoria permite deshacer hasta 30 operaciones.
+- Hay listas de duplicados y registros, búsqueda y filtros, un comparador de coincidencias con procedencia y un editor individual con contraseña oculta inicialmente. La fusión de copias exactas requiere confirmación y conserva notas distintas.
+- La auditoría local identifica reutilización, debilidad básica y datos incompletos. No comprueba filtraciones ni inicia sesión en servicios.
+- La sesión se puede descargar manualmente en `.pwc` con Argon2id y AES-256-GCM y abrir más tarde. Se recuperan los registros, ediciones y estados guardados; no se recuperan el historial de deshacer ni los filtros o la pantalla seleccionada.
+- La exportación descarga un CSV Bitwarden tras confirmar el número incluido y los grupos con conflicto. La interfaz presenta tablas en escritorio y tarjetas en pantallas pequeñas.
+- Hay pruebas unitarias, de API y E2E con datos ficticios. El dominio puro vive en `backend/password_checker/domain/`, el espacio de revisión en `application/`, los adaptadores en `infrastructure/` y la API conecta con `frontend/src/`.
 
-## Pendientes explícitos
+## Limitaciones y trabajo pendiente
 
-1. **Guardado manual:** el progreso permanece en memoria mientras la aplicación está abierta. Para continuar otro día hay que descargar una sesión `.pwc` cifrada y reabrirla más tarde; **no hay autosalvado**. Perder el archivo o su contraseña implica perder ese progreso. El historial de deshacer no se guarda al cerrar.
-2. **Multipart HTTP:** el parser del framework podría almacenar temporalmente ficheros grandes mientras recibe la solicitud; mantener límites estrictos y revisar esta superficie. El parser CSV propio ya funciona sobre flujos en memoria sin crear archivos temporales explícitos.
-3. Comparación A/B con más información de los originales (notas, variantes, usuario en dos paneles) y pruebas de accesibilidad/teclado.
-4. Validación segura de enlaces Android: el identificador del paquete no permite abrir la app automáticamente desde cualquier navegador.
-5. Mejor evaluación local de fortaleza (p.ej. zxcvbn, sin usar servicios externos).
-6. Pruebas E2E, revisión de dependencia/CI frontend y validación con usuarios.
-7. Separación por capas: **hecho** el núcleo de dominio puro (`backend/password_checker/domain/`), el espacio de revisión en `application/` y la conexión a infraestructura mediante `api.py`. `frontend/src/App.vue` contiene el estado y las llamadas a la API; las pantallas y diálogos viven en `frontend/src/components/`.
+- El progreso solo se conserva mientras el backend está activo o si se descarga una sesión cifrada. No hay guardado automático, bloqueo por inactividad ni recuperación de contraseña.
+- El parser multipart del framework podría usar almacenamiento temporal durante las subidas. El lector CSV propio procesa los datos en memoria y no crea archivos temporales explícitos.
+- El comparador muestra coincidencias y procedencia, pero no ofrece una comparación completa de contraseñas y notas originales. Cada registro se abre por separado para editarlo. No hay una vista previa detallada de la exportación.
+- El identificador de paquete Android no garantiza un enlace para abrir la aplicación. El acceso desde móvil mediante ADB requiere configuración adicional.
+- Siguen pendientes la validación con usuarios, una revisión más amplia de accesibilidad y teclado, la revisión de dependencias y CI frontend, y una evaluación local de fortaleza más completa.
 
-**No debe afirmarse** que se han implementado funciones pendientes. La exportación CSV y las importaciones contienen secretos en claro; almacenar y borrar de acuerdo con el modelo de amenazas documentado.
+Los CSV importados y exportados contienen secretos en texto plano. Protege también el archivo cifrado, que incluye credenciales y notas originales.
