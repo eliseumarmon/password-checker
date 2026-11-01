@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Audita y unifica CSV de Chrome, Brave y Firefox para importar en Bitwarden.
 
-Python 3.9+; solo biblioteca estandar; no accede a Internet.
+Python 3.12+; solo biblioteca estandar; no accede a Internet.
 Por defecto SOLO simula e informa. --apply --output RUTA crea un unico CSV
 SIN sobrescribir archivos existentes. Conserva las contrasenas en conflicto
 como registros separados para que puedas decidir cual es valida.
