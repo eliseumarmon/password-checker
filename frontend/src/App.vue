@@ -57,11 +57,11 @@ function errorMessage(error: unknown): void {
 
 async function loadFileList(files: FileList | File[]): Promise<void> {
   const selectedFiles = Array.from(files).filter(file => file.name.toLowerCase().endsWith('.csv'));
+  if (fileInput.value) fileInput.value.value = '';
   if (!selectedFiles.length) { store.error = 'Selecciona archivos CSV'; return; }
   if (data.value?.stats.total && !window.confirm('Importar reemplazará la sesión actual sin guardar. ¿Continuar?')) return;
   await store.execute(() => api.importFiles(selectedFiles));
   selectedGroup.value = null; selected.value = null; subtab.value = 'duplicates'; screen.value = 'credentials';
-  if (fileInput.value) fileInput.value.value = '';
 }
 function openGroup(group: DuplicateGroup): void {
   selectedGroup.value = group; selected.value = null;
