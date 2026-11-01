@@ -95,11 +95,33 @@ class CsvUploadTests(unittest.TestCase):
         self.assertEqual(source, 'firefox')
         self.assertEqual(rows[0].note, 'Firefox HTTP realm: Private')
 
+    def test_firefox_realm_header_variants_detect_and_preserve_realm(self):
+        for header in ('http_realm', 'HTTP_REALM', 'Http-Realm', ' httpRealm ', 'http realm', '\thttp\tRealm\t'):
+            with self.subTest(header=header):
+                data = (f'url,username,password,note,{header}\n'
+                        'https://basic.invalid/path,bob,fictional-secret,Existing note,Private realm\n').encode()
+                source, rows = read_upload('Brave Passwords.csv', data)
+                self.assertEqual(source, 'firefox')
+                self.assertEqual(len(rows), 1)
+                self.assertEqual(rows[0].source, 'firefox')
+                self.assertEqual(rows[0].url, 'https://basic.invalid/path')
+                self.assertEqual((rows[0].username, rows[0].password), ('bob', 'fictional-secret'))
+                self.assertEqual(rows[0].note, 'Existing note\n\nFirefox HTTP realm: Private realm')
+
+    def test_realm_like_header_does_not_detect_firefox(self):
+        data = (b'url,username,password,note,http_realm_extra\n'
+                b'https://basic.invalid/path,bob,fictional-secret,Existing note,Private realm\n')
+        source, rows = read_upload('Brave Passwords.csv', data)
+        self.assertEqual(source, 'brave')
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].source, 'brave')
+        self.assertEqual(rows[0].note, 'Existing note')
+
 
 class UploadReaderTests(unittest.TestCase):
     def test_detects_firefox_without_name_hint(self):
-        data = ('url,username,password,httpRealm,formActionOrigin,guid,timeCreated,timeLastUsed,timePasswordChanged\n'
-                'https://example.org/login,alice,fictional-abc-123,,,,,,\n').encode()
+        data = (b'url,username,password,httpRealm,formActionOrigin,guid,timeCreated,timeLastUsed,timePasswordChanged\n'
+                b'https://example.org/login,alice,fictional-abc-123,,,,,,\n')
         source, rows = read_upload('passwords.csv', data)
         self.assertEqual(source, 'firefox')
         self.assertEqual(len(rows), 1)
