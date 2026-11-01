@@ -52,6 +52,17 @@ class APITests(unittest.TestCase):
         self.assertEqual(response.status_code, 422)
         self.assertEqual(workspace.snapshot()['stats']['total'], 1)
 
+    def test_import_file_count_limit_matches_session_metadata(self):
+        payload = b'name,url,username,password,note\nA,https://a.invalid/,alice,fictional-123456,\n'
+        files = [('files', (f'{index}.csv', payload, 'text/csv')) for index in range(16)]
+        accepted = self.client.post('/api/import', files=files[:15])
+        self.assertEqual(accepted.status_code, 200, accepted.text)
+        self.assertEqual(len(accepted.json()['files']), 15)
+        rejected = self.client.post('/api/import', files=files)
+        self.assertEqual(rejected.status_code, 400, rejected.text)
+        self.assertEqual(rejected.json()['detail'], 'Selecciona entre 1 y 15 archivos')
+        self.assertEqual(len(workspace.snapshot()['files']), 15)
+
     def test_trash_many_records_in_one_request(self):
         payload = (b'name,url,username,password,note\n'
                    b'A,https://a.invalid/,alice,fictional-123456,\n'

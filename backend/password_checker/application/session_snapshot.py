@@ -6,6 +6,8 @@ from typing import Any
 
 from ..domain.credential import Credential
 from .candidate import ALLOWED_REVIEW, Candidate
+from .limits import (MAX_SESSION_RECORDS, MAX_SNAPSHOT_FILE_NAME_CHARS,
+                     MAX_SNAPSHOT_TEXT_CHARS, MAX_WORKSPACE_FILES)
 
 
 def to_payload(records: list[Candidate], files: list[dict[str, Any]]) -> dict[str, Any]:
@@ -17,10 +19,10 @@ def from_payload(payload: dict[str, Any]) -> tuple[dict[str, Candidate], list[di
     if payload.get('version') != 1 or not isinstance(payload.get('records'), list):
         raise ValueError('Formato de sesión no compatible')
     items = payload['records']
-    if not 1 <= len(items) <= 100000:
+    if not 1 <= len(items) <= MAX_SESSION_RECORDS:
         raise ValueError('Número de credenciales no válido')
     files = payload.get('files')
-    if not isinstance(files, list) or len(files) > 15:
+    if not isinstance(files, list) or len(files) > MAX_WORKSPACE_FILES:
         raise ValueError('Metadatos de sesión no válidos')
     validated = {}
     expected = {'id', 'original', 'name', 'url', 'username', 'password', 'note', 'included', 'review'}
@@ -32,12 +34,12 @@ def from_payload(payload: dict[str, Any]) -> tuple[dict[str, Candidate], list[di
         if set(origin) != original_keys:
             raise ValueError('Origen de credencial no válido')
         for key in ('source', 'name', 'url', 'username', 'password', 'note'):
-            if not isinstance(origin[key], str) or len(origin[key]) > 100_000:
+            if not isinstance(origin[key], str) or len(origin[key]) > MAX_SNAPSHOT_TEXT_CHARS:
                 raise ValueError('Datos de origen no válidos')
         if type(origin['line']) is not int or origin['line'] < 1:
             raise ValueError('Línea de origen no válida')
         for key in ('id', 'name', 'url', 'username', 'password', 'note'):
-            if not isinstance(raw[key], str) or len(raw[key]) > 100_000:
+            if not isinstance(raw[key], str) or len(raw[key]) > MAX_SNAPSHOT_TEXT_CHARS:
                 raise ValueError('Campo de credencial no válido')
         if not raw['id'] or raw['id'] in validated or not isinstance(raw['included'], bool):
             raise ValueError('ID o inclusión de credencial no válidos')
@@ -52,7 +54,7 @@ def from_payload(payload: dict[str, Any]) -> tuple[dict[str, Candidate], list[di
     safe_files = []
     for file in files:
         if (not isinstance(file, dict) or set(file) != {'name', 'source', 'count'}
-                or not isinstance(file['name'], str) or len(file['name']) > 1024
+                or not isinstance(file['name'], str) or len(file['name']) > MAX_SNAPSHOT_FILE_NAME_CHARS
                 or file['source'] not in ('chrome', 'brave', 'firefox')
                 or type(file['count']) is not int or file['count'] < 0):
             raise ValueError('Metadatos de archivo no válidos')
