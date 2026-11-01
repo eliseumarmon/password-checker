@@ -43,6 +43,18 @@ class APITests(unittest.TestCase):
         self.assertIn(b'fictional-secret-123', export.content)
         self.assertEqual(self.client.post('/api/undo').json()['stats']['included'], 2)
 
+    def test_import_uses_base_name_for_source_and_metadata(self):
+        payload = b'name,url,username,password,note\nA,https://a.invalid/,alice,fictional-123456,\n'
+        response = self.client.post('/api/import', files=[
+            ('files', ('brave/passwords.csv', payload, 'text/csv')),
+            ('files', ('dir/Brave Passwords.csv', payload, 'text/csv')),
+        ])
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()['files'], [
+            {'name': 'passwords.csv', 'source': 'chrome', 'count': 1},
+            {'name': 'Brave Passwords.csv', 'source': 'brave', 'count': 1},
+        ])
+
     def test_import_is_all_files_or_none(self):
         good = b'name,url,username,password,note\nA,https://a.invalid/,alice,fictional-123456,\n'
         self.client.post('/api/import', files=[('files', ('chrome.csv', good, 'text/csv'))])

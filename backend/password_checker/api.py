@@ -16,7 +16,7 @@ from .infrastructure.csv_reader import read_upload
 from .infrastructure.sessions import (MAX_SESSION_BYTES, MAX_SESSION_PASSPHRASE_LENGTH,
                                       MIN_SESSION_PASSPHRASE_LENGTH, decrypt_session, encrypt_session)
 from .application.limits import MAX_WORKSPACE_FILES
-from .application.workspace import Workspace
+from .application.workspace import ImportedFile, Workspace
 
 MAX_FILE_SIZE = 5 * 1024 * 1024
 MAX_TOTAL_SIZE = 20 * 1024 * 1024
@@ -77,10 +77,13 @@ async def import_files(files: list[UploadFile] = File(...)):
         total += len(data)
         if len(data) > MAX_FILE_SIZE or total > MAX_TOTAL_SIZE:
             raise HTTPException(413, 'El archivo o el conjunto supera el límite de tamaño')
-        incoming.append((Path(uploaded.filename or 'import.csv').name, data))
+        incoming.append((ImportedFile(uploaded.filename or 'import.csv'), data))
     try:
         # Parse every file before touching the workspace: all files or none.
-        parsed = [(name, *read_upload(name, data)) for name, data in incoming]
+        parsed = []
+        for file, data in incoming:
+            file.source, file.credentials = read_upload(file.name, data)
+            parsed.append(file)
         return workspace.import_files(parsed)
     except (ValueError, UnicodeError, OSError) as error:
         raise HTTPException(422, str(error)) from None

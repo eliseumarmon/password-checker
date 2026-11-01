@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import threading
 from collections import defaultdict
-from dataclasses import replace
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +17,18 @@ from ..domain.notes import combine_notes
 from .candidate import ALLOWED_REVIEW, Candidate, identity
 from .review_state import detail, review_state
 from .session_snapshot import from_payload, to_payload
+
+
+@dataclass
+class ImportedFile:
+    """Parsed file and its base name, shared by import adapters and the workspace."""
+
+    name: str
+    source: str = ""
+    credentials: list[Credential] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self.name = Path(self.name).name
 
 
 class Workspace:
@@ -33,11 +45,11 @@ class Workspace:
         if len(self._history) > 30:
             self._history.pop(0)
 
-    def import_files(self, files: list[tuple[str, str, list[Credential]]]) -> dict[str, Any]:
-        """Replace the workspace with already parsed files: (file name, source, credentials)."""
-        candidates = [Candidate.from_source(row) for _, _, rows in files for row in rows]
-        metadata = [{'name': Path(file_name).name, 'source': source, 'count': len(rows)}
-                    for file_name, source, rows in files]
+    def import_files(self, files: list[ImportedFile]) -> dict[str, Any]:
+        """Replace the workspace with already parsed files."""
+        candidates = [Candidate.from_source(row) for file in files for row in file.credentials]
+        metadata = [{'name': file.name, 'source': file.source, 'count': len(file.credentials)}
+                    for file in files]
         if not candidates:
             raise ValueError('No se encontraron credenciales válidas')
         with self._lock:

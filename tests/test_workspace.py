@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from backend.password_checker.infrastructure.bitwarden import bitwarden_csv_bytes
 from backend.password_checker.application.candidate import Candidate
-from backend.password_checker.application.workspace import Workspace
+from backend.password_checker.application.workspace import ImportedFile, Workspace
 from auditar_contrasenas_local import Credential
 
 
@@ -102,12 +102,12 @@ class WorkspaceTests(unittest.TestCase):
 
     def test_import_replaces_records_and_keeps_file_metadata(self):
         self.workspace.merge_exact()
-        result = self.workspace.import_files([('dir/passwords.csv', 'firefox', [cred('A', 'https://a.invalid', 'u', 'fake-123')])])
+        result = self.workspace.import_files([ImportedFile('dir/passwords.csv', 'firefox', [cred('A', 'https://a.invalid', 'u', 'fake-123')])])
         self.assertEqual(result['files'], [{'name': 'passwords.csv', 'source': 'firefox', 'count': 1}])
         self.assertEqual(result['stats']['total'], 1)
         self.assertFalse(result['can_undo'])
         with self.assertRaises(ValueError):
-            self.workspace.import_files([('empty.csv', 'chrome', [])])
+            self.workspace.import_files([ImportedFile('empty.csv', 'chrome', [])])
 
     def test_partial_updates_cannot_change_id_or_original(self):
         identifier = self.workspace.snapshot()['records'][0]['id']
