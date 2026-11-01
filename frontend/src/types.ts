@@ -26,5 +26,7 @@ export interface WorkspaceState {
   stats: { total: number; included: number; excluded: number; reviewed: number; verified: number };
   can_undo: boolean;
 }
+export type SessionMode = 'save' | 'load';
+export type SessionRequestEmits = { sessionRequested: [mode: SessionMode] };
 export interface SessionInput { passphrase: string; confirmation: string; file: File | null }
 export type RecordEdit = Partial<Pick<CredentialDetail, 'name' | 'url' | 'username' | 'password' | 'note' | 'included' | 'review'>>;

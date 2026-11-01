@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { MIN_SESSION_PASSPHRASE_LENGTH } from '../limits';
-import type { SessionInput } from '../types';
+import type { SessionInput, SessionMode } from '../types';
 
-defineProps<{ mode: 'save' | 'load'; busy: boolean }>();
+defineProps<{ mode: SessionMode; busy: boolean }>();
 defineEmits<{ close: []; submit: [input: SessionInput] }>();
 
 // Secrets live only in this dialog and vanish when it closes.
