@@ -14,7 +14,7 @@ import TrashView from './components/TrashView.vue';
 import SettingsView from './components/SettingsView.vue';
 import { SCREENS } from './labels';
 import { MIN_SESSION_PASSPHRASE_LENGTH } from './limits';
-import type { CredentialDetail, CredentialSummary, DuplicateGroup, FilterType, RecordEdit, Screen, SessionInput } from './types';
+import type { CredentialDetail, CredentialSummary, DuplicateGroup, FilterType, RecordEdit, Screen, SessionInput, SessionMode } from './types';
 
 const store = useWorkspace();
 const screen = ref<Screen>('credentials');
@@ -25,7 +25,7 @@ const pendingOnly = ref(false);
 const selectedGroup = ref<DuplicateGroup | null>(null);
 const selected = ref<CredentialDetail | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
-const sessionMode = ref<'save' | 'load' | null>(null);
+const sessionMode = ref<SessionMode | null>(null);
 // Per-viewer convenience only: storage may be unavailable, so failures are ignored.
 const SIDEBAR_KEY = 'pc.sidebarCollapsed';
 const collapsed = ref(readCollapsed());
@@ -101,7 +101,7 @@ async function exportNow(): Promise<void> {
   try { await api.exportCsv(); } catch (error) { errorMessage(error); }
 }
 function closeSession(): void { sessionMode.value = null; }
-function showSession(mode: 'save' | 'load'): void { sessionMode.value = mode; }
+function showSession(mode: SessionMode): void { sessionMode.value = mode; }
 async function submitSession({ passphrase, confirmation, file }: SessionInput): Promise<void> {
   store.error = '';
   try {
@@ -159,7 +159,7 @@ onMounted(async () => { await store.execute(api.state); });
       </div>
       </div>
       <input ref="fileInput" type="file" accept=".csv,text/csv" multiple hidden @change="loadFileList(($event.target as HTMLInputElement).files || [])" />
-      <WelcomePanel v-if="!data?.stats.total" :busy="store.busy" @pick="fileInput?.click()" @files-dropped="loadFileList" @open-session-requested="showSession('load')" />
+      <WelcomePanel v-if="!data?.stats.total" :busy="store.busy" @pick="fileInput?.click()" @files-dropped="loadFileList" @session-requested="showSession" />
 
       <template v-else>
         <section v-if="screen==='credentials'" class="workspace card">
@@ -173,7 +173,7 @@ onMounted(async () => { await store.execute(api.state); });
         </section>
         <AuditView v-else-if="screen==='audit'" :audit="data.audit" :records="recById" @review="openRecord" />
         <TrashView v-else-if="screen==='trash'" :rows="trashed" :busy="store.busy" @restore="restore" />
-        <SettingsView v-else @session-mode-requested="showSession" />
+        <SettingsView v-else @session-requested="showSession" />
       </template>
     </main>
 
