@@ -27,7 +27,7 @@ Ya resueltos y fuera de esta lista: papelera sin cambios (`247e830`), regla de �
 - [x] T7. `CredentialType` define una vez `'web' | 'android'` para `CredentialSummary`, `DuplicateGroup`, `FilterType` y `labelType`. (R2-labeltype-literal-union, trozo 4)
 - [x] T8. El selector del editor reutiliza `labelReview` y conserva sus aclaraciones «sin verificar acceso» y «manualmente». (R2-review-options-duplicate-labels, trozo 4)
 - [x] T9. `SCREENS` describe el icono y si muestra contador; la navegación usa esos metadatos visuales. (R2-trash-special-case, trozo 4)
-- [ ] T10. La forma `(nombre, origen, credenciales)` de la importación solo existe por posición entre `api.py` y `Workspace.import_files`, y el nombre base del archivo se normaliza dos veces: tupla con nombre y una sola normalización. (R2-004, trozo 2)
+- [x] T10. La importación usa `ImportedFile` con campos nombrados; la API normaliza una vez el nombre base y `Workspace` exige metadatos válidos. (R2-004, trozo 2)
 
 ### Tests que faltan (S3)
 
