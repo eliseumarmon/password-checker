@@ -241,6 +241,30 @@ test('trashes a row from its quick action and restores it from the trash', async
   await expect(sidebar(page).getByRole('button', { name: 'Papelera (0)' })).toHaveAttribute('title', 'Papelera (0)');
 });
 
+test('keeps the editor open when a text selection ends outside it', async ({ page }) => {
+  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.locator('.desktop-table').getByRole('row', { name: /carol/ }).getByRole('button', { name: 'Editar' }).click();
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  const notes = editor.getByLabel('Notas');
+  await notes.fill('Fictional note to select');
+  const box = (await notes.boundingBox())!;
+  await page.mouse.move(box.x + 10, box.y + 10);
+  await page.mouse.down();
+  await page.mouse.move(5, 5, { steps: 5 });
+  await page.mouse.up();
+  await expect(editor).toBeVisible();
+  await expect(notes).toHaveValue('Fictional note to select');
+});
+
+test('closes the editor with a click on the backdrop', async ({ page }) => {
+  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.locator('.desktop-table').getByRole('row', { name: /carol/ }).getByRole('button', { name: 'Editar' }).click();
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  await expect(editor).toBeVisible();
+  await page.mouse.click(5, 5);
+  await expect(editor).toBeHidden();
+});
+
 test('discards a record from the editor into the trash', async ({ page }) => {
   await page.getByRole('button', { name: 'Todas (6)' }).click();
   await page.locator('.desktop-table').getByRole('row', { name: /carol/ })
