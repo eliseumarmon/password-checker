@@ -10,7 +10,7 @@ Este documento reúne lo que la aplicación todavía no hace: limitaciones conoc
 
 ## Trabajo pendiente
 
-- Validación con usuarios: no se han realizado pruebas observadas con personas ni con contraseñas reales (véase [Validación con personas](#validación-con-personas)).
+- Validación con usuarios: no se han realizado entrevistas ni pruebas observadas con personas ni con contraseñas reales (véase [Validación con personas](#validación-con-personas)).
 - Una revisión más amplia de accesibilidad y teclado.
 - La revisión de dependencias.
 - Ejecutar las pruebas E2E en CI: hoy CI ejecuta los tests del backend y compila el frontend, pero no lanza Playwright.
@@ -20,12 +20,12 @@ Este documento reúne lo que la aplicación todavía no hace: limitaciones conoc
 
 Proceden de la propuesta de diseño inicial y de las mejoras anotadas en el flujo. No se han validado con usuarios.
 
-- **Interfaz general:** tema claro; ajustes de idioma, tema y caducidad por inactividad; botón «Ocultar todo» en la cabecera; filtro por estado y selector de orden junto a la búsqueda; en «Todas», orden por riesgo y por URL, con los grupos de una misma URL contiguos; continuidad de filtros.
-- **Comparación:** revelar contraseñas de forma individual dentro de la comparación; panel comparativo para conservar A, B o ambos, fusionar notas y editar el candidato final, distinguiendo los datos originales (inmutables) de la salida editable; en móvil, acciones «Elegir para exportación», «Conservar ambas» y «Fusionar notas»; una comparación más completa de originales.
+- **Interfaz general:** tema claro; ajustes de idioma, tema y caducidad por inactividad, y una sección de ayuda; botón «Ocultar todo» en la cabecera; filtro por estado y selector de orden junto a la búsqueda; en «Todas», orden por riesgo y por URL, con los grupos de una misma URL contiguos; continuidad de filtros; atajo `Ctrl/Cmd+Z` para el «Deshacer» de la aplicación (hoy solo funciona el deshacer nativo dentro de los campos de texto).
+- **Comparación:** revelar contraseñas de forma individual dentro de la comparación; panel comparativo que muestre de cada registro la URL original, el nombre, el usuario, la contraseña oculta, las notas y el estado, y permita conservar A, B o ambos, fusionar notas y editar el candidato final, distinguiendo los datos originales (inmutables) de la salida editable; en móvil, acciones «Elegir para exportación», «Conservar ambas» y «Fusionar notas»; una comparación más completa de originales.
 - **Ficha:** en móvil, detalle a pantalla completa con navegación «Anterior / Siguiente pendiente»; botón para copiar la contraseña con aviso de portapapeles; fecha local al confirmar manualmente y acciones «Marcar revisada» y «Acceso verificado» separadas; aviso de edición con deshacer e indicación de qué cambió.
 - **Exportación:** modal con resultados incluidos y excluidos, conflictos pendientes, destino y formato Bitwarden, en lugar de la confirmación actual con recuentos; resumen y vista previa antes de exportar.
-- **Sesión:** bloqueo tras una inactividad configurada que oculte la interfaz y exija reabrir la sesión cifrada.
-- **Android:** «Abrir aplicación (si existe mecanismo compatible)» y «Buscar en tienda».
+- **Sesión:** bloqueo tras una inactividad configurada que oculte la interfaz y exija reabrir la sesión cifrada; en la cabecera móvil, un indicador de sesión local o bloqueada.
+- **Android:** en el teléfono, «Abrir aplicación (si existe mecanismo compatible)», «Buscar en tienda» y «Marcar verificada».
 - **Acceso móvil:** un mecanismo seguro que no dependa de configurar ADB a mano.
 
 ## Validación con personas
