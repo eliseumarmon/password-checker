@@ -2,7 +2,7 @@
 
 Objetivo: cerrar tres riesgos de fiabilidad identificados en la revisión del 2026-11-01 tras retirar la CLI. El producto es la GUI local FastAPI + Vue; Python mínimo: 3.12.
 
-Estado: T3 hecha y verificada en GitHub Actions (L5); T1 y T2 pendientes.
+Estado: T3 hecha y verificada en GitHub Actions (L5); T1 hecha (L7); T2 pendiente.
 
 ## Contexto y alcance
 
@@ -21,7 +21,7 @@ No modificar el formato de `.pwc` v1, la criptografía, las reglas de consolidac
 
 ## Tareas (una rama y una revisión independiente por tarea)
 
-### [ ] T1 — Invariante de ida y vuelta de sesiones (prioridad alta)
+### [x] T1 — Invariante de ida y vuelta de sesiones (prioridad alta)
 
 **Problema:** el guardado puede devolver un archivo que la restauración rechaza por límites de contenido o por tamaño.
 
@@ -88,3 +88,4 @@ cd frontend && npm run build && npm run e2e
 - **L4 (2026-11-02):** revisión de riesgo alto (cuatro lentes) de `8fd43c0` aprobada. Aplicado: `timeout-minutes` de 20 en el paso E2E (falla el paso y se suben las trazas) y de 30 en el job; línea de estado actualizada. Descartado: añadir `permissions` al job, porque el workflow ya declara `contents: read` para todos; fijar las acciones por SHA, como en los jobs existentes, queda fuera de alcance. El README afirma que el job existe: la rama no se integra hasta que la primera ejecución en GitHub Actions salga en verde.
 - **L5 (2026-11-02):** petición: «Correcto» a subir la rama. `ci/e2e-playwright` subida a `origin`; ejecución [41449520998](https://github.com/eliseumarmon/password-checker/actions/runs/41449520998) en verde: `python`, `frontend` y `e2e` correctos, y el registro de `e2e` muestra «65 passed (1.1m)» en Linux, sin ajustes de plataforma. Línea de estado reescrita (la revisión de `9481319` señaló que conservaba la frase de trabajo futuro). No verificado: la subida del artefacto `playwright-traces`, que solo ocurre si falla una prueba.
 - **L6 (2026-11-02):** petición: «Sí sigue con t1». Huecos confirmados: el `.pwc` ocupa unas 2,7 veces el CSV (originales y candidatos, JSON y base64), así que un CSV de unos 10 MiB ya supera los 25 MiB de apertura; el lector CSV admite campos de 131 072 caracteres y la apertura 100 000; caben más de 100 000 filas en 20 MiB; `merge_exact` une notas sin límite. Medido: 100 000 registros mínimos son 34 MiB de JSON; la comprobación completa (`to_payload`, JSON y `from_payload`) tarda unos 1,8 s con ese volumen, que ya no cabe, y milisegundos con exportaciones normales. Decisión del usuario, literal: «Selecciona «Rechazar al entrar (Recom.)». Garantizar que las importaciones, fusiones y ediciones sean atómicas y que todas las operaciones aceptadas mantengan el workspace dentro de los límites necesarios para guardar y restaurar una sesión .pwc. Centralizar los límites, comprobar el tamaño real del archivo resultante y conservar la validación defensiva al guardar. No descartar credenciales silenciosamente y permitir operaciones que corrijan un exceso de límites.» Criterio 2 reescrito. Además, la API no traduce `ValueError` en papelera ni en fusionar: se añade. Rama `fix/t1-session-roundtrip` desde `main`.
+- **L7 (2026-11-02):** T1 en `fix/t1-session-roundtrip`. RED: `tests/test_session_limits.py` no se podía importar (faltaba `encode_payload`) y las dos pruebas nuevas de `tests/test_api.py` fallaban (guardar sin validar; fusionar rechazada devolvía 500). GREEN: `application/limits.py` reúne todos los límites, incluido `MAX_SESSION_BYTES`, y `session_file_size()` calcula el tamaño exacto del `.pwc` (132 bytes de envoltorio más el base64 del texto cifrado; fijado contra `encrypt_session` por prueba); `session_snapshot.py` añade `encode_payload` y `session_fit`, y lee los límites en el momento; `Workspace` comprueba cada estado nuevo (importar y abrir sesión, estricto; editar, papelera y fusionar, aceptando lo que no empeora un exceso) antes de aplicarlo, sin paso de deshacer si se rechaza; `serialize()` valida con `from_payload`; `encrypt_session` nunca devuelve más de `MAX_SESSION_BYTES`; la API traduce a 422 los rechazos de papelera y fusionar. Mensajes con el campo, el origen y la línea, nunca el valor. `docs/flujo-usuario.md` lo describe. Comprobaciones: 76 tests de backend (12 en las pruebas nuevas y de arquitectura), 65 E2E, `ruff` 81 avisos frente a 82 en `main` (ninguno nuevo). Riesgo alto (sesiones y datos guardados): pendiente de revisión independiente.

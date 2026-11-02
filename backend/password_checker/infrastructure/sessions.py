@@ -15,9 +15,11 @@ from argon2.low_level import Type, hash_secret_raw
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+from ..application import limits
+from ..application.session_snapshot import describe_size, encode_payload
+
 VERSION = 1
 AAD = b'password-checker/workspace/session-v1'
-MAX_SESSION_BYTES = 25 * 1024 * 1024
 MIN_SESSION_PASSPHRASE_LENGTH = 12
 MAX_SESSION_PASSPHRASE_LENGTH = 1024
 
@@ -49,17 +51,22 @@ def encrypt_session(payload: dict[str, Any], passphrase: str) -> bytes:
     salt = secrets.token_bytes(16)
     nonce = secrets.token_bytes(12)
     key = _key(passphrase, salt)
-    plaintext = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+    plaintext = encode_payload(payload)
     ciphertext = AESGCM(key).encrypt(nonce, plaintext, AAD)
     document = {'version': VERSION, 'kdf': 'argon2id-64m-3-1', 'cipher': 'aes-256-gcm',
                 'salt': base64.b64encode(salt).decode('ascii'),
                 'nonce': base64.b64encode(nonce).decode('ascii'),
                 'data': base64.b64encode(ciphertext).decode('ascii')}
-    return json.dumps(document, separators=(',', ':')).encode('ascii')
+    blob = json.dumps(document, separators=(',', ':')).encode('ascii')
+    # decrypt_session() refuses larger files, so never hand one out.
+    if len(blob) > limits.MAX_SESSION_BYTES:
+        raise ValueError(f'La sesión cifrada ocuparía {describe_size(len(blob))} y el máximo es '
+                         f'{describe_size(limits.MAX_SESSION_BYTES)}; no se ha generado el archivo.')
+    return blob
 
 
 def decrypt_session(blob: bytes, passphrase: str) -> dict[str, Any]:
-    if not blob or len(blob) > MAX_SESSION_BYTES:
+    if not blob or len(blob) > limits.MAX_SESSION_BYTES:
         raise ValueError('Tamaño de sesión no válido')
     try:
         envelope = json.loads(blob)

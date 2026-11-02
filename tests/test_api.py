@@ -6,11 +6,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from unittest.mock import patch
+
 try:
     from fastapi.testclient import TestClient
     from backend.password_checker.api import app, workspace
+    from backend.password_checker.application import limits
 except ImportError:
     TestClient = None
+
+EXACT_COPIES_CSV = (b'name,url,username,password,note\n'
+                    b'Site,https://site.invalid/,alice,fictional-secret-123,fictional note one\n'
+                    b'Site,https://site.invalid/,alice,fictional-secret-123,fictional note two\n')
 
 
 @unittest.skipUnless(TestClient is not None, 'Optional API dependencies not installed')
@@ -20,6 +27,32 @@ class APITests(unittest.TestCase):
         workspace._records.clear()
         workspace._history.clear()
         workspace._files.clear()
+
+    def import_exact_copies(self):
+        response = self.client.post('/api/import', files=[('files', ('chrome.csv', EXACT_COPIES_CSV, 'text/csv'))])
+        self.assertEqual(response.status_code, 200, response.text)
+        return response.json()
+
+    def test_save_refuses_a_session_that_could_not_be_opened_again(self):
+        before = self.import_exact_copies()
+        with patch.object(limits, 'MAX_SESSION_RECORDS', 1):
+            response = self.client.post('/api/session/save', json={'passphrase': 'fictional-passphrase-123'})
+        self.assertEqual(response.status_code, 422)
+        self.assertNotIn('content-disposition', response.headers)
+        self.assertNotIn('fictional-secret-123', response.text)
+        self.assertEqual(self.client.get('/api/workspace').json(), before)
+
+    def test_rejected_merge_and_trash_are_client_errors_that_change_nothing(self):
+        before = self.import_exact_copies()
+        with patch.object(limits, 'MAX_SNAPSHOT_TEXT_CHARS', 30):
+            merged = self.client.post('/api/merge-exact')
+        self.assertEqual(merged.status_code, 422)
+        self.assertIn('«notas»', merged.json()['detail'])
+        with patch.object(limits, 'MAX_SESSION_BYTES', 64):
+            trashed = self.client.post('/api/records/trash', json={'ids': [before['records'][0]['id']]})
+        self.assertEqual(trashed.status_code, 422)
+        self.assertNotIn('fictional-secret-123', merged.text + trashed.text)
+        self.assertEqual(self.client.get('/api/workspace').json(), before)
 
     def test_import_edit_export_and_security(self):
         fake_csv = (b'name,url,username,password,note\n'
