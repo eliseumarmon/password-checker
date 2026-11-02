@@ -96,7 +96,7 @@ Acción transversal visible: **Guardar sesión cifrada** (cuando haya una sesió
 └──────────────────┴──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Estructura:** barra lateral de **220–240 px**, contraíble a iconos (**64 px**); cabecera de **64–72 px**; contenido central flexible. Tabla de datos con encabezado fijo y ordenación explícita (`asc/desc/ninguna`). La edición (hasta **760 px**) y la comparación de duplicados (hasta **900 px**, registros lado a lado) se abren en diálogos centrados. La cabecera con título, acciones y estadísticas queda fija al desplazarse, igual que la barra lateral.
+**Estructura:** barra lateral de **220–240 px**, contraíble a iconos (**64 px**); cabecera de **64–72 px**; contenido central flexible. Tabla de datos con encabezado fijo y ordenación explícita (`asc/desc/ninguna`). La edición (hasta **760 px**) y la comparación de duplicados (hasta **900 px**, registros lado a lado) se abren en diálogos centrados. La comparación permanece abierta al descartar, restaurar o guardar un registro, de modo que se pueden revisar todos sus registros sin reabrirla. La cabecera con título, acciones y estadísticas queda fija al desplazarse, igual que la barra lateral.
 
 **Tabla por defecto (Duplicados):** sitio, tipo, usuario, cantidad de registros, coincidencias URL/usuario/contraseña, fuentes, estado y acción. **No mostrar la contraseña en texto en la tabla**. Comparaciones solo dentro del grupo, con controles individuales para revelarla. El valor real de usuario es visible (truncar solo visualmente; tooltip/copia accesible).
 
@@ -159,6 +159,7 @@ Acción transversal visible: **Guardar sesión cifrada** (cuando haya una sesió
 9. **Modal de exportación:** resultados incluidos/excluidos, conflictos pendientes, destino y formato Bitwarden; exige confirmación explícita.
 10. **Bloqueo de sesión:** tras inactividad configurada; oculta la UI y exige reabrir la sesión cifrada cuando proceda.
 11. **Aviso de error:** flotante arriba y centrado, siempre por encima de diálogos abiertos; muestra el motivo del servidor y se cierra con «×».
+12. **Diálogo de confirmación:** sustituye a la confirmación nativa del navegador y queda por encima de cualquier otro diálogo. Título «Confirmar acción», el mismo texto del aviso y dos botones: «Cancelar», que recibe el foco al abrirse, y uno que nombra la acción, en rojo cuando envía registros a la papelera. `Tab` no sale del diálogo; `Esc` y el clic fuera cancelan, y el foco vuelve al control que lo abrió.
 
 ## 7. Diseño de datos sensibles
 
