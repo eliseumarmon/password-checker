@@ -422,6 +422,20 @@ test('asks with its own dialog and cancels with the button, Escape or a click ou
   await expect(metric(page, 'En la papelera')).toHaveText('1');
 });
 
+test('keeps keyboard focus inside the confirmation dialog', async ({ page }) => {
+  await page.getByRole('button', { name: 'Fusionar copias exactas' }).click();
+  const dialog = page.getByRole('alertdialog', { name: 'Confirmar acción' });
+  const cancel = dialog.getByRole('button', { name: 'Cancelar' });
+  const confirm = dialog.getByRole('button', { name: 'Fusionar', exact: true });
+  await expect(cancel).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(confirm).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(cancel).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(confirm).toBeFocused();
+});
+
 test('asks above the editor before opening a local address on Android', async ({ page }) => {
   await page.addInitScript(() => Object.defineProperty(navigator, 'userAgent', { get: () => 'Mozilla/5.0 (Linux; Android 14) Mobile' }));
   await page.reload();
