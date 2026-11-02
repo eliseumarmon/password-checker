@@ -97,6 +97,30 @@ class WorkspaceSessionLimitTests(unittest.TestCase):
                 self.workspace.change(record_id, {'note': 'w' * 260})
         self.assertEqual(self.workspace.get(record_id)['note'], 'w' * 250)
 
+    def test_operations_that_do_not_touch_the_exceeded_limit_are_allowed(self):
+        record_id = self.before['records'][0]['id']
+        other_id = self.before['records'][1]['id']
+        self.workspace.change(record_id, {'note': 'v' * 40})
+        with patch.object(limits, 'MAX_SNAPSHOT_TEXT_CHARS', 30):
+            # Over the text limit only: one byte more for the trash or the other record is fine.
+            self.workspace.trash([other_id])
+            self.workspace.change(other_id, {'name': 'Site renamed'})
+            with self.assertRaisesRegex(ValueError, '«notas»'):
+                self.workspace.change(other_id, {'note': 'u' * 40})
+        self.assertEqual(self.workspace.get(other_id)['name'], 'Site renamed')
+
+    def test_restore_rejects_a_session_that_could_not_be_saved_again(self):
+        payload = self.workspace.serialize()
+        with patch.object(limits, 'MAX_SESSION_BYTES', 1024):
+            with self.assertRaisesRegex(ValueError, 'no cabe en una sesión cifrada'):
+                Workspace().restore(payload)
+            with self.assertRaisesRegex(ValueError, 'no cabe en una sesión cifrada'):
+                self.workspace.restore(payload)
+        self.assert_unchanged()
+        restored = Workspace()
+        restored.restore(payload)
+        self.assertEqual(restored.snapshot()['records'], self.before['records'])
+
     def test_saving_validates_the_state_defensively(self):
         with patch.object(limits, 'MAX_SESSION_RECORDS', 1), self.assertRaisesRegex(ValueError, 'Número de credenciales no válido'):
             self.workspace.serialize()

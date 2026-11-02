@@ -59,9 +59,11 @@ class SessionFit:
         return None
 
     def no_worse_than(self, other: SessionFit) -> bool:
-        return (self.records <= other.records
-                and len(self.oversized_fields) <= len(other.oversized_fields)
-                and self.file_bytes <= other.file_bytes)
+        """Each measure stays within its limit, or does not grow past where *other* already was."""
+        measures = ((self.records, other.records, limits.MAX_SESSION_RECORDS),
+                    (len(self.oversized_fields), len(other.oversized_fields), 0),
+                    (self.file_bytes, other.file_bytes, limits.MAX_SESSION_BYTES))
+        return all(new <= max(old, limit) for new, old, limit in measures)
 
 
 def session_fit(records: list[Candidate], files: list[dict[str, Any]]) -> SessionFit:
