@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import TrashIcon from '../TrashIcon.vue';
 import { safeWebUrl } from '../api';
 import { confirmAction } from '../confirm';
@@ -22,16 +22,25 @@ function onBackdropUp(event: PointerEvent): void {
 function onBackdropClick(event: MouseEvent): void {
   const close = pressedOnBackdrop && releasedOnBackdrop && event.target === event.currentTarget;
   pressedOnBackdrop = releasedOnBackdrop = false;
-  if (close) emit('close');
+  if (close) void requestClose();
 }
 
 const form = ref<RecordEdit>({});
+const loaded = ref<RecordEdit>({});
 const revealed = ref(false);
 watch(() => props.record, record => {
-  form.value = { name: record.name, url: record.url, username: record.username,
+  loaded.value = { name: record.name, url: record.url, username: record.username,
     password: record.password, note: record.note, review: record.review };
+  form.value = { ...loaded.value };
   revealed.value = false;
 }, { immediate: true });
+// Edits only reach the server on save, so any other way out of the editor discards them.
+const dirty = computed(() => (Object.keys(loaded.value) as (keyof RecordEdit)[]).some(key => form.value[key] !== loaded.value[key]));
+
+async function requestClose(): Promise<void> {
+  if (dirty.value && !await confirmAction('Hay cambios sin guardar en esta credencial. Si cierras la ficha, se perderán. ¿Continuar?', 'Descartar cambios', true)) return;
+  emit('close');
+}
 
 async function openSite(url: string): Promise<void> {
   const href = safeWebUrl(url);
@@ -48,7 +57,7 @@ async function openSite(url: string): Promise<void> {
     <section class="editor-dialog card" role="dialog" aria-modal="true" aria-label="Editar credencial">
       <slot />
       <div class="dialog-content">
-      <div class="drawer-top"><h2>Editar credencial</h2><button aria-label="Cerrar" @click="$emit('close')">✕</button></div>
+      <div class="drawer-top"><h2>Editar credencial</h2><button aria-label="Cerrar" @click="requestClose">✕</button></div>
       <div class="editor-fields editor-grid">
         <label>Nombre<input v-model="form.name" autocomplete="off" /></label>
         <label>URL o paquete Android<input v-model="form.url" autocomplete="off" spellcheck="false" /></label>
@@ -61,7 +70,7 @@ async function openSite(url: string): Promise<void> {
         <p class="hint">Editar esta contraseña guardada NO cambia la contraseña real del servicio.</p>
         <p class="muted">Origen inmutable: {{record.source}} · línea {{record.line}}</p>
       </div>
-      <div class="drawer-actions"><button v-if="record.included" class="danger push-left" :disabled="busy" @click="$emit('trash', record.id)"><TrashIcon /> Descartar</button><button v-else class="push-left" :disabled="busy" @click="$emit('restore', record.id)">Restaurar</button><button @click="$emit('close')">Cancelar</button><button class="primary" :disabled="busy" @click="$emit('save', form)">Guardar cambios</button></div>
+      <div class="drawer-actions"><button v-if="record.included" class="danger push-left" :disabled="busy" @click="$emit('trash', record.id)"><TrashIcon /> Descartar</button><button v-else class="push-left" :disabled="busy" @click="$emit('restore', record.id)">Restaurar</button><button @click="requestClose">Cancelar</button><button class="primary" :disabled="busy" @click="$emit('save', form)">Guardar cambios</button></div>
       </div>
     </section>
   </div>
