@@ -23,7 +23,8 @@ const subtab = ref<'duplicates' | 'all'>('duplicates');
 const filterType = ref<FilterType>('all');
 const query = ref('');
 const pendingOnly = ref(false);
-const selectedGroup = ref<DuplicateGroup | null>(null);
+// Members fixed when the comparison opens, so it outlives the group when one is discarded.
+const compareIds = ref<string[] | null>(null);
 const selected = ref<CredentialDetail | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
 const sessionMode = ref<SessionMode | null>(null);
@@ -48,13 +49,16 @@ const activeRecords = computed(() => records.value.filter(r => r.included));
 const trashed = computed(() => records.value.filter(r => !r.included));
 const visibleRows = computed(() => activeRecords.value.filter(r => matches(r)));
 const visibleGroups = computed(() => groups.value.filter(g => matches(g) && (!pendingOnly.value || g.pending)));
+const compareRows = computed(() => (compareIds.value ?? []).flatMap(id => recById.value.get(id) ?? []));
+// Group ids follow their first active member, so the current group is found by membership.
+const compareGroup = computed(() => groups.value.find(g => g.members.some(m => compareIds.value?.includes(m.id))) ?? null);
 const progress = computed(() => data.value?.stats.total ? Math.round(100 * data.value.stats.reviewed / data.value.stats.total) : 0);
 // The error notice lives in the topmost open layer: session > editor > comparison > page.
 const errorHost = computed<'session' | 'editor' | 'compare' | 'page' | null>(() => {
   if (!store.error) return null;
   if (sessionMode.value) return 'session';
   if (selected.value) return 'editor';
-  if (selectedGroup.value) return 'compare';
+  if (compareIds.value) return 'compare';
   return 'page';
 });
 
@@ -75,10 +79,10 @@ async function loadFileList(files: FileList | File[]): Promise<void> {
   if (!selectedFiles.length) { store.error = 'Selecciona archivos CSV'; return; }
   if (data.value?.stats.total && !window.confirm('Importar reemplazará la sesión actual sin guardar. ¿Continuar?')) return;
   await store.execute(() => api.importFiles(selectedFiles));
-  selectedGroup.value = null; selected.value = null; subtab.value = 'duplicates'; screen.value = 'credentials';
+  compareIds.value = null; selected.value = null; subtab.value = 'duplicates'; screen.value = 'credentials';
 }
 function openGroup(group: DuplicateGroup): void {
-  selectedGroup.value = group; selected.value = null;
+  compareIds.value = group.members.map(member => member.id); selected.value = null;
 }
 async function openRecord(id: string): Promise<void> {
   try { selected.value = await api.detail(id); } catch (error) { errorMessage(error); }
@@ -86,27 +90,24 @@ async function openRecord(id: string): Promise<void> {
 async function save(form: RecordEdit): Promise<void> {
   if (!selected.value) return;
   await store.execute(() => api.edit(selected.value!.id, form));
-  if (!store.error) { selected.value = null; selectedGroup.value = null; }
+  if (!store.error) { selected.value = null; compareIds.value = null; }
 }
 async function quickEdit(id: string, payload: RecordEdit): Promise<void> {
   await store.execute(() => api.edit(id, payload));
-  if (!store.error) {
-    selectedGroup.value = null;
-    if (selected.value?.id === id) selected.value = null;
-  }
+  if (!store.error && selected.value?.id === id) selected.value = null;
 }
 function closeEditor(): void { selected.value = null; }
 function moveToTrash(id: string): Promise<void> { return quickEdit(id, { included: false }); }
 async function trashGroup(group: DuplicateGroup): Promise<void> {
   if (!window.confirm(`Se moverán ${group.count} registros de «${group.name}» a la papelera. Podrás restaurarlos. ¿Continuar?`)) return;
   await store.execute(() => api.trash(group.members.map(member => member.id)));
-  selectedGroup.value = null;
+  compareIds.value = null;
 }
 function restore(id: string): Promise<void> { return quickEdit(id, { included: true }); }
 async function merge(): Promise<void> {
   if (!window.confirm('Las copias idénticas por URL, usuario y contraseña irán a la papelera. Las notas se combinarán. ¿Continuar?')) return;
   await store.execute(api.mergeExact);
-  selectedGroup.value = null;
+  compareIds.value = null;
 }
 async function exportNow(): Promise<void> {
   if (!data.value) return;
@@ -134,14 +135,14 @@ async function submitSession({ passphrase, confirmation, file }: SessionInput): 
       if (store.error) return;
       screen.value = 'credentials';
       subtab.value = 'duplicates';
-      selected.value = null; selectedGroup.value = null;
+      selected.value = null; compareIds.value = null;
     }
     closeSession();
   } catch (error) { errorMessage(error); }
 }
 
 
-watch(screen, () => { selected.value = null; selectedGroup.value = null; });
+watch(screen, () => { selected.value = null; compareIds.value = null; });
 onMounted(async () => {
   layoutObserver = new ResizeObserver(() => {
     headerHeight.value = stickyHead.value?.offsetHeight ?? 0;
@@ -200,7 +201,7 @@ onUnmounted(() => layoutObserver?.disconnect());
       </template>
     </main>
 
-    <CompareDialog v-if="selectedGroup" :group="selectedGroup" :busy="store.busy" @close="selectedGroup=null" @edit="openRecord" @trash="moveToTrash">
+    <CompareDialog v-if="compareIds" :group="compareGroup" :rows="compareRows" :busy="store.busy" @close="compareIds=null" @edit="openRecord" @trash="moveToTrash" @restore="restore">
       <ErrorNotice v-if="errorHost==='compare'" :message="store.error" @close="store.error=''" />
     </CompareDialog>
     <EditorDialog v-if="selected" :record="selected" :busy="store.busy" @close="closeEditor" @save="save" @trash="moveToTrash" @restore="restore">
