@@ -10,7 +10,7 @@ sys.path.insert(0, str(ROOT))
 from backend.password_checker.application.candidate import Candidate
 from backend.password_checker.application.session_snapshot import from_payload
 from backend.password_checker.application.workspace import ImportedFile, Workspace
-from backend.password_checker.domain.credential import BROWSER_SOURCES, Credential
+from backend.password_checker.domain.credential import ORIGINS, Credential
 
 
 class SessionSnapshotLimitTests(unittest.TestCase):
@@ -31,8 +31,9 @@ class SessionSnapshotLimitTests(unittest.TestCase):
             with self.subTest(count=len(records)), self.assertRaises(ValueError):
                 from_payload({**self.payload, 'records': records})
 
-    def test_import_and_restore_accept_the_same_browser_sources(self):
-        for source in BROWSER_SOURCES:
+    def test_import_and_restore_accept_the_same_origins(self):
+        self.assertEqual(ORIGINS, ('chrome', 'brave', 'firefox', 'unknown'))
+        for source in ORIGINS:
             with self.subTest(source=source):
                 self.assertEqual(ImportedFile(name='a.csv', source=source, credentials=[]).source, source)
                 files = [dict(self.payload['files'][0], source=source)]

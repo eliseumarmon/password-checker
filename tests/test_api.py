@@ -86,9 +86,9 @@ class APITests(unittest.TestCase):
         ])
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(response.json()['files'], [
-            {'name': 'passwords.csv', 'source': 'chrome', 'count': 1},
+            {'name': 'passwords.csv', 'source': 'unknown', 'count': 1},
             {'name': 'Brave Passwords.csv', 'source': 'brave', 'count': 1},
-            {'name': 'passwords.csv', 'source': 'chrome', 'count': 1},
+            {'name': 'passwords.csv', 'source': 'unknown', 'count': 1},
             {'name': 'Brave Passwords.csv', 'source': 'brave', 'count': 1},
         ])
 

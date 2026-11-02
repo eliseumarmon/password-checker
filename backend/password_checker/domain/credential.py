@@ -5,13 +5,13 @@ from dataclasses import dataclass
 
 from .urls import android_package, parse_url
 
-# Browsers whose password exports can be imported.
-BROWSER_SOURCES = ("chrome", "brave", "firefox")
+# Where an export came from: metadata only, it never decides how the CSV is read.
+ORIGINS = ("chrome", "brave", "firefox", "unknown")
 
 
 @dataclass(frozen=True)
 class Credential:
-    source: str
+    source: str  # One of ORIGINS; the field keeps its name so .pwc sessions do not change.
     line: int
     name: str
     url: str
