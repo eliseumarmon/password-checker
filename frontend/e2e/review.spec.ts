@@ -16,12 +16,16 @@ const BRAVE_CSV = [
 ].join('\n');
 
 async function importFixtures(page: Page) {
-  page.on('dialog', dialog => dialog.accept());
+  // The E2E backend is shared between tests, so importing may replace the previous test's data.
+  const state = await page.request.get('/api/workspace');
+  const replacing = (await state.json()).stats.total > 0;
   await page.goto('/');
+  if (replacing) await expect(page.getByRole('button', { name: 'Importar otros CSV' })).toBeVisible();
   await page.locator('input[type=file][accept*=".csv"]').first().setInputFiles([
     { name: 'chrome.csv', mimeType: 'text/csv', buffer: Buffer.from(CHROME_CSV) },
     { name: 'brave.csv', mimeType: 'text/csv', buffer: Buffer.from(BRAVE_CSV) },
   ]);
+  if (replacing) await confirmWith(page, 'Importar');
   await expect(page.getByRole('button', { name: 'Todas (6)' })).toBeVisible();
 }
 
@@ -55,6 +59,17 @@ async function expectThirtyRowsPerPage(page: Page, count: number): Promise<void>
     await paginator.locator('.p-paginator-next').click();
     await expect(table.locator('tbody tr')).toHaveCount(1);
   }
+}
+
+async function confirmWith(page: Page, label: string): Promise<void> {
+  const dialog = page.getByRole('alertdialog', { name: 'Confirmar acción' });
+  await dialog.getByRole('button', { name: label, exact: true }).click();
+  await expect(dialog).toBeHidden();
+}
+
+async function exportBitwarden(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Exportar Bitwarden' }).click();
+  await confirmWith(page, 'Generar CSV');
 }
 
 function metric(page: Page, label: string): Locator {
@@ -196,6 +211,7 @@ test('preserves review options and saves the selected state', async ({ page }) =
 
 test('merges exact copies into the trash and can undo it', async ({ page }) => {
   await page.getByRole('button', { name: 'Fusionar copias exactas' }).click();
+  await confirmWith(page, 'Fusionar');
   await expect(metric(page, 'En la papelera')).toHaveText('1');
   await expect(page.getByRole('button', { name: 'Todas (5)' })).toBeVisible();
   await page.getByRole('button', { name: /Deshacer/ }).click();
@@ -294,6 +310,7 @@ test('trashes a whole duplicate group in one undoable step', async ({ page }) =>
   const table = page.locator('.desktop-table');
   await expect(table.getByRole('columnheader', { name: 'Acciones' })).toBeVisible();
   await table.getByRole('row', { name: /Conflict/ }).getByRole('button', { name: 'Mover grupo a la papelera' }).click();
+  await confirmWith(page, 'Mover a la papelera');
   await expect(metric(page, 'En la papelera')).toHaveText('2');
   await expect(page.getByRole('button', { name: 'Duplicados (1)' })).toBeVisible();
   await page.getByRole('button', { name: /Deshacer/ }).click();
@@ -384,9 +401,83 @@ test('saves a record from the audit and closes the editor without leaving the au
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Auditoría local');
 });
 
+test('asks with its own dialog and cancels with the button, Escape or a click outside', async ({ page }) => {
+  const merge = page.getByRole('button', { name: 'Fusionar copias exactas' });
+  const dialog = page.getByRole('alertdialog', { name: 'Confirmar acción' });
+  await merge.click();
+  await expect(dialog).toContainText('Las copias idénticas por URL, usuario y contraseña irán a la papelera. Las notas se combinarán. ¿Continuar?');
+  await expect(dialog.getByRole('button', { name: 'Cancelar' })).toBeFocused();
+  await dialog.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(merge).toBeFocused();
+  await merge.click();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(merge).toBeFocused();
+  await merge.click();
+  await page.mouse.click(5, 5);
+  await expect(dialog).toBeHidden();
+  await expect(merge).toBeFocused();
+  await expect(metric(page, 'En la papelera')).toHaveText('0');
+  await merge.click();
+  await confirmWith(page, 'Fusionar');
+  await expect(metric(page, 'En la papelera')).toHaveText('1');
+});
+
+test('keeps keyboard focus inside the confirmation dialog', async ({ page }) => {
+  await page.getByRole('button', { name: 'Fusionar copias exactas' }).click();
+  const dialog = page.getByRole('alertdialog', { name: 'Confirmar acción' });
+  const cancel = dialog.getByRole('button', { name: 'Cancelar' });
+  const confirm = dialog.getByRole('button', { name: 'Fusionar', exact: true });
+  await expect(cancel).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(confirm).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(cancel).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(confirm).toBeFocused();
+});
+
+test('asks above the editor before opening a local address on Android', async ({ page }) => {
+  await page.addInitScript(() => Object.defineProperty(navigator, 'userAgent', { get: () => 'Mozilla/5.0 (Linux; Android 14) Mobile' }));
+  await page.reload();
+  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.locator('.desktop-table').getByRole('row', { name: /carol/ }).getByRole('button', { name: 'Editar' }).click();
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  await editor.getByLabel('URL o paquete Android').fill('http://localhost:8000');
+  const popups: unknown[] = [];
+  page.on('popup', popup => popups.push(popup));
+  await editor.getByRole('button', { name: /Abrir sitio/ }).click();
+  const dialog = page.getByRole('alertdialog', { name: 'Confirmar acción' });
+  await expect(dialog).toContainText('Esta dirección local apunta a este teléfono, no al ordenador. ¿Abrir de todas formas?');
+  await expect(dialog.getByRole('button', { name: 'Abrir de todas formas' })).toBeVisible();
+  // A click only lands when nothing covers the dialog, so this also proves it sits above the editor.
+  await dialog.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(editor).toBeVisible();
+  expect(popups).toHaveLength(0);
+});
+
+test('opens a local address on Android after confirming', async ({ page }) => {
+  await page.addInitScript(() => Object.defineProperty(navigator, 'userAgent', { get: () => 'Mozilla/5.0 (Linux; Android 14) Mobile' }));
+  await page.reload();
+  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.locator('.desktop-table').getByRole('row', { name: /carol/ }).getByRole('button', { name: 'Editar' }).click();
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  // The E2E server itself, so the new tab never reaches a real local service.
+  await editor.getByLabel('URL o paquete Android').fill('http://127.0.0.1:5173/fictional-path');
+  await editor.getByRole('button', { name: /Abrir sitio/ }).click();
+  const opened = page.context().waitForEvent('page');
+  await confirmWith(page, 'Abrir de todas formas');
+  // Only the origin is opened: no path, query or hash leaves the editor.
+  expect((await opened).url()).toBe('http://127.0.0.1:5173/');
+  await expect(editor).toBeVisible();
+});
+
 test('saves an encrypted session and opens it again', async ({ page }) => {
   const passphrase = 'fictional-session-passphrase';
   await page.getByRole('button', { name: 'Fusionar copias exactas' }).click();
+  await confirmWith(page, 'Fusionar');
   await expect(metric(page, 'En la papelera')).toHaveText('1');
 
   await page.getByRole('button', { name: 'Guardar sesión cifrada' }).click();
@@ -410,6 +501,7 @@ test('saves an encrypted session and opens it again', async ({ page }) => {
   await loadDialog.getByLabel('Archivo cifrado').setInputFiles(file);
   await loadDialog.getByLabel(/Contraseña de sesión/).fill(passphrase);
   await loadDialog.getByRole('button', { name: 'Abrir sesión' }).click();
+  await confirmWith(page, 'Abrir sesión');
   await expect(loadDialog).toBeHidden();
   await expect(metric(page, 'En la papelera')).toHaveText('1');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Credenciales');
@@ -549,7 +641,7 @@ test('shows the server reason when a download fails', async ({ page }) => {
   await page.route('**/api/export', route => route.fulfill({
     status: 409, contentType: 'application/json', body: JSON.stringify({ detail: 'No hay credenciales para exportar' }),
   }));
-  await page.getByRole('button', { name: 'Exportar Bitwarden' }).click();
+  await exportBitwarden(page);
   await expect(page.getByRole('alert')).toContainText('No hay credenciales para exportar');
 });
 
@@ -563,7 +655,7 @@ for (const { name, body, contentType, secret } of [
     page.on('download', download => downloads.push(download.suggestedFilename()));
     await page.route('**/api/export', route => route.fulfill({ status: 503, contentType, body }));
 
-    await page.getByRole('button', { name: 'Exportar Bitwarden' }).click();
+    await exportBitwarden(page);
     const alert = page.getByRole('alert');
     await expect(alert).toContainText('No se pudo exportar (503)');
     await expect(alert).not.toContainText(secret);
@@ -632,8 +724,7 @@ for (const { name, viewport } of [
   test(`keeps the error notice clear of navigation and header on ${name}`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await page.route('**/api/export', route => route.fulfill({ status: 503, body: '' }));
-    const exportButton = page.getByRole('button', { name: 'Exportar Bitwarden' });
-    await exportButton.click();
+    await exportBitwarden(page);
     const alert = page.getByRole('alert');
     await expect(alert).toContainText('No se pudo exportar');
     const notice = (await alert.boundingBox())!;
@@ -646,7 +737,7 @@ for (const { name, viewport } of [
       await nav.getByRole('button', { name: 'Ajustes' }).click();
       await expect(page.getByRole('heading', { name: 'Ajustes', exact: true }).first()).toBeVisible();
     } else {
-      await exportButton.click();
+      await exportBitwarden(page);
     }
     await expect(alert).toBeVisible();
     await alert.getByRole('button', { name: 'Cerrar aviso' }).click();
@@ -693,7 +784,7 @@ test('keeps a long notice between the header and navigation in a short viewport'
   await page.route('**/api/export', route => route.fulfill({
     status: 503, contentType: 'application/json', body: JSON.stringify({ detail: message }),
   }));
-  await page.getByRole('button', { name: 'Exportar Bitwarden' }).click();
+  await exportBitwarden(page);
   const alert = page.getByRole('alert');
   await expect(alert).toContainText(message);
   const box = (await alert.boundingBox())!;
@@ -711,7 +802,7 @@ test('keeps a long notice between the header and navigation in a short viewport'
   await close.focus();
   await page.keyboard.press('Enter');
   await expect(alert).toHaveCount(0);
-  await page.getByRole('button', { name: 'Exportar Bitwarden' }).click();
+  await exportBitwarden(page);
   await expect(alert).toBeVisible();
   await page.getByRole('navigation', { name: 'Navegación móvil' }).getByRole('button', { name: 'Ajustes' }).click();
   await page.waitForTimeout(6000);
@@ -720,7 +811,7 @@ test('keeps a long notice between the header and navigation in a short viewport'
 
 test('moves the persistent notice into the active dialog', async ({ page }) => {
   await page.route('**/api/export', route => route.fulfill({ status: 503, body: '' }));
-  await page.getByRole('button', { name: 'Exportar Bitwarden' }).click();
+  await exportBitwarden(page);
   const alert = page.getByRole('alert');
   await expect(alert).toHaveCount(1);
   await page.locator('.desktop-table').getByRole('row', { name: /Conflict/ }).getByRole('button', { name: 'Comparar' }).click();
@@ -746,7 +837,7 @@ for (const viewport of [{ width: 320, height: 320 }, { width: 390, height: 250 }
     await page.route('**/api/export', route => route.fulfill({
       status: 503, contentType: 'application/json', body: JSON.stringify({ detail: 'Error largo. '.repeat(100) }),
     }));
-    await page.getByRole('button', { name: 'Exportar Bitwarden' }).click();
+    await exportBitwarden(page);
     const alert = page.getByRole('alert');
     await expect(alert).toBeVisible();
     const noticeBox = (await alert.boundingBox())!;
