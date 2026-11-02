@@ -20,14 +20,6 @@ def origin_account(rec: Credential) -> Optional[Tuple[Any, str]]:
     return url.key[:2], rec.username
 
 
-def host_account(rec: Credential) -> Optional[Tuple[str, str]]:
-    """Domain + username, to warn about related accounts across URL paths."""
-    url = parse_url(rec.url)
-    if url.host and not url.invalid and rec.username:
-        return url.host, rec.username
-    return None
-
-
 def account_key(rec: Credential) -> Optional[Any]:
     url = parse_url(rec.url)
     if not rec.url or not rec.username or url.invalid or url.embedded_auth:
@@ -38,12 +30,3 @@ def account_key(rec: Credential) -> Optional[Any]:
 def duplicate_key(rec: Credential) -> Optional[Any]:
     account = account_key(rec)
     return (account, rec.password) if account and rec.password else None
-
-
-def masked_username(username: str) -> str:
-    if not username:
-        return "(sin usuario)"
-    if "@" in username:
-        local, domain = username.rsplit("@", 1)
-        return (local[:2] + "***@" + domain) if local else "***@" + domain
-    return username[:2] + "***" if len(username) > 2 else "**"

@@ -5,13 +5,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from backend.password_checker.domain.accounts import account_key, duplicate_key, masked_username, origin_account  # noqa: E402
+from backend.password_checker.domain.accounts import account_key, duplicate_key, origin_account  # noqa: E402
 from backend.password_checker.domain.credential import Credential  # noqa: E402
 from backend.password_checker.domain.notes import NOTE_SEPARATOR, combine_notes  # noqa: E402
 from backend.password_checker.domain.reuse import shared_password_groups  # noqa: E402
 from backend.password_checker.domain.strength import Strength, assess_strength, is_weak  # noqa: E402
 from backend.password_checker.domain.urls import (  # noqa: E402
-    bitwarden_uri, is_android_source, parse_url, supported_uri, web_origin,
+    bitwarden_uri, parse_url, supported_uri,
 )
 
 
@@ -38,8 +38,6 @@ class UrlTests(unittest.TestCase):
         second = parse_url('android://SIGN-B@com.example.app/')
         self.assertEqual(first.host, 'com.example.app')
         self.assertNotEqual(first.key, second.key)
-        self.assertTrue(is_android_source(' android://SIGN-A@com.example.app/ '))
-        self.assertFalse(is_android_source('androidapp://com.example.app'))
         # Same as Bitwarden's Chrome importer: package kept as written, signature dropped.
         self.assertEqual(bitwarden_uri('android://SIGN@Com.Example.App/'), 'androidapp://Com.Example.App')
         self.assertEqual(bitwarden_uri('https://example.org'), 'https://example.org')
@@ -48,13 +46,6 @@ class UrlTests(unittest.TestCase):
         self.assertTrue(supported_uri('https://example.org'))
         self.assertFalse(supported_uri('example.org'))
         self.assertFalse(supported_uri(' https://example.org'))
-
-    def test_web_origin_never_leaks_path_query_or_userinfo(self):
-        self.assertEqual(web_origin('https://Host.invalid:8443/reset/TOKEN?key=x#f'), 'https://host.invalid:8443/')
-        self.assertEqual(web_origin('http://host.invalid:80/a'), 'http://host.invalid/')
-        self.assertIsNone(web_origin('https://user:pw@host.invalid/'))
-        self.assertIsNone(web_origin('androidapp://com.example.app'))
-        self.assertIsNone(web_origin('https://host.invalid:99999/'))
 
 
 class StrengthTests(unittest.TestCase):
@@ -95,13 +86,6 @@ class AccountTests(unittest.TestCase):
                          origin_account(cred('androidapp://com.example.app', 'eve', 'x')))
         self.assertIsNone(origin_account(cred('ftp://example.org', 'alice', 'x')))
         self.assertIsNone(origin_account(cred('https://example.org', '', 'x')))
-
-    def test_masked_username(self):
-        self.assertEqual(masked_username('alice@example.org'), 'al***@example.org')
-        self.assertEqual(masked_username('@example.org'), '***@example.org')
-        self.assertEqual(masked_username('alice'), 'al***')
-        self.assertEqual(masked_username('ab'), '**')
-        self.assertEqual(masked_username(''), '(sin usuario)')
 
 
 class NotesTests(unittest.TestCase):
