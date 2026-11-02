@@ -323,6 +323,30 @@ test('opens the comparison centred and the editor above it', async ({ page }) =>
   await expect(compare).toBeVisible();
 });
 
+test('keeps the comparison open after discarding one record', async ({ page }) => {
+  await page.locator('.desktop-table').getByRole('row', { name: /Conflict/ }).getByRole('button', { name: 'Comparar' }).click();
+  const compare = page.getByRole('dialog', { name: 'Comparar duplicados' });
+  const cards = compare.locator('.compare-card');
+  await cards.first().getByRole('button', { name: 'Descartar' }).click();
+  await expect(metric(page, 'En la papelera')).toHaveText('1');
+  await expect(compare).toBeVisible();
+  await expect(cards).toHaveCount(2);
+  await expect(cards.first()).toContainText('En la papelera');
+  await expect(cards.first().getByRole('button', { name: 'Descartar' })).toHaveCount(0);
+  await expect(compare.locator('.compare-flags')).toHaveCount(0);
+  await expect(compare).toContainText('Ya no quedan duplicados activos en este grupo.');
+
+  await cards.nth(1).getByRole('button', { name: 'Ver / editar' }).click();
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  await expect(editor.getByRole('button', { name: 'Descartar' })).toBeVisible();
+  await editor.getByRole('button', { name: 'Cancelar' }).click();
+
+  await cards.first().getByRole('button', { name: 'Restaurar' }).click();
+  await expect(metric(page, 'En la papelera')).toHaveText('0');
+  await expect(cards.first().getByRole('button', { name: 'Descartar' })).toBeVisible();
+  await expect(compare.locator('.compare-flags')).toHaveCount(2);
+});
+
 test('saves an encrypted session and opens it again', async ({ page }) => {
   const passphrase = 'fictional-session-passphrase';
   await page.getByRole('button', { name: 'Fusionar copias exactas' }).click();
