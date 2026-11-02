@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onUnmounted, ref, watch } from 'vue';
 import TrashIcon from '../TrashIcon.vue';
 import { safeWebUrl } from '../api';
 import { confirmAction } from '../confirm';
@@ -36,6 +36,18 @@ watch(() => props.record, record => {
 }, { immediate: true });
 // Edits only reach the server on save, so any other way out of the editor discards them.
 const dirty = computed(() => (Object.keys(loaded.value) as (keyof RecordEdit)[]).some(key => form.value[key] !== loaded.value[key]));
+
+// Reloading or closing the tab would also drop the edits: let the browser warn, only while there are some.
+// Browsers show their own message, and some mobile ones may not show it at all.
+function warnBeforeUnload(event: BeforeUnloadEvent): void {
+  event.preventDefault();
+  event.returnValue = '';
+}
+watch(dirty, value => {
+  if (value) window.addEventListener('beforeunload', warnBeforeUnload);
+  else window.removeEventListener('beforeunload', warnBeforeUnload);
+});
+onUnmounted(() => window.removeEventListener('beforeunload', warnBeforeUnload));
 
 async function requestClose(): Promise<void> {
   if (dirty.value && !await confirmAction('Hay cambios sin guardar en esta credencial. Si cierras la ficha, se perderán. ¿Continuar?', 'Descartar cambios', true)) return;
