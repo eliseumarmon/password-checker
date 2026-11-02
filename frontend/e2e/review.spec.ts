@@ -413,9 +413,11 @@ test('asks with its own dialog and cancels with the button, Escape or a click ou
   await merge.click();
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
+  await expect(merge).toBeFocused();
   await merge.click();
   await page.mouse.click(5, 5);
   await expect(dialog).toBeHidden();
+  await expect(merge).toBeFocused();
   await expect(metric(page, 'En la papelera')).toHaveText('0');
   await merge.click();
   await confirmWith(page, 'Fusionar');
