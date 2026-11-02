@@ -456,6 +456,22 @@ test('asks above the editor before opening a local address on Android', async ({
   expect(popups).toHaveLength(0);
 });
 
+test('opens a local address on Android after confirming', async ({ page }) => {
+  await page.addInitScript(() => Object.defineProperty(navigator, 'userAgent', { get: () => 'Mozilla/5.0 (Linux; Android 14) Mobile' }));
+  await page.reload();
+  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.locator('.desktop-table').getByRole('row', { name: /carol/ }).getByRole('button', { name: 'Editar' }).click();
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  // The E2E server itself, so the new tab never reaches a real local service.
+  await editor.getByLabel('URL o paquete Android').fill('http://127.0.0.1:5173/fictional-path');
+  await editor.getByRole('button', { name: /Abrir sitio/ }).click();
+  const opened = page.context().waitForEvent('page');
+  await confirmWith(page, 'Abrir de todas formas');
+  // Only the origin is opened: no path, query or hash leaves the editor.
+  expect((await opened).url()).toBe('http://127.0.0.1:5173/');
+  await expect(editor).toBeVisible();
+});
+
 test('saves an encrypted session and opens it again', async ({ page }) => {
   const passphrase = 'fictional-session-passphrase';
   await page.getByRole('button', { name: 'Fusionar copias exactas' }).click();
