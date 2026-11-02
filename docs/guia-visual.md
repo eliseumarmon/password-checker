@@ -104,7 +104,7 @@ Acción transversal visible: **Guardar sesión cifrada** (cuando haya una sesió
 
 **Vista Todas:** tabla ordenable por nombre, URL, usuario, tipo, origen, riesgo y estado, con filtro `Solo pendientes` y grupos de URL contiguos al ordenar. Edición en panel, no en una cuadrícula de inputs siempre visible; evita cambios accidentales.
 
-**Interacción teclado:** `Tab` recorre controles, `Enter` abre registro, `Esc` cierra panel/cancela edición sin guardar, `Ctrl/Cmd+Z` deshace una operación dentro del editor; confirmar de forma explícita las acciones destructivas. No utilizar atajos para revelar contraseñas globalmente.
+**Interacción teclado:** `Tab` recorre controles, `Enter` abre registro, `Ctrl/Cmd+Z` deshace una operación dentro del editor; confirmar de forma explícita las acciones destructivas. `Esc` solo cancela el diálogo de confirmación: los paneles (comparación, ficha, sesión cifrada) no se cierran con `Esc`, sino con «✕», «Cancelar» o un clic fuera, y la ficha avisa antes de perder cambios sin guardar. No utilizar atajos para revelar contraseñas globalmente.
 
 ## 5. Vista móvil: verificación y continuidad
 
@@ -158,7 +158,7 @@ Acción transversal visible: **Guardar sesión cifrada** (cuando haya una sesió
 8. **Desglose de auditoría:** grupos por contraseña reutilizada con número de cuentas, pero **sin el valor de la contraseña en el encabezado**.
 9. **Modal de exportación:** resultados incluidos/excluidos, conflictos pendientes, destino y formato Bitwarden; exige confirmación explícita.
 10. **Bloqueo de sesión:** tras inactividad configurada; oculta la UI y exige reabrir la sesión cifrada cuando proceda.
-11. **Aviso de error:** flotante arriba y centrado, siempre por encima de diálogos abiertos; muestra el motivo del servidor y se cierra con «×».
+11. **Aviso de error:** flotante en la parte inferior de la página, encima de la navegación móvil; con un diálogo abierto se muestra dentro del diálogo superior (sesión cifrada, ficha o comparación). Muestra el motivo del servidor y se cierra con «×». El diálogo de confirmación queda por encima.
 12. **Diálogo de confirmación:** sustituye a la confirmación nativa del navegador y queda por encima de cualquier otro diálogo. Título «Confirmar acción», el mismo texto del aviso y dos botones: «Cancelar», que recibe el foco al abrirse, y uno que nombra la acción, en rojo cuando envía registros a la papelera. `Tab` no sale del diálogo; `Esc` y el clic fuera cancelan, y el foco vuelve al control que lo abrió.
 
 ## 7. Diseño de datos sensibles
