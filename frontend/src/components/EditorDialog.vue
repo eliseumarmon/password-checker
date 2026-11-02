@@ -7,7 +7,23 @@ import { labelReview } from '../labels';
 import type { CredentialDetail, RecordEdit } from '../types';
 
 const props = defineProps<{ record: CredentialDetail; busy: boolean }>();
-defineEmits<{ close: []; save: [form: RecordEdit]; trash: [id: string]; restore: [id: string] }>();
+const emit = defineEmits<{ close: []; save: [form: RecordEdit]; trash: [id: string]; restore: [id: string] }>();
+
+// Only a click that starts and ends on the backdrop closes the editor: browsers send a press
+// that starts on one side and ends on the other (a text selection, a drag) to the backdrop as a click.
+let pressedOnBackdrop = false;
+let releasedOnBackdrop = false;
+function onBackdropDown(event: PointerEvent): void {
+  pressedOnBackdrop = event.target === event.currentTarget;
+}
+function onBackdropUp(event: PointerEvent): void {
+  releasedOnBackdrop = event.target === event.currentTarget;
+}
+function onBackdropClick(event: MouseEvent): void {
+  const close = pressedOnBackdrop && releasedOnBackdrop && event.target === event.currentTarget;
+  pressedOnBackdrop = releasedOnBackdrop = false;
+  if (close) emit('close');
+}
 
 const form = ref<RecordEdit>({});
 const revealed = ref(false);
@@ -28,7 +44,7 @@ async function openSite(url: string): Promise<void> {
 </script>
 
 <template>
-  <div class="overlay modal-overlay" @click.self="$emit('close')">
+  <div class="overlay modal-overlay" @pointerdown="onBackdropDown" @pointerup="onBackdropUp" @click="onBackdropClick">
     <section class="editor-dialog card" role="dialog" aria-modal="true" aria-label="Editar credencial">
       <slot />
       <div class="dialog-content">
