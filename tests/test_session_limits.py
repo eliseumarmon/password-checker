@@ -44,6 +44,13 @@ class WorkspaceSessionLimitTests(unittest.TestCase):
             self.workspace.import_files([imported(cred(2), cred(3), cred(4))])
         self.assert_unchanged()
 
+    def test_import_of_more_files_than_a_session_holds_is_rejected_without_trace(self):
+        # One change first, so a rejected import must also leave the undo history alone.
+        self.workspace.change(self.before['records'][0]['id'], {'note': 'kept'})
+        files = [imported(cred(2), name=f'{index}.csv') for index in range(limits.MAX_WORKSPACE_FILES + 1)]
+        self.assertEqual(len(files), 16)
+        self.assert_rejected_without_trace(lambda: self.workspace.import_files(files), 'como máximo 15 archivos')
+
     def test_import_with_field_over_text_limit_names_the_field_not_the_value(self):
         secret = 'fictional-secret-note-' + 'x' * 30
         with patch.object(limits, 'MAX_SNAPSHOT_TEXT_CHARS', 20), self.assertRaises(ValueError) as caught:

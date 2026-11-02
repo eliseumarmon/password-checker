@@ -45,6 +45,7 @@ class SessionFit:
     """How a workspace state measures against what a session file can save and restore."""
 
     records: int
+    files: int
     oversized_fields: tuple[str, ...]
     excess_chars: int
     file_bytes: int
@@ -54,6 +55,9 @@ class SessionFit:
         if self.records > limits.MAX_SESSION_RECORDS:
             return (f'Una sesión cifrada admite como máximo {limits.MAX_SESSION_RECORDS} credenciales '
                     f'y el resultado tendría {self.records}.')
+        if self.files > limits.MAX_WORKSPACE_FILES:
+            return (f'Una sesión cifrada admite como máximo {limits.MAX_WORKSPACE_FILES} archivos '
+                    f'y el resultado tendría {self.files}.')
         if self.oversized_fields:
             return self.oversized_fields[0]
         if self.file_bytes > limits.MAX_SESSION_BYTES:
@@ -64,6 +68,7 @@ class SessionFit:
     def no_worse_than(self, other: SessionFit) -> bool:
         """Each measure stays within its limit, or does not grow past where *other* already was."""
         measures = ((self.records, other.records, limits.MAX_SESSION_RECORDS),
+                    (self.files, other.files, limits.MAX_WORKSPACE_FILES),
                     (self.excess_chars, other.excess_chars, 0),
                     (self.file_bytes, other.file_bytes, limits.MAX_SESSION_BYTES))
         return all(new <= max(old, limit) for new, old, limit in measures)
@@ -71,7 +76,7 @@ class SessionFit:
 
 def session_fit(records: list[Candidate], files: list[dict[str, Any]]) -> SessionFit:
     oversized = list(_oversized_fields(records))
-    return SessionFit(len(records), tuple(message for message, _ in oversized),
+    return SessionFit(len(records), len(files), tuple(message for message, _ in oversized),
                       sum(excess for _, excess in oversized),
                       limits.session_file_size(len(encode_payload(to_payload(records, files)))))
 
