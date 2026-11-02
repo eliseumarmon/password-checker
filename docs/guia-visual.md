@@ -1,8 +1,6 @@
 # Password Checker — Guía visual y de interacción
 
-> **Propuesta de diseño v0.1 · 29 de octubre de 2026.**
->
-> Las secciones siguientes describen propuestas y criterios de diseño, no una lista de funciones disponibles. Consulta el [estado de implementación](implementacion-v0.1.md) y el [flujo disponible](flujo-usuario.md) para conocer el comportamiento actual. La sesión cifrada manual sí está implementada; no hay bloqueo automático ni vista previa detallada de exportación.
+Criterios de diseño e interacción: qué debe cumplir la interfaz y por qué. No describe cómo funciona hoy la aplicación, que está en el [flujo de usuario](flujo-usuario.md), ni las ideas aún sin implementar, que están en el [trabajo pendiente](pendiente.md). Nació como propuesta de diseño el 29 de octubre de 2026.
 
 ## 1. Concepto estético
 
@@ -17,7 +15,7 @@
 5. **Continuidad.** La revisión de cientos de registros debe poder retomarse sin repetir trabajo.
 6. **Sin falsear certezas.** «Revisado» no significa «Acceso verificado»; no haber consultado filtraciones no significa «Sin filtraciones».
 
-**Lenguaje de interfaz:** español sencillo, acciones concretas: «Comparar», «Conservar ambos», «Descartar» (a la papelera), «Restaurar», «Deshacer», «Guardar sesión cifrada». Evitar etiquetas ambiguas como «Arreglar» y «Seguro» cuando no se haya comprobado nada.
+**Lenguaje de interfaz:** español sencillo, acciones concretas: «Comparar», «Descartar» (a la papelera), «Restaurar», «Deshacer», «Guardar sesión cifrada». Evitar etiquetas ambiguas como «Arreglar» y «Seguro» cuando no se haya comprobado nada.
 
 ## 2. Sistema visual
 
@@ -54,93 +52,49 @@ No utilizar verde para indicar que una contraseña es «segura» si únicamente 
 
 | Tipo | Forma | Qué significa |
 |---|---|---|
-| Duplicado exacto | Indicador neutro «3 copias» | URL canónica, usuario exacto y contraseña iguales; pueden diferir notas y procedencia |
+| Duplicado exacto | Indicador neutro «Copia exacta» | URL canónica, usuario exacto y contraseña iguales; pueden diferir notas y procedencia |
 | Conflicto | Icono alerta y texto «Contraseñas diferentes» | Misma cuenta aparente, variantes que requieren comprobación |
-| Cuenta distinta | Indicador «Otro usuario» | Mismo sitio, distinta identidad; normalmente conservar |
+| Cuenta distinta | Indicador «Varias cuentas» | Mismo sitio, distinta identidad; normalmente conservar |
 | Reutilización | Icono advertencia + «Usada en N cuentas» | Misma contraseña en cuentas distintas; **no** equivale a duplicado |
 | Pendiente | Punto + texto «Pendiente» | No revisado |
-| Revisado | Check de revisión + texto | Inspeccionado sin confirmar acceso |
-| Verificado | Check de acceso + texto «Acceso comprobado» | El usuario declara que ha iniciado sesión correctamente |
-| Incorrecto | Icono X + texto «No permite acceder» | Requiere corrección manual |
+| Revisado | Check de revisión + texto «Revisada» | Inspeccionado sin confirmar acceso |
+| Verificado | Check de acceso + texto «Verificada» | El usuario declara que ha iniciado sesión correctamente |
+| Incorrecto | Icono X + texto «No funciona» | Requiere corrección manual |
 | En la papelera | Icono de basura y sección «Papelera» | No saldrá en el CSV; se restaura desde la papelera |
 
 El estado de **revisión** y el estado de **seguridad** son independientes. Las ediciones de URL/usuario/contraseña invalidan la verificación previa; una edición de notas no.
 
 ## 3. Arquitectura de información
 
-Tres destinos de primer nivel:
+Las pantallas actuales se describen en el [flujo de usuario](flujo-usuario.md). Criterios:
 
-- **Credenciales:** subpestañas `Duplicados` (por defecto tras importar) y `Todas`; comparación, filtro web/Android, edición, origen, decisiones y vista previa.
-- **Auditoría:** `Reutilizadas`, `Poco seguras`, `Datos por revisar`, `Filtraciones: no comprobadas`. Agrupación desplegable, estilo de las capturas de referencia. No mezclar duplicados con reutilización.
-- **Ajustes:** idioma, tema, privacidad, caducidad por inactividad, exportación, sesión cifrada y ayuda.
-
-Acción transversal visible: **Guardar sesión cifrada** (cuando haya una sesión abierta) y, al final del proceso, **Exportar a Bitwarden** con resumen previo.
+- Duplicados y reutilización son problemas distintos y no se mezclan: los duplicados se tratan en **Credenciales** y la reutilización en **Auditoría**.
+- La auditoría no falsea certezas: las filtraciones aparecen como «no comprobadas», nunca como «0».
+- Las acciones transversales, **Guardar sesión cifrada** (con una sesión abierta) y **Exportar a Bitwarden**, están siempre visibles.
 
 ## 4. Vista de escritorio: comparación intensiva
 
 **Ancho de diseño:** 1280–1600 px (referencia 1440); disposición adaptable a pantallas ≥ 1100 px. El escritorio es la herramienta principal de consolidación, no una versión móvil estirada.
 
-```text
-┌─────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ Password Checker    Sesión local · 312/480 revisadas          [Ocultar todo] [Guardar] [Exportar]  │
-├──────────────────┬──────────────────────────────────────────────────────────────────────────────────┤
-│ Credenciales     │ Duplicados       36 grupos  ·  18 pendientes                                 │
-│  ├ Duplicados    │ [Buscar nombre, URL o usuario]  [Web/Android ▾] [Estado ▾] [Orden ▾]          │
-│  └ Todas         │                                                                                  │
-│ Auditoría        │  Sitio ↕      Usuario ↕        Coincide URL  Usuario  Clave   Estado          │
-│ Ajustes          │  Example.org   cuenta@example…      ✓         ✓       ≠    Conflicto   >     │
-│                  │  Example.org   cuenta@example…      ✓         ✓       =    2 copias    >     │
-│                  │  Otra web      otro usuario          ✓         ≠       —    Dos cuentas >     │
-│                  │                                                                                  │
-│                  │             Seleccionar grupo → panel de comparación                             │
-└──────────────────┴──────────────────────────────────────────────────────────────────────────────────┘
-```
+**Estructura:** barra lateral de **220–240 px**, contraíble a iconos (**64 px**); cabecera de **64–72 px**; contenido central flexible. Tabla de datos con encabezado fijo y ordenación explícita (`asc/desc/ninguna`). La edición (hasta **760 px**) y la comparación de duplicados (hasta **900 px**, registros lado a lado) se abren en diálogos centrados. La cabecera con título, acciones y estadísticas y la barra lateral quedan fijas al desplazarse.
 
-**Estructura:** barra lateral de **220–240 px**, contraíble a iconos (**64 px**); cabecera de **64–72 px**; contenido central flexible. Tabla de datos con encabezado fijo y ordenación explícita (`asc/desc/ninguna`). La edición (hasta **760 px**) y la comparación de duplicados (hasta **900 px**, registros lado a lado) se abren en diálogos centrados. El fondo de la ficha solo la cierra con un clic que empieza y termina en él. La comparación permanece abierta al descartar, restaurar o guardar un registro, de modo que se pueden revisar todos sus registros sin reabrirla. La cabecera con título, acciones y estadísticas queda fija al desplazarse, igual que la barra lateral.
+**Tabla por defecto (Duplicados):** sitio, tipo, usuario, cantidad de registros, coincidencias URL/usuario/contraseña, fuentes, estado y acción. **No mostrar la contraseña en texto en la tabla**. Las contraseñas solo se comparan dentro del grupo y sin mostrarlas. El valor real de usuario es visible (truncar solo visualmente; tooltip/copia accesible).
 
-**Tabla por defecto (Duplicados):** sitio, tipo, usuario, cantidad de registros, coincidencias URL/usuario/contraseña, fuentes, estado y acción. **No mostrar la contraseña en texto en la tabla**. Comparaciones solo dentro del grupo, con controles individuales para revelarla. El valor real de usuario es visible (truncar solo visualmente; tooltip/copia accesible).
+**Panel comparativo:** registros lado a lado o apilados, con su procedencia (navegador y número de fila). Mostrar el motivo técnico de coincidencia, sin exponer contraseñas.
 
-**Panel comparativo:** registros originales lado a lado o apilados, encabezados «Chrome», «Brave», «Firefox» y número de fila. Visualizar URL original, nombre, usuario, contraseña oculta, notas y estado. Selección de conservar A/B/ambos, fusionar notas y edición en el candidato final. Distinguir datos originales (inmutables) de la salida editable. Mostrar el motivo técnico de coincidencia, sin exponer contraseñas.
+**Vista Todas:** tabla ordenable y filtrable. Edición en panel, no en una cuadrícula de inputs siempre visible; evita cambios accidentales.
 
-**Vista Todas:** tabla ordenable por nombre, URL, usuario, tipo, origen, riesgo y estado, con filtro `Solo pendientes` y grupos de URL contiguos al ordenar. Edición en panel, no en una cuadrícula de inputs siempre visible; evita cambios accidentales.
-
-**Interacción teclado:** `Tab` recorre controles, `Enter` abre registro, `Ctrl/Cmd+Z` deshace una operación dentro del editor; confirmar de forma explícita las acciones destructivas. `Esc` solo cancela el diálogo de confirmación: los paneles (comparación, ficha, sesión cifrada) no se cierran con `Esc`, sino con «✕», «Cancelar» o un clic fuera, y la ficha avisa antes de perder cambios sin guardar. No utilizar atajos para revelar contraseñas globalmente.
+**Interacción teclado:** `Tab` recorre controles, `Enter` abre registro, `Ctrl/Cmd+Z` deshace una operación dentro del editor; confirmar de forma explícita las acciones destructivas. El comportamiento de `Esc` y del cierre de diálogos se describe en el [flujo de usuario](flujo-usuario.md). No utilizar atajos para revelar contraseñas globalmente.
 
 ## 5. Vista móvil: verificación y continuidad
 
 **Anchos de referencia:** 360, 390 y 430 px; diseño compacto < 720 px. Optimizar para una mano, zoom y teclados virtuales. **No comprimir la tabla de escritorio** ni imponer desplazamiento horizontal.
 
-```text
-┌─────────────────────────────────┐
-│ Password Checker   [● Local] [⋯]│
-│ Revisar duplicados               │
-│ 312 de 480 revisadas             │
-│ [██████████░░░░░] 65 %           │
-│ [Buscar sitio o usuario         ]│
-│ [Pendientes ▾] [Web / Android ▾] │
-│                                 │
-│ ┌─────────────────────────────┐ │
-│ │ Example.org       Conflicto │ │
-│ │ cuenta@example.com           │ │
-│ │ URL ✓  Usuario ✓  Clave ≠   │ │
-│ │ 2 variantes      [Comparar] │ │
-│ └─────────────────────────────┘ │
-│ ┌─────────────────────────────┐ │
-│ │ App Android     3 registros │ │
-│ │ paquete.example.app          │ │
-│ │ Revisada          [Abrir]   │ │
-│ └─────────────────────────────┘ │
-│                                 │
-├─────────────────────────────────┤
-│ Credenciales   Auditoría Ajustes│
-└─────────────────────────────────┘
-```
+**Navegación:** barra inferior fija, respetando `safe-area-inset-bottom`. Tarjetas compactas en lugar de filas, con 1 acción principal por tarjeta. El detalle muestra identidad, URL y botón para abrir la web, contraseña oculta con revelado individual, notas editables, procedencia y estado.
 
-**Navegación:** barra inferior fija con 3 opciones, respetando `safe-area-inset-bottom`; cabecera con sesión local/bloqueada. Tarjetas compactas en lugar de filas, con 1 acción principal por tarjeta. Al entrar, detalle de pantalla completa (no modal estrecho): identidad, URL y botón «Abrir web», contraseña oculta con ojo individual, notas editables, fuentes, riesgos, verificación y navegación `Anterior / Siguiente pendiente`.
+**Comparación móvil:** tarjetas apiladas, con indicadores de coincidencia siempre visibles. Confirmación y deshacer. Usar acordeones para metadatos secundarios, pero **no esconder la razón del conflicto**.
 
-**Comparación móvil:** tarjetas A y B apiladas, con indicadores de coincidencia siempre visibles; acción `Elegir para exportación`, `Conservar ambas`, `Fusionar notas`. Confirmación y deshacer. Usar acordeones para metadatos secundarios, pero **no esconder la razón del conflicto**.
-
-**Android:** filtro `Aplicaciones Android` y nombre del paquete; no representar `androidapp://` como enlace web. En teléfono mostrar `Abrir aplicación (si existe mecanismo compatible)` / `Buscar en tienda` / `Marcar verificada`. Nunca suponer que el esquema identifica una actividad Android lanzable; el identificador del paquete por sí solo no garantiza un enlace de apertura. Para `127.0.0.1` mostrar el aviso «Esta dirección apunta a este dispositivo».
+**Android:** filtro `Aplicaciones Android` y nombre del paquete; no representar `androidapp://` como enlace web. Nunca suponer que el esquema identifica una actividad Android lanzable; el identificador del paquete por sí solo no garantiza un enlace de apertura.
 
 **Acceso móvil a la app:** primera solución de diseño mediante conexión USB + ADB reverse manteniendo el backend en `127.0.0.1` del PC; no habilitar el servidor en LAN por defecto. No considerar el acceso mediante Wi-Fi inseguro como característica lista para usar.
 
@@ -151,20 +105,19 @@ Acción transversal visible: **Guardar sesión cifrada** (cuando haya una sesió
 1. **Dropzone + selector de archivos:** admite varios CSV; identifica navegador por cabecera, no solo por nombre de fichero; muestra recuento y errores específicos; los originales quedan intactos.
 2. **Chip de coincidencia:** «URL ✓ / Usuario ✓ / Clave ≠» sin mostrar secretos. `≠` no implica contraseña incorrecta.
 3. **Comparador de registros:** original inmutable frente a candidato editable; procedencia visible.
-4. **Campo secreto:** oculto por defecto, ojo con etiqueta «Mostrar contraseña», botón copiar opcional con aviso de portapapeles; nunca revelar todas al cargar.
+4. **Campo secreto:** oculto por defecto, control con etiqueta «Mostrar contraseña»; nunca revelar todas al cargar.
 5. **Enlace de servicio:** clic explícito abre **pestaña nueva** solo para URL web `http(s)` validada, con `noopener noreferrer`; si hay credenciales en URL, exigir revisión y no abrirla tal cual. No usar favicons remotos.
-6. **Ficha de revisión:** estado, fecha local si se confirma manualmente, acciones «Marcar revisada» y «Acceso verificado» separadas.
-7. **Aviso de edición:** cambios pendientes, deshacer, indicación de qué cambió; no autoaplicar sobre originales. Hoy la ficha avisa con el diálogo de confirmación antes de perder cambios sin guardar al cerrarla («Descartar cambios», en rojo) o al descartar o restaurar el registro desde ella; sin cambios no avisa.
+6. **Ficha de revisión:** muestra y cambia el estado de revisión; «Revisada» y «Verificada» son estados distintos.
+7. **Aviso de edición:** advertir antes de perder cambios sin guardar; no autoaplicar sobre originales.
 8. **Desglose de auditoría:** grupos por contraseña reutilizada con número de cuentas, pero **sin el valor de la contraseña en el encabezado**.
-9. **Modal de exportación:** resultados incluidos/excluidos, conflictos pendientes, destino y formato Bitwarden; exige confirmación explícita.
-10. **Bloqueo de sesión:** tras inactividad configurada; oculta la UI y exige reabrir la sesión cifrada cuando proceda.
-11. **Aviso de error:** flotante en la parte inferior de la página, encima de la navegación móvil; con un diálogo abierto se muestra dentro del diálogo superior (sesión cifrada, ficha o comparación). Muestra el motivo del servidor y se cierra con «×». El diálogo de confirmación queda por encima.
-12. **Diálogo de confirmación:** sustituye a la confirmación nativa del navegador y queda por encima de cualquier otro diálogo. Título «Confirmar acción», el mismo texto del aviso y dos botones: «Cancelar», que recibe el foco al abrirse, y uno que nombra la acción, en rojo cuando envía registros a la papelera. `Tab` no sale del diálogo; `Esc` y el clic fuera cancelan, y el foco vuelve al control que lo abrió.
+9. **Confirmación de exportación:** recuento de credenciales incluidas y de conflictos pendientes; exige confirmación explícita.
+10. **Aviso de error:** muestra el motivo concreto, permanece hasta cerrarlo y nunca queda oculto detrás de un diálogo.
+11. **Diálogo de confirmación:** propio de la aplicación, no el del navegador; el botón de confirmar nombra la acción y cancelar es la opción que recibe el foco.
 
 ## 7. Diseño de datos sensibles
 
-- **No guardar credenciales en `localStorage`, `sessionStorage`, `IndexedDB` ni cachés del navegador**. La sesión activa reside en el proceso local; la preferencia de menú contraído se guarda en `localStorage` sin credenciales.
-- Una sesión para reanudar debe persistirse **cifrada con criptografía estándar autenticada y derivación robusta de clave**, con frase de paso elegida por el usuario. No inventar cifrado; no guardar la frase en el proyecto. El guardado manual de sesión cifrada ya está implementado.
+- **No guardar credenciales en `localStorage`, `sessionStorage`, `IndexedDB` ni cachés del navegador**. La sesión activa reside en el proceso local.
+- Una sesión para reanudar debe persistirse **cifrada con criptografía estándar autenticada y derivación robusta de clave**, con frase de paso elegida por el usuario. No inventar cifrado; no guardar la frase en el proyecto.
 - No guardar contraseñas en trazas, logs, informes Markdown, telemetría ni URLs. Escapar todos los datos CSV antes de pintarlos en el DOM (el CSV es entrada no confiable). Proteger contra peticiones de otras páginas al servicio local.
 - No hacer peticiones a Internet para iconos, fuentes, analítica, imágenes o JS; las pruebas de acceso web solo ocurren tras clic explícito en el enlace.
 - No añadir botón «Comprobar todas las cuentas automáticamente»: evita bloqueos, CAPTCHAs y exposición de credenciales.
@@ -193,5 +146,3 @@ Acción transversal visible: **Guardar sesión cifrada** (cuando haya una sesió
 - Acceso en LAN sin autenticación/HTTPS y sin evaluación de riesgos.
 - Sincronización con Bitwarden mediante API; primera etapa es CSV.
 - Iconos/favicons descargados de servicios externos.
-
-**Estado:** propuesta de diseño; consulta el [estado de implementación](implementacion-v0.1.md) para distinguir las funciones disponibles de las pendientes.
