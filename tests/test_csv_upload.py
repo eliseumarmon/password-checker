@@ -178,6 +178,21 @@ class FormatOriginTests(unittest.TestCase):
             with self.subTest(headers=headers, name=name):
                 self.assertEqual(detect_format_and_origin(headers, name), expected)
 
+    def test_origin_needs_brave_or_chrome_as_a_separate_word(self):
+        cases = {
+            'Brave Passwords.csv': 'brave', 'brave-export.csv': 'brave', 'brave_export.csv': 'brave',
+            'export.brave.csv': 'brave', 'BRAVE.csv': 'brave',
+            'Chrome Passwords.csv': 'chrome', 'chrome_passwords.csv': 'chrome', 'my.CHROME-export.csv': 'chrome',
+            # Both browsers named: brave wins.
+            'chrome and brave.csv': 'brave', 'brave-chrome.csv': 'brave',
+            # Only part of a word: no evidence of a browser.
+            'my-bravery-awards.csv': 'unknown', 'chromebook-backup.csv': 'unknown',
+            'unbraved.csv': 'unknown', 'passwords.csv': 'unknown',
+        }
+        for name, origin in cases.items():
+            with self.subTest(name=name):
+                self.assertEqual(detect_format_and_origin(CHROMIUM, name), ('chromium', origin))
+
     def test_renaming_a_file_only_changes_the_inferred_origin(self):
         # A missing trailing note is a Chromium repair: it must not depend on the name.
         data = b'name,url,username,password,note\nSite,https://test.invalid,alice,fake-PW\n'
@@ -185,7 +200,7 @@ class FormatOriginTests(unittest.TestCase):
             'chrome.csv', 'brave.csv', 'mis_contrasenas.csv', 'my-bravery-awards-backup-2026-11-02.csv')}
         self.assertEqual({name: origin for name, (origin, _) in read.items()}, {
             'chrome.csv': 'chrome', 'brave.csv': 'brave', 'mis_contrasenas.csv': 'unknown',
-            'my-bravery-awards-backup-2026-11-02.csv': 'brave'})
+            'my-bravery-awards-backup-2026-11-02.csv': 'unknown'})
         for name, (origin, rows) in read.items():
             with self.subTest(name=name):
                 self.assertEqual([row.source for row in rows], [origin])
