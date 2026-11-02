@@ -2,7 +2,7 @@
 
 Objetivo: cerrar tres riesgos de fiabilidad identificados en la revisión del 2026-11-01 tras retirar la CLI. El producto es la GUI local FastAPI + Vue; Python mínimo: 3.12.
 
-Estado: **pendiente**. Este documento registra trabajo futuro; no acredita que las correcciones o las pruebas se hayan ejecutado.
+Estado: **pendiente**; T3 planificada para empezar primero (L2). Este documento registra trabajo futuro; no acredita que las correcciones o las pruebas se hayan ejecutado.
 
 ## Contexto y alcance
 
@@ -60,9 +60,18 @@ No modificar el formato de `.pwc` v1, la criptografía, las reglas de consolidac
 4. Usar exclusivamente datos ficticios y un backend local aislado, sin telemetría ni servicios externos. Respetar la ejecución serial del workspace en memoria.
 5. Mantener separados y verdes el trabajo Python y el typecheck/build frontend. Documentar localmente cómo reproducir un fallo E2E.
 
+**Implementación prevista (añadida el 2026-11-02, L2):**
+
+- Nuevo job `e2e` en `tests.yml`, separado de `python` y `frontend`: `actions/setup-python@v5` (3.12) e instalación de `backend/requirements.txt`; `actions/setup-node@v4` (22) y `npm ci` en `frontend/`; `npx playwright install --with-deps chromium`; `npm run e2e` con `E2E_PYTHON=python`, que respetan `playwright.config.ts` y `e2e/isolated-welcome.ts`, de modo que no hace falta `.venv` en CI.
+- Si falla, se suben `frontend/test-results/` (trazas `retain-on-failure`) con `actions/upload-artifact@v4` y retención corta. Solo contienen datos ficticios de las pruebas.
+- `forbidOnly` ya se activa con `CI`. No se cambia `playwright.config.ts` salvo que la primera ejecución en Linux lo exija; cualquier ajuste de pruebas por diferencias de plataforma (fuentes, medidas) se anota en el registro.
+- Comprobación de que no pasa con cero pruebas: el registro del job muestra el número de pruebas ejecutadas (hoy 65).
+- Documentación: README (quitar «Las pruebas E2E todavía no se ejecutan en CI») y `docs/pendiente.md` (quitar «Ejecutar las pruebas E2E en CI»).
+- Verificación: GitHub Actions no se puede ejecutar en local con lo instalado, así que la prueba real es subir la rama y comprobar la ejecución con `gh run`. Subir la rama se pide al usuario en ese momento. Riesgo alto (CI): revisión independiente antes de integrar.
+
 ## Orden de ejecución y validación
 
-T1 → T2 → T3. Cada tarea sale de `main` actualizado, con prueba de regresión, revisión independiente y verificación antes de fusionar. No mezclar los tres cambios en un único PR.
+T3 → T1 → T2 (L2: se adelanta T3). Cada tarea sale de `main` actualizado, con prueba de regresión, revisión independiente y verificación antes de fusionar. No mezclar los tres cambios en un único PR.
 
 **Comandos de referencia:**
 
@@ -74,3 +83,4 @@ cd frontend && npm run build && npm run e2e
 ## Registro
 
 - **L1 (2026-11-01):** revisión de `main` tras retirar la CLI: tres riesgos detectados; los tests Python y el build frontend habían terminado correctamente en GitHub Actions, pero E2E no estaba incluido en el workflow. Se crea esta especificación, sin implementación.
+- **L2 (2026-11-02):** una revisión externa, pegada por el usuario, recomienda integrar Playwright en CI antes de seguir ampliando la interfaz. Petición: «Sí» a planificar E2E en CI. Comprobado: `tests.yml` no ejecuta E2E; T1 y T2 siguen pendientes (`api.py` no captura `csv.Error`). Se adelanta T3 y se detalla su implementación; T1 y T2 no cambian.
