@@ -4,6 +4,7 @@ import { api } from './api';
 import { useWorkspace } from './store';
 import TrashIcon from './TrashIcon.vue';
 import ErrorNotice from './components/ErrorNotice.vue';
+import ConfirmDialog from './components/ConfirmDialog.vue';
 import CompareDialog from './components/CompareDialog.vue';
 import EditorDialog from './components/EditorDialog.vue';
 import SessionDialog from './components/SessionDialog.vue';
@@ -13,6 +14,7 @@ import RecordsTable from './components/RecordsTable.vue';
 import AuditView from './components/AuditView.vue';
 import TrashView from './components/TrashView.vue';
 import SettingsView from './components/SettingsView.vue';
+import { confirmAction, pendingConfirm, settleConfirm } from './confirm';
 import { SCREENS } from './labels';
 import { MIN_SESSION_PASSPHRASE_LENGTH } from './limits';
 import type { CredentialDetail, CredentialSummary, DuplicateGroup, FilterType, RecordEdit, Screen, SessionInput, SessionMode } from './types';
@@ -78,7 +80,7 @@ async function loadFileList(files: FileList | File[]): Promise<void> {
   const selectedFiles = Array.from(files).filter(file => file.name.toLowerCase().endsWith('.csv'));
   if (fileInput.value) fileInput.value.value = '';
   if (!selectedFiles.length) { store.error = 'Selecciona archivos CSV'; return; }
-  if (data.value?.stats.total && !window.confirm('Importar reemplazará la sesión actual sin guardar. ¿Continuar?')) return;
+  if (data.value?.stats.total && !await confirmAction('Importar reemplazará la sesión actual sin guardar. ¿Continuar?', 'Importar')) return;
   await store.execute(() => api.importFiles(selectedFiles));
   compareIds.value = null; selected.value = null; subtab.value = 'duplicates'; screen.value = 'credentials';
 }
@@ -100,20 +102,20 @@ async function quickEdit(id: string, payload: RecordEdit): Promise<void> {
 function closeEditor(): void { selected.value = null; }
 function moveToTrash(id: string): Promise<void> { return quickEdit(id, { included: false }); }
 async function trashGroup(group: DuplicateGroup): Promise<void> {
-  if (!window.confirm(`Se moverán ${group.count} registros de «${group.name}» a la papelera. Podrás restaurarlos. ¿Continuar?`)) return;
+  if (!await confirmAction(`Se moverán ${group.count} registros de «${group.name}» a la papelera. Podrás restaurarlos. ¿Continuar?`, 'Mover a la papelera', true)) return;
   await store.execute(() => api.trash(group.members.map(member => member.id)));
   compareIds.value = null;
 }
 function restore(id: string): Promise<void> { return quickEdit(id, { included: true }); }
 async function merge(): Promise<void> {
-  if (!window.confirm('Las copias idénticas por URL, usuario y contraseña irán a la papelera. Las notas se combinarán. ¿Continuar?')) return;
+  if (!await confirmAction('Las copias idénticas por URL, usuario y contraseña irán a la papelera. Las notas se combinarán. ¿Continuar?', 'Fusionar', true)) return;
   await store.execute(api.mergeExact);
   compareIds.value = null;
 }
 async function exportNow(): Promise<void> {
   if (!data.value) return;
   const unresolved = data.value.groups.filter(g => g.kind === 'conflict').length;
-  if (!window.confirm(`Se exportarán ${data.value.stats.included} credenciales. ${unresolved} grupos presentan contraseñas conflictivas. Bitwarden no eliminará duplicados automáticamente. ¿Generar CSV?`)) return;
+  if (!await confirmAction(`Se exportarán ${data.value.stats.included} credenciales. ${unresolved} grupos presentan contraseñas conflictivas. Bitwarden no eliminará duplicados automáticamente. ¿Generar CSV?`, 'Generar CSV')) return;
   try { await api.exportCsv(); } catch (error) { errorMessage(error); }
 }
 function closeSession(): void { sessionMode.value = null; }
@@ -131,7 +133,7 @@ async function submitSession({ passphrase, confirmation, file }: SessionInput): 
       await api.saveSession(passphrase);
     } else if (sessionMode.value === 'load') {
       if (!file) throw new Error('Selecciona el archivo cifrado .pwc.');
-      if (data.value?.stats.total && !window.confirm('Abrir otra sesión reemplazará los cambios que estén en memoria. ¿Continuar?')) return;
+      if (data.value?.stats.total && !await confirmAction('Abrir otra sesión reemplazará los cambios que estén en memoria. ¿Continuar?', 'Abrir sesión')) return;
       await store.execute(() => api.loadSession(file, passphrase));
       if (store.error) return;
       screen.value = 'credentials';
@@ -212,6 +214,7 @@ onUnmounted(() => layoutObserver?.disconnect());
     <SessionDialog v-if="sessionMode" :mode="sessionMode" :busy="store.busy" @close="closeSession" @submit="submitSession">
       <ErrorNotice v-if="errorHost==='session'" :message="store.error" @close="store.error=''" />
     </SessionDialog>
+    <ConfirmDialog v-if="pendingConfirm" :request="pendingConfirm" @settle="settleConfirm" />
     <nav ref="mobileNav" class="mobile-nav" aria-label="Navegación móvil"><button v-for="s in SCREENS" :key="s.id" :class="{active:screen===s.id}" @click="screen=s.id"><TrashIcon v-if="s.icon.kind==='trash'" /><template v-else>{{s.icon.text}}</template><span>{{s.label}}</span></button></nav>
   </div>
 </template>

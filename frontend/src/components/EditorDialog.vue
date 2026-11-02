@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue';
 import TrashIcon from '../TrashIcon.vue';
 import { safeWebUrl } from '../api';
+import { confirmAction } from '../confirm';
 import { labelReview } from '../labels';
 import type { CredentialDetail, RecordEdit } from '../types';
 
@@ -16,11 +17,11 @@ watch(() => props.record, record => {
   revealed.value = false;
 }, { immediate: true });
 
-function openSite(url: string): void {
+async function openSite(url: string): Promise<void> {
   const href = safeWebUrl(url);
   if (!href) return;
   if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(href) && /Android/i.test(navigator.userAgent)) {
-    if (!window.confirm('Esta dirección local apunta a este teléfono, no al ordenador. ¿Abrir de todas formas?')) return;
+    if (!await confirmAction('Esta dirección local apunta a este teléfono, no al ordenador. ¿Abrir de todas formas?', 'Abrir de todas formas')) return;
   }
   window.open(href, '_blank', 'noopener,noreferrer');
 }

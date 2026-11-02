@@ -22,3 +22,4 @@
 @media(max-width:760px){.editor-dialog>.dialog-content{padding:16px 14px 0}}
 @media(max-height:400px){.sticky-head{max-height:calc(100dvh - var(--nav-height) - 64px);overflow:auto}.drawer-actions{position:static}}
 .session-dialog:has(>.error) .drawer-actions,.editor-dialog:has(>.error) .drawer-actions{position:static}
+.confirm-overlay{z-index:40}.confirm-dialog{width:min(480px,100%);padding:22px}.confirm-dialog h2{margin-bottom:12px}.confirm-dialog p{margin:0;overflow-wrap:anywhere}.confirm-dialog .drawer-actions{position:static;padding-bottom:0;flex-wrap:wrap}

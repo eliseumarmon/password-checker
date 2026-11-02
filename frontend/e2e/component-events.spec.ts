@@ -26,13 +26,11 @@ async function csvFile(testInfo: TestInfo, csv: string) {
 async function chooseCsv(page: Page, filename: string, accept: boolean) {
   const chooser = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Importar otros CSV' }).click();
-  const dialogPromise = page.waitForEvent('dialog');
-  const selection = (await chooser).setFiles(filename);
-  const confirmation = await dialogPromise;
-  expect(confirmation.message()).toContain('Importar reemplazará la sesión actual');
-  if (accept) await confirmation.accept();
-  else await confirmation.dismiss();
-  await selection;
+  await (await chooser).setFiles(filename);
+  const confirmation = page.getByRole('alertdialog', { name: 'Confirmar acción' });
+  await expect(confirmation).toContainText('Importar reemplazará la sesión actual');
+  await confirmation.getByRole('button', { name: accept ? 'Importar' : 'Cancelar', exact: true }).click();
+  await expect(confirmation).toBeHidden();
 }
 
 async function workspace(page: Page) {
