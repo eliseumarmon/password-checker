@@ -17,6 +17,13 @@ Este documento reúne lo que la aplicación todavía no hace: limitaciones conoc
 - Límites de sesión: cuando la revisión ya supera un límite y un cambio empeora otro, el mensaje de rechazo puede nombrar el límite que no empeoró; y faltan pruebas por HTTP de esos rechazos al importar y al editar. Detalle en [reliability-hardening](../odd/tasks/reliability-hardening.md#deuda-técnica-registrada) (DT1 y DT2).
 - Limpiar los avisos existentes de `ruff`, hoy fuera de CI (DT3).
 
+## Funcionalidades planificadas
+
+Tienen especificación y tareas en su plan, que es donde se sigue su avance:
+
+1. [Importación: formato y origen separados](../odd/tasks/import-format-origin.md): separar cómo se lee un CSV de dónde viene, dejar de inventar un origen y avisar de las columnas con datos que se descartan.
+2. [Soporte de Safari](../odd/tasks/safari-support.md): importar la exportación de Safari o de la app Contraseñas conservando los códigos 2FA hasta la exportación a Bitwarden; la sesión `.pwc` pasa a v2. Se apoya en la funcionalidad anterior.
+
 ## Ideas de diseño sin implementar
 
 Proceden de la propuesta de diseño inicial y de las mejoras anotadas en el flujo. No se han validado con usuarios.
