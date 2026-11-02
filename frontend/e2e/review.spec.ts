@@ -615,6 +615,20 @@ test('asks with its own dialog and cancels with the button, Escape or a click ou
   await expect(metric(page, 'En la papelera')).toHaveText('1');
 });
 
+test('refuses a second confirmation while one is open and keeps the first', async ({ page }) => {
+  await page.getByRole('button', { name: 'Fusionar copias exactas' }).click();
+  const dialog = page.getByRole('alertdialog', { name: 'Confirmar acción' });
+  await expect(dialog).toContainText('Las copias idénticas');
+  // The backdrop blocks the page, so the second request comes from a programmatic click.
+  await page.evaluate(() => document.querySelector<HTMLButtonElement>('[aria-label="Mover grupo a la papelera"]')!.click());
+  await expect(dialog).toHaveCount(1);
+  await expect(dialog).toContainText('Las copias idénticas');
+  await confirmWith(page, 'Fusionar');
+  // Only the merge ran: one exact copy in the trash, and the group was not moved.
+  await expect(metric(page, 'En la papelera')).toHaveText('1');
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
+});
+
 test('keeps keyboard focus inside the confirmation dialog', async ({ page }) => {
   await page.getByRole('button', { name: 'Fusionar copias exactas' }).click();
   const dialog = page.getByRole('alertdialog', { name: 'Confirmar acción' });
