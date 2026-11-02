@@ -20,6 +20,11 @@ EXACT_COPIES_CSV = (b'name,url,username,password,note\n'
                     b'Site,https://site.invalid/,alice,fictional-secret-123,fictional note two\n')
 
 
+def without_warnings(import_response):
+    """The import response is the workspace snapshot plus the warnings channel."""
+    return {key: value for key, value in import_response.items() if key != 'warnings'}
+
+
 @unittest.skipUnless(TestClient is not None, 'Optional API dependencies not installed')
 class APITests(unittest.TestCase):
     def setUp(self):
@@ -40,7 +45,8 @@ class APITests(unittest.TestCase):
         self.assertEqual(response.status_code, 422)
         self.assertNotIn('content-disposition', response.headers)
         self.assertNotIn('fictional-secret-123', response.text)
-        self.assertEqual(self.client.get('/api/workspace').json(), before)
+        self.assertEqual(before['warnings'], [])
+        self.assertEqual(self.client.get('/api/workspace').json(), without_warnings(before))
 
     def test_rejected_merge_and_trash_are_client_errors_that_change_nothing(self):
         before = self.import_exact_copies()
@@ -52,7 +58,8 @@ class APITests(unittest.TestCase):
             trashed = self.client.post('/api/records/trash', json={'ids': [before['records'][0]['id']]})
         self.assertEqual(trashed.status_code, 422)
         self.assertNotIn('fictional-secret-123', merged.text + trashed.text)
-        self.assertEqual(self.client.get('/api/workspace').json(), before)
+        self.assertEqual(before['warnings'], [])
+        self.assertEqual(self.client.get('/api/workspace').json(), without_warnings(before))
 
     def test_import_edit_export_and_security(self):
         fake_csv = (b'name,url,username,password,note\n'
@@ -222,6 +229,77 @@ class APITests(unittest.TestCase):
         accepted = self.client.post('/api/session/save', json={'passphrase': 'x' * 12})
         self.assertEqual(accepted.status_code, 200, accepted.text)
         self.assertEqual(self.client.post('/api/session/save', json={'passphrase': 'x' * 1025}).status_code, 422)
+
+    def test_import_response_always_carries_warnings_and_never_discarded_values(self):
+        payload = (b'name,url,username,password,note,extra_secret\n'
+                   b'A,https://a.invalid/,alice,fictional-123456,,fictional-discarded-xyz\n')
+        response = self.client.post('/api/import', files=[('files', ('chrome.csv', payload, 'text/csv'))])
+        self.assertEqual(response.status_code, 200, response.text)
+        state = response.json()
+        self.assertEqual(state['warnings'], [{'file': 'chrome.csv', 'imported_count': 1,
+                                              'columns': [{'column': 'extra_secret', 'rows': 1}]}])
+        self.assertEqual(state['stats']['total'], 1)
+        self.assertNotIn('fictional-discarded-xyz', response.text)
+
+    def test_import_without_warnings_returns_an_empty_list(self):
+        payload = b'name,url,username,password,note\nA,https://a.invalid/,alice,fictional-123456,\n'
+        response = self.client.post('/api/import', files=[('files', ('chrome.csv', payload, 'text/csv'))])
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()['warnings'], [])
+
+    def test_import_warnings_are_per_file_with_base_name_and_imported_count(self):
+        warnable = (b'url,username,password,guid\n'
+                    b'https://a.invalid/,alice,fictional-111,fictional-guid-1\n'
+                    b'https://b.invalid/,bob,fictional-222,\n')
+        clean = b'name,url,username,password,note\nC,https://c.invalid/,carol,fictional-333,\n'
+        response = self.client.post('/api/import', files=[
+            ('files', ('dir/sub\\warn.csv', warnable, 'text/csv')),
+            ('files', ('clean.csv', clean, 'text/csv')),
+        ])
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()['warnings'], [
+            {'file': 'warn.csv', 'imported_count': 2, 'columns': [{'column': 'guid', 'rows': 1}]}])
+        self.assertNotIn('fictional-guid-1', response.text)
+
+    def test_warnings_stay_out_of_workspace_session_and_export(self):
+        payload = (b'name,url,username,password,note,extra_secret\n'
+                   b'A,https://a.invalid/,alice,fictional-123456,,fictional-discarded-xyz\n')
+        imported = self.client.post('/api/import', files=[('files', ('chrome.csv', payload, 'text/csv'))])
+        self.assertEqual(imported.status_code, 200, imported.text)
+        self.assertEqual(len(imported.json()['warnings']), 1)
+        workspace_json = self.client.get('/api/workspace').json()
+        self.assertNotIn('warnings', workspace_json)
+        self.assertNotIn('fictional-discarded-xyz', str(workspace_json))
+        passphrase = 'fictional-session-passphrase-12345'
+        saved = self.client.post('/api/session/save', json={'passphrase': passphrase})
+        self.assertEqual(saved.status_code, 200, saved.text)
+        self.assertNotIn(b'fictional-discarded-xyz', saved.content)
+        restored = self.client.post('/api/session/load', data={'passphrase': passphrase},
+                                    files={'file': ('session.pwc', saved.content, 'application/octet-stream')})
+        self.assertEqual(restored.status_code, 200, restored.text)
+        self.assertNotIn('warnings', restored.json())
+        self.assertNotIn('fictional-discarded-xyz', restored.text)
+        export = self.client.get('/api/export')
+        self.assertEqual(export.status_code, 200)
+        self.assertNotIn(b'fictional-discarded-xyz', export.content)
+
+    def test_failed_import_keeps_workspace_snapshot_and_history(self):
+        warnable = b'url,username,password,extra\nhttps://a.invalid/,alice,fictional-111,fictional-x\n'
+        imported = self.client.post('/api/import', files=[('files', ('a.csv', warnable, 'text/csv'))])
+        self.assertEqual(imported.status_code, 200, imported.text)
+        self.assertEqual(len(imported.json()['warnings']), 1)
+        identifier = imported.json()['records'][0]['id']
+        self.client.patch('/api/records/' + identifier, json={'review': 'verified'})
+        before = workspace.snapshot()
+        self.assertTrue(before['can_undo'])
+        self.assertNotIn('warnings', before)
+        good = b'name,url,username,password,note\nC,https://c.invalid/,carol,fictional-333,\n'
+        bad = b'name,url,username,password,note\nB,https://b.invalid/,bob,"fictional-bad"x,\n'
+        response = self.client.post('/api/import', files=[('files', ('ok.csv', good, 'text/csv')),
+                                                          ('files', ('bad.csv', bad, 'text/csv'))])
+        self.assertEqual(response.status_code, 422, response.text)
+        self.assertNotIn('fictional-bad', response.text)
+        self.assertEqual(workspace.snapshot(), before)
 
     def test_cross_origin_rejected_and_no_cache(self):
         response = self.client.get('/api/workspace', headers={'Origin': 'https://evil.example'})

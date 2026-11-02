@@ -20,6 +20,11 @@ USERNAME_COLUMNS = ("username", "user", "login", "loginusername")
 NOTE_COLUMNS = ("note", "notes")
 # How a CSV is read. The origin (domain ORIGINS) only says where it came from.
 FORMATS = ("chromium", "firefox", "generic")
+# Columns each format recognizes but deliberately discards (normalized keys).
+# httpRealm is read only by firefox, so it is NOT ignored a priori elsewhere.
+IGNORED_COLUMNS = {
+    "firefox": ("formactionorigin", "guid", "timecreated", "timelastused", "timepasswordchanged"),
+}
 
 
 def column_key(value):
@@ -66,10 +71,20 @@ def checked_rows(reader):
         yield values
 
 
+def read_columns(fmt):
+    """Normalized keys *fmt* reads and imports (aliases plus format-specific ones)."""
+    keys = {*URL_COLUMNS, *NAME_COLUMNS, *USERNAME_COLUMNS, *NOTE_COLUMNS, "password"}
+    if fmt == "firefox":
+        keys.add("httprealm")
+    return keys
+
+
 def read_export(fmt, filename, origin):
     """Lee una exportacion, validando anchura sin perder columnas silenciosamente.
 
-    *fmt* decide las reglas de lectura; *origin* identifica la procedencia de las credenciales.
+    Devuelve (credenciales, avisos): *fmt* decide las reglas de lectura; *origin*
+    identifica la procedencia de las credenciales. Los avisos listan cada columna
+    desconocida con datos (cabecera original y numero de filas), nunca sus valores.
     """
     if fmt not in FORMATS:
         raise ValueError(f"Formato de CSV no admitido: {fmt}")
@@ -103,6 +118,11 @@ def read_export(fmt, filename, origin):
         if not any(k in keys for k in URL_COLUMNS):
             raise ValueError("Falta columna de URL en el CSV")
         expected = len(headers)
+        # Unknown columns (not read, not deliberately ignored by this format) are
+        # reported per data row; recognized-but-ignored ones stay silent.
+        known = read_columns(fmt) | set(IGNORED_COLUMNS.get(fmt, ()))
+        unknown = [index for index, header in enumerate(headers) if column_key(header) not in known]
+        unknown_counts = dict.fromkeys(unknown, 0)
         note_last = expected > 0 and column_key(headers[-1]) in NOTE_COLUMNS
         url_idx = next((keys[k] for k in URL_COLUMNS if k in keys), None)
         name_idx = next((keys[k] for k in NAME_COLUMNS if k in keys), None)
@@ -147,6 +167,12 @@ def read_export(fmt, filename, origin):
                     raise ValueError("CSV: línea {}: {} columnas, esperadas {}."
                                      " No se importara parcialmente.".format(line, len(values), expected))
 
+            # Count after row validation/repairs and before skipping empty credentials:
+            # a row that yields no credential still counts if the unknown column has data.
+            for index in unknown:
+                if values[index].strip():
+                    unknown_counts[index] += 1
+
             def field(*aliases):
                 for alias in aliases:
                     if alias in keys:
@@ -167,11 +193,16 @@ def read_export(fmt, filename, origin):
             if not any((name, url, username, password, note)):
                 continue
             rows.append(Credential(origin, start_line, name, url, username, password, note))
-    return rows
+    warnings = [{"column": headers[index], "rows": count}
+                for index, count in unknown_counts.items() if count]
+    return rows, warnings
 
 
 def read_upload(file_name, content):
-    """Read an uploaded export from memory as (origin, credentials): no plaintext temp file."""
+    """Read an uploaded export from memory as (origin, credentials, warnings).
+
+    No plaintext temp file; warnings list the unknown columns with data per file.
+    """
     if b"\x00" in content:
         raise ValueError("Archivo con bytes nulos; se rechaza la importación")
     text = content.decode("utf-8-sig", errors="strict")
@@ -180,4 +211,5 @@ def read_upload(file_name, content):
     except csv.Error:
         raise ValueError(malformed_csv(1)) from None
     fmt, origin = detect_format_and_origin(header, file_name)
-    return origin, read_export(fmt, io.StringIO(text, newline=""), origin)
+    credentials, warnings = read_export(fmt, io.StringIO(text, newline=""), origin)
+    return origin, credentials, warnings
