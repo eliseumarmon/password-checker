@@ -59,6 +59,37 @@ class CsvUploadTests(unittest.TestCase):
                 read_upload('chrome.csv', self.chrome.read_bytes())[1]
             self.assertNotIn('fake-PW', str(error.exception))
 
+    def assert_readable_error(self, content, secret):
+        """Python's csv.Error becomes a ValueError that names the line, never the cell."""
+        with self.assertRaises(ValueError) as error:
+            read_upload('chrome.csv', content)
+        self.assertNotIsInstance(error.exception, csv.Error)
+        self.assertIn('formato no válido', str(error.exception))
+        self.assertNotIn(secret, str(error.exception))
+        return str(error.exception)
+
+    def test_bad_quoting_in_a_row_is_a_readable_error(self):
+        message = self.assert_readable_error(
+            b'name,url,username,password,note\n'
+            b'Ok,https://ok.invalid,bob,fictional-ok-123,\n'
+            b'Site,https://test.invalid,alice,"fictional-secret-1"x,\n', 'fictional-secret-1')
+        self.assertIn('línea 3', message)
+
+    def test_bad_quoting_in_the_header_is_a_readable_error(self):
+        self.assert_readable_error(b'name,"url"fictional-header,username,password,note\n', 'fictional-header')
+
+    def test_field_over_the_csv_reader_limit_is_a_readable_error(self):
+        huge = b'fictional-huge-' + b'x' * csv.field_size_limit()
+        self.assert_readable_error(b'name,url,username,password,note\nSite,https://a.invalid,al,pw,' + huge + b'\n',
+                                   'fictional-huge-')
+        self.assert_readable_error(b'name,url,username,password,' + huge + b'\n', 'fictional-huge-')
+
+    def test_valid_quoted_commas_and_line_breaks_still_import(self):
+        source, rows = read_upload('chrome.csv', b'name,url,username,password,note\n'
+                                   b'"A, B",https://a.invalid,alice,"fictional,pw","line one\nline two"\n')
+        self.assertEqual((source, rows[0].name, rows[0].password, rows[0].note),
+                         ('chrome', 'A, B', 'fictional,pw', 'line one\nline two'))
+
     def test_missing_trailing_note_is_completed(self):
         self.chrome.write_text('name,url,username,password,note\nSite,https://test.invalid,alice,fake-PW\n', encoding='utf-8')
         self.assertEqual(read_upload('chrome.csv', self.chrome.read_bytes())[1][0].note, '')

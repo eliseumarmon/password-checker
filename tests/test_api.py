@@ -111,6 +111,19 @@ class APITests(unittest.TestCase):
         self.assertEqual(response.status_code, 422)
         self.assertEqual(workspace.snapshot()['stats']['total'], 1)
 
+    def test_csv_with_bad_quoting_is_a_422_that_changes_nothing(self):
+        good = b'name,url,username,password,note\nA,https://a.invalid/,alice,fictional-123456,\n'
+        imported = self.client.post('/api/import', files=[('files', ('chrome.csv', good, 'text/csv'))])
+        self.assertEqual(imported.status_code, 200, imported.text)
+        before = workspace.snapshot()
+        bad = b'name,url,username,password,note\nB,https://b.invalid/,bob,"fictional-secret-555"x,\n'
+        response = self.client.post('/api/import', files=[('files', ('valid.csv', good, 'text/csv')),
+                                                          ('files', ('chrome.csv', bad, 'text/csv'))])
+        self.assertEqual(response.status_code, 422, response.text)
+        self.assertIn('formato no válido', response.json()['detail'])
+        self.assertNotIn('fictional-secret-555', response.text)
+        self.assertEqual(workspace.snapshot(), before)
+
     def test_malformed_csv_rejected_without_exposing_secret_or_changing_workspace(self):
         good = b'name,url,username,password,note\nA,https://a.invalid/,alice,fictional-123456,\n'
         imported = self.client.post('/api/import', files=[('files', ('chrome.csv', good, 'text/csv'))])

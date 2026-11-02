@@ -24,6 +24,25 @@ def column_key(value):
     return re.sub(r"[\s_-]+", "", value.strip().casefold())
 
 
+def malformed_csv(line, source=None):
+    """Message for Python's csv.Error: it names the line, never the cell contents."""
+    where = f"El CSV de {source}" if source else "El CSV"
+    return (f"{where} tiene un formato no válido en la línea {line}: revisa las comillas y los separadores, "
+            "o si algún campo es demasiado largo.")
+
+
+def checked_rows(reader, source):
+    """Rows of *reader*, turning csv.Error into a readable ValueError."""
+    while True:
+        try:
+            values = next(reader)
+        except StopIteration:
+            return
+        except csv.Error:
+            raise ValueError(malformed_csv(reader.line_num, source)) from None
+        yield values
+
+
 def read_export(source, filename):
     """Lee una exportacion, validando anchura sin perder columnas silenciosamente."""
     if hasattr(filename, "read"):
@@ -36,8 +55,9 @@ def read_export(source, filename):
     rows = []
     with file_context as file:
         reader = csv.reader(file, strict=True)
+        lines = checked_rows(reader, source)
         try:
-            headers = next(reader)
+            headers = next(lines)
         except StopIteration:
             raise ValueError("El CSV de {} esta vacio".format(source))
         headers = [h.strip() for h in headers]
@@ -60,7 +80,7 @@ def read_export(source, filename):
         name_idx = next((keys[k] for k in NAME_COLUMNS if k in keys), None)
         # Algunos exportadores omiten los ultimos campos vacios; SOLO el
         # campo final de nota se puede rellenar sin desplazar columnas.
-        for values in reader:
+        for values in lines:
             line = reader.line_num
             start_line = reader.line_num - sum(value.count("\n") for value in values)
             if not values or (len(values) == 1 and not values[0].strip()):
@@ -127,7 +147,10 @@ def read_upload(file_name, content):
     if b"\x00" in content:
         raise ValueError("Archivo con bytes nulos; se rechaza la importación")
     text = content.decode("utf-8-sig", errors="strict")
-    header = next(csv.reader(io.StringIO(text)), [])
+    try:
+        header = next(csv.reader(io.StringIO(text)), [])
+    except csv.Error:
+        raise ValueError(malformed_csv(1)) from None
     keys = {column_key(h) for h in header}
     source = "firefox" if "httprealm" in keys else ("brave" if "brave" in file_name.lower() else "chrome")
     return source, read_export(source, io.StringIO(text, newline=""))
