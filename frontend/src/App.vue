@@ -49,6 +49,14 @@ const trashed = computed(() => records.value.filter(r => !r.included));
 const visibleRows = computed(() => activeRecords.value.filter(r => matches(r)));
 const visibleGroups = computed(() => groups.value.filter(g => matches(g) && (!pendingOnly.value || g.pending)));
 const progress = computed(() => data.value?.stats.total ? Math.round(100 * data.value.stats.reviewed / data.value.stats.total) : 0);
+// The error notice lives in the topmost open layer: session > editor > comparison > page.
+const errorHost = computed<'session' | 'editor' | 'compare' | 'page' | null>(() => {
+  if (!store.error) return null;
+  if (sessionMode.value) return 'session';
+  if (selected.value) return 'editor';
+  if (selectedGroup.value) return 'compare';
+  return 'page';
+});
 
 function matches(row: CredentialSummary | DuplicateGroup): boolean {
   if (filterType.value !== 'all' && row.type !== filterType.value) return false;
@@ -193,14 +201,14 @@ onUnmounted(() => layoutObserver?.disconnect());
     </main>
 
     <CompareDialog v-if="selectedGroup" :group="selectedGroup" :busy="store.busy" @close="selectedGroup=null" @edit="openRecord" @trash="moveToTrash">
-      <ErrorNotice v-if="store.error && !selected && !sessionMode" :message="store.error" @close="store.error=''" />
+      <ErrorNotice v-if="errorHost==='compare'" :message="store.error" @close="store.error=''" />
     </CompareDialog>
     <EditorDialog v-if="selected" :record="selected" :busy="store.busy" @close="closeEditor" @save="save" @trash="moveToTrash" @restore="restore">
-      <ErrorNotice v-if="store.error && !sessionMode" :message="store.error" @close="store.error=''" />
+      <ErrorNotice v-if="errorHost==='editor'" :message="store.error" @close="store.error=''" />
     </EditorDialog>
-    <ErrorNotice v-if="store.error && !selectedGroup && !selected && !sessionMode" class="floating-error" :message="store.error" @close="store.error=''" />
+    <ErrorNotice v-if="errorHost==='page'" class="floating-error" :message="store.error" @close="store.error=''" />
     <SessionDialog v-if="sessionMode" :mode="sessionMode" :busy="store.busy" @close="closeSession" @submit="submitSession">
-      <ErrorNotice v-if="store.error" :message="store.error" @close="store.error=''" />
+      <ErrorNotice v-if="errorHost==='session'" :message="store.error" @close="store.error=''" />
     </SessionDialog>
     <nav ref="mobileNav" class="mobile-nav" aria-label="Navegación móvil"><button v-for="s in SCREENS" :key="s.id" :class="{active:screen===s.id}" @click="screen=s.id"><TrashIcon v-if="s.icon.kind==='trash'" /><template v-else>{{s.icon.text}}</template><span>{{s.label}}</span></button></nav>
   </div>
