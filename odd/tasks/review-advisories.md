@@ -43,8 +43,8 @@ Ya resueltos y fuera de esta lista: papelera sin cambios (`247e830`), regla de �
 
 ### Documentación y comentarios (S4)
 
-- [ ] T17. `docs/implementacion-v0.1.md` dice que cada pantalla y diálogo es un componente, pero cabecera, estadísticas y barra móvil siguen en `App.vue`: precisar la frase. (R2-doc-overclaims-frontend-split, trozo 6)
-- [ ] T18. El comentario sobre el aviso de error habla de «la cabecera fija»; el revisor la confundió con `.topbar`. Nombrar `.sticky-head` explícitamente. (R2-misleading-error-placement-comment, trozo 6; el aviso sí estaba dentro de `.sticky-head`, `App.vue@0325170:144-161`)
+- [x] T17. Resuelta por la redacción vigente de `docs/implementacion-v0.1.md`: ya no afirma que cada pantalla y diálogo sea un componente independiente; no requiere cambios adicionales. (R2-doc-overclaims-frontend-split, trozo 6)
+- [x] T18. Resuelta por T16: se eliminó el comentario sobre «la cabecera fija» al extraer `ErrorNotice.vue`; el nuevo comentario describe su ubicación en el diálogo activo, fuera del contenido desplazable. No procede referirse ahora a `.sticky-head`. (R2-misleading-error-placement-comment, trozo 6)
 
 ## Registro
 
