@@ -13,7 +13,6 @@ Este documento reúne lo que la aplicación todavía no hace: limitaciones conoc
 - Validación con usuarios: no se han realizado entrevistas ni pruebas observadas con personas ni con contraseñas reales (véase [Validación con personas](#validación-con-personas)).
 - Una revisión más amplia de accesibilidad y teclado.
 - La revisión de dependencias.
-- Ejecutar las pruebas E2E en CI: hoy CI ejecuta los tests del backend y compila el frontend, pero no lanza Playwright.
 - Una evaluación local de fortaleza más completa.
 
 ## Ideas de diseño sin implementar
