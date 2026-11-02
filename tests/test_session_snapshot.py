@@ -9,8 +9,8 @@ sys.path.insert(0, str(ROOT))
 
 from backend.password_checker.application.candidate import Candidate
 from backend.password_checker.application.session_snapshot import from_payload
-from backend.password_checker.application.workspace import Workspace
-from backend.password_checker.domain.credential import Credential
+from backend.password_checker.application.workspace import ImportedFile, Workspace
+from backend.password_checker.domain.credential import BROWSER_SOURCES, Credential
 
 
 class SessionSnapshotLimitTests(unittest.TestCase):
@@ -30,6 +30,18 @@ class SessionSnapshotLimitTests(unittest.TestCase):
         for records in ([], self.payload['records'] * 100_001):
             with self.subTest(count=len(records)), self.assertRaises(ValueError):
                 from_payload({**self.payload, 'records': records})
+
+    def test_import_and_restore_accept_the_same_browser_sources(self):
+        for source in BROWSER_SOURCES:
+            with self.subTest(source=source):
+                self.assertEqual(ImportedFile(name='a.csv', source=source, credentials=[]).source, source)
+                files = [dict(self.payload['files'][0], source=source)]
+                self.assertEqual(from_payload({**self.payload, 'files': files})[1][0]['source'], source)
+        files = [dict(self.payload['files'][0], source='edge')]
+        with self.assertRaises(ValueError):
+            ImportedFile(name='a.csv', source='edge', credentials=[])
+        with self.assertRaises(ValueError):
+            from_payload({**self.payload, 'files': files})
 
     def test_file_count_limit(self):
         files = [dict(self.payload['files'][0], name=f'{index}.csv') for index in range(16)]

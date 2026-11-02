@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import Any
 
-from ..domain.credential import Credential
+from ..domain.credential import BROWSER_SOURCES, Credential
 from .candidate import ALLOWED_REVIEW, Candidate
 from .limits import (MAX_SESSION_RECORDS, MAX_SNAPSHOT_FILE_NAME_CHARS,
                      MAX_SNAPSHOT_TEXT_CHARS, MAX_WORKSPACE_FILES)
@@ -55,7 +55,7 @@ def from_payload(payload: dict[str, Any]) -> tuple[dict[str, Candidate], list[di
     for file in files:
         if (not isinstance(file, dict) or set(file) != {'name', 'source', 'count'}
                 or not isinstance(file['name'], str) or len(file['name']) > MAX_SNAPSHOT_FILE_NAME_CHARS
-                or file['source'] not in ('chrome', 'brave', 'firefox')
+                or file['source'] not in BROWSER_SOURCES
                 or type(file['count']) is not int or file['count'] < 0):
             raise ValueError('Metadatos de archivo no válidos')
         safe_files.append(file)

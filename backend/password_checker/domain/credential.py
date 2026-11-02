@@ -5,6 +5,9 @@ from dataclasses import dataclass
 
 from .urls import android_package, parse_url
 
+# Browsers whose password exports can be imported.
+BROWSER_SOURCES = ("chrome", "brave", "firefox")
+
 
 @dataclass(frozen=True)
 class Credential:
