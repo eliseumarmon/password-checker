@@ -528,9 +528,11 @@ test('keeps session details for retry when saving fails', async ({ page }) => {
   await confirmation.fill(passphrase);
   await dialog.getByRole('button', { name: 'Descargar archivo cifrado' }).click();
 
-  const alert = page.getByRole('alert');
+  // The notice belongs inside the open session dialog, not floating behind it.
+  const alert = dialog.getByRole('alert');
   await expect(alert).toContainText('No se pudo guardar la sesión (503)');
   await expect(alert).not.toContainText(passphrase);
+  await expect(page.getByRole('alert')).toHaveCount(1);
   // Keep observing until after the error, before starting the successful retry.
   await page.waitForTimeout(500);
   expect(downloads).toEqual([]);
