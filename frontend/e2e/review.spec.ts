@@ -377,6 +377,41 @@ test('asks before restoring a record with unsaved changes from the editor', asyn
   await expect(card).not.toContainText('Fictional unsaved name');
 });
 
+test('warns before closing the page with unsaved changes in the editor', async ({ page }) => {
+  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.locator('.desktop-table').getByRole('row', { name: /carol/ }).getByRole('button', { name: 'Editar' }).click();
+  const name = page.getByRole('dialog', { name: 'Editar credencial' }).getByLabel('Nombre');
+  await name.fill('Fictional unsaved name');
+  const warning = page.waitForEvent('dialog');
+  await page.close({ runBeforeUnload: true });
+  const dialog = await warning;
+  expect(dialog.type()).toBe('beforeunload');
+  // Dismissing keeps the page, and the edit, where they were.
+  await dialog.dismiss();
+  expect(page.isClosed()).toBe(false);
+  await expect(name).toHaveValue('Fictional unsaved name');
+});
+
+for (const settle of ['reverted', 'saved'] as const) {
+  test(`closes the page without a warning once the edit is ${settle}`, async ({ page }) => {
+    await page.getByRole('button', { name: 'Todas (6)' }).click();
+    await page.locator('.desktop-table').getByRole('row', { name: /carol/ }).getByRole('button', { name: 'Editar' }).click();
+    const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+    await editor.getByLabel('Nombre').fill('Fictional temporary name');
+    if (settle === 'reverted') {
+      await editor.getByLabel('Nombre').fill('Weak');
+    } else {
+      await editor.getByRole('button', { name: 'Guardar cambios' }).click();
+      await expect(editor).toBeHidden();
+    }
+    const dialogs: string[] = [];
+    page.on('dialog', dialog => { dialogs.push(dialog.type()); void dialog.dismiss(); });
+    await page.close({ runBeforeUnload: true });
+    await expect.poll(() => page.isClosed()).toBe(true);
+    expect(dialogs).toEqual([]);
+  });
+}
+
 test('closes the editor without asking when edits are reverted or saved', async ({ page }) => {
   await page.getByRole('button', { name: 'Todas (6)' }).click();
   const row = page.locator('.desktop-table').getByRole('row', { name: /carol/ });
