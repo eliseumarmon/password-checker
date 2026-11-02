@@ -31,12 +31,12 @@ La revisión permanece en memoria y el guardado es manual. Para continuar otro d
 ## Seguridad y limitaciones
 
 - Los CSV de entrada y salida contienen contraseñas en texto plano. No los compartas, subas al repositorio ni guardes en carpetas sincronizadas o copias inseguras.
-- Las contraseñas se ocultan al abrir las fichas y no aparecen en las listas generales. Los datos se intercambian entre el navegador y el servidor del mismo equipo; no se requiere Internet durante la revisión ni se realiza seguimiento.
+- Las contraseñas se ocultan al abrir las fichas y no aparecen en las listas generales. Los datos se intercambian entre el navegador y el servidor del mismo equipo; no se requiere Internet durante la revisión ni se realiza seguimiento. La API valida el origen y el host de las peticiones y envía cabeceras `no-store`. Lo único que se guarda en el navegador es la preferencia de menú contraído (`localStorage`), sin credenciales.
 - El lector CSV procesa los datos en memoria sin escribir archivos temporales explícitos. Durante subidas HTTP grandes, el parser multipart del framework puede utilizar almacenamiento temporal; evita discos y carpetas sincronizados para el entorno de trabajo.
 - La aplicación conserva las variantes conflictivas para revisión. No determina si una contraseña funciona, no automatiza inicios de sesión ni consulta filtraciones.
 - Después de importar, comprueba las entradas en Bitwarden, conserva un respaldo seguro mientras confirmas que todo funciona y elimina las copias CSV en texto plano.
 
-Consulta el [estado de implementación](docs/implementacion-v0.1.md), la [guía visual propuesta](docs/guia-visual.md) y el [flujo de usuario](docs/flujo-usuario.md).
+Consulta el [flujo de usuario](docs/flujo-usuario.md) para el funcionamiento detallado, el [trabajo pendiente](docs/pendiente.md) para las limitaciones y las ideas sin implementar, y la [guía visual](docs/guia-visual.md) para los criterios de diseño.
 
 ## Formatos y criterios
 
@@ -66,4 +66,4 @@ npx playwright install chromium   # solo la primera vez
 npm run e2e
 ```
 
-Playwright compila el frontend y arranca un backend propio en el puerto 5173 con el Python de `.venv` (otro intérprete: variable `E2E_PYTHON`). No ejecutes `npm run dev` al mismo tiempo porque usa el mismo puerto. Consulta las [limitaciones actuales](docs/implementacion-v0.1.md).
+Playwright compila el frontend y arranca un backend propio en el puerto 5173 con el Python de `.venv` (otro intérprete: variable `E2E_PYTHON`). No ejecutes `npm run dev` al mismo tiempo porque usa el mismo puerto. Las pruebas E2E todavía no se ejecutan en CI; consulta el [trabajo pendiente](docs/pendiente.md).
