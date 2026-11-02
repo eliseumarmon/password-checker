@@ -16,6 +16,8 @@ Este documento reúne lo que la aplicación todavía no hace: limitaciones conoc
 - Una evaluación local de fortaleza más completa.
 - Límites de sesión: cuando la revisión ya supera un límite y un cambio empeora otro, el mensaje de rechazo puede nombrar el límite que no empeoró; y faltan pruebas por HTTP de esos rechazos al importar y al editar. Detalle en [reliability-hardening](../odd/tasks/reliability-hardening.md#deuda-técnica-registrada) (DT1 y DT2).
 - Limpiar los avisos existentes de `ruff`, hoy fuera de CI (DT3).
+- Optimización del bundle frontend: analizar el aviso de Vite por un chunk superior a 500 kB; valorar división de código y carga diferida sin ocultar el aviso aumentando únicamente el umbral.
+- Identidad de servicios y duplicados: definir si las credenciales se identifican por la URL/URI encontrada al importar o si se vinculan a un servicio lógico común (web, Android, iOS). Conservar las asociaciones originales y evaluar las consecuencias para la detección de duplicados; pertenecer al mismo servicio no implica fusionarlas automáticamente.
 
 ## Funcionalidades planificadas
 
