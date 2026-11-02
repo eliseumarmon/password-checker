@@ -2,7 +2,7 @@
 
 Objetivo: cerrar tres riesgos de fiabilidad identificados en la revisión del 2026-11-01 tras retirar la CLI. El producto es la GUI local FastAPI + Vue; Python mínimo: 3.12.
 
-Estado: T3 implementada en `ci/e2e-playwright`, a la espera de su primera ejecución en GitHub Actions; T1 y T2 pendientes. Este documento registra trabajo futuro; no acredita que las correcciones o las pruebas se hayan ejecutado.
+Estado: T3 hecha y verificada en GitHub Actions (L5); T1 y T2 pendientes.
 
 ## Contexto y alcance
 
@@ -47,7 +47,7 @@ No modificar el formato de `.pwc` v1, la criptografía, las reglas de consolidac
 4. Añadir al menos un test de CSV con entrecomillado inválido y una prueba de API que compruebe código, ausencia de secretos y estado intacto.
 5. Mantener el rechazo de reparaciones ambiguas y la aceptación de CSV válidos (comas y saltos de línea correctamente entrecomillados).
 
-### [ ] T3 — Ejecutar Playwright en GitHub Actions (prioridad media)
+### [x] T3 — Ejecutar Playwright en GitHub Actions (prioridad media)
 
 **Problema:** CI puede quedar verde con un flujo roto de la GUI porque solo compila el frontend.
 
@@ -86,3 +86,4 @@ cd frontend && npm run build && npm run e2e
 - **L2 (2026-11-02):** una revisión externa, pegada por el usuario, recomienda integrar Playwright en CI antes de seguir ampliando la interfaz. Petición: «Sí» a planificar E2E en CI. Comprobado: `tests.yml` no ejecuta E2E; T1 y T2 siguen pendientes (`api.py` no captura `csv.Error`). Se adelanta T3 y se detalla su implementación; T1 y T2 no cambian.
 - **L3 (2026-11-02):** petición: «Sí» a empezar la implementación. T3 en `ci/e2e-playwright` (encadenada sobre el plan): job `e2e` en `tests.yml` según la implementación prevista; YAML validado con `yaml.safe_load` (jobs `python`, `frontend`, `e2e`). En local, con el `.venv` primero en el `PATH`, `E2E_PYTHON=python` y `CI=1`: 65 pasadas, lo que prueba la resolución por nombre que usará el CI. README y `pendiente.md` actualizados. Pendiente: la primera ejecución real en GitHub Actions (requiere subir la rama) y la revisión independiente.
 - **L4 (2026-11-02):** revisión de riesgo alto (cuatro lentes) de `8fd43c0` aprobada. Aplicado: `timeout-minutes` de 20 en el paso E2E (falla el paso y se suben las trazas) y de 30 en el job; línea de estado actualizada. Descartado: añadir `permissions` al job, porque el workflow ya declara `contents: read` para todos; fijar las acciones por SHA, como en los jobs existentes, queda fuera de alcance. El README afirma que el job existe: la rama no se integra hasta que la primera ejecución en GitHub Actions salga en verde.
+- **L5 (2026-11-02):** petición: «Correcto» a subir la rama. `ci/e2e-playwright` subida a `origin`; ejecución [41449520998](https://github.com/eliseumarmon/password-checker/actions/runs/41449520998) en verde: `python`, `frontend` y `e2e` correctos, y el registro de `e2e` muestra «65 passed (1.1m)» en Linux, sin ajustes de plataforma. Línea de estado reescrita (la revisión de `9481319` señaló que conservaba la frase de trabajo futuro). No verificado: la subida del artefacto `playwright-traces`, que solo ocurre si falla una prueba.
