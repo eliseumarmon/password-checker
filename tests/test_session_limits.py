@@ -109,6 +109,46 @@ class WorkspaceSessionLimitTests(unittest.TestCase):
                 self.workspace.change(other_id, {'note': 'u' * 40})
         self.assertEqual(self.workspace.get(other_id)['name'], 'Site renamed')
 
+    def over_text_limit(self):
+        """First record's note 10 characters over a 30-character limit, which the caller patches."""
+        record_id = self.before['records'][0]['id']
+        self.workspace.change(record_id, {'note': 'n' * 40})
+        return record_id
+
+    def assert_rejected_without_trace(self, operation, pattern):
+        records, history = dict(self.workspace._records), len(self.workspace._history)
+        snapshot = self.workspace.snapshot()
+        with self.assertRaisesRegex(ValueError, pattern):
+            operation()
+        self.assertEqual(self.workspace._records, records)
+        self.assertEqual(len(self.workspace._history), history)
+        self.assertEqual(self.workspace.snapshot(), snapshot)
+
+    def test_lengthening_an_already_oversized_field_is_rejected(self):
+        record_id = self.over_text_limit()
+        with patch.object(limits, 'MAX_SNAPSHOT_TEXT_CHARS', 30):
+            self.assert_rejected_without_trace(
+                lambda: self.workspace.change(record_id, {'note': 'n' * 45}), '«notas»')
+        self.assertEqual(self.workspace.get(record_id)['note'], 'n' * 40)
+
+    def test_moving_the_excess_to_another_field_without_reducing_it_is_rejected(self):
+        record_id = self.over_text_limit()
+        with patch.object(limits, 'MAX_SNAPSHOT_TEXT_CHARS', 30):
+            # The note drops 10 characters of excess while the name adds 15.
+            self.assert_rejected_without_trace(
+                lambda: self.workspace.change(record_id, {'note': 'n' * 30, 'name': 'm' * 45}), '«nombre»')
+
+    def test_changes_that_reduce_the_character_excess_are_accepted(self):
+        record_id = self.over_text_limit()
+        with patch.object(limits, 'MAX_SNAPSHOT_TEXT_CHARS', 30):
+            history = len(self.workspace._history)
+            self.workspace.change(record_id, {'note': 'n' * 35})
+            # Ten characters of excess before, three after, although in another field.
+            self.workspace.change(record_id, {'note': 'n' * 30, 'name': 'm' * 33})
+            self.assertEqual(len(self.workspace._history), history + 2)
+        detail = self.workspace.get(record_id)
+        self.assertEqual((detail['note'], detail['name']), ('n' * 30, 'm' * 33))
+
     def test_restore_rejects_a_session_that_could_not_be_saved_again(self):
         payload = self.workspace.serialize()
         with patch.object(limits, 'MAX_SESSION_BYTES', 1024):
