@@ -20,7 +20,8 @@ Los enlaces web se abren solo por acción del usuario. Las URI Android no son en
 - Los orígenes web distinguen esquema, host y puerto para el análisis de reutilización. Las rutas de un mismo origen y usuario cuentan como una cuenta.
 - El lector admite comas y saltos de línea entrecomillados. Si la anchura de una fila es ambigua, rechaza la importación; puede completar una nota final vacía y reconstruir de forma restringida un título desplazado por una coma junto a una URI reconocida.
 - Abrir otro CSV o sesión reemplaza la revisión en memoria tras confirmación. Guarda antes el `.pwc` si necesitas conservarla.
-- Las confirmaciones usan un diálogo propio cuyo botón nombra la acción («Importar», «Mover a la papelera», «Fusionar», «Generar CSV», «Abrir sesión», «Abrir de todas formas»). «Cancelar», `Esc` o un clic fuera lo cierran sin hacer nada.
+- Las confirmaciones usan un diálogo propio cuyo botón nombra la acción («Importar», «Mover a la papelera», «Fusionar», «Generar CSV», «Abrir sesión», «Abrir de todas formas», «Descartar cambios», «Restaurar»). «Cancelar», `Esc` o un clic fuera lo cierran sin hacer nada.
+- La ficha solo guarda con «Guardar cambios». Si hay cambios sin guardar, cerrarla con «✕», «Cancelar» o un clic fuera, o pulsar «Descartar» o «Restaurar», pide confirmación antes de perderlos; deshacer los cambios a mano evita el aviso. Solo un clic que empieza y termina fuera de la ficha la cierra: soltar fuera una selección de texto no la cierra.
 - El guardado cifrado incluye los datos originales, incluidos secretos y notas. Protege el archivo y su contraseña como un respaldo sensible.
 
 ## Propuestas para validar con personas

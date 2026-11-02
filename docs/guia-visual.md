@@ -96,7 +96,7 @@ Acción transversal visible: **Guardar sesión cifrada** (cuando haya una sesió
 └──────────────────┴──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Estructura:** barra lateral de **220–240 px**, contraíble a iconos (**64 px**); cabecera de **64–72 px**; contenido central flexible. Tabla de datos con encabezado fijo y ordenación explícita (`asc/desc/ninguna`). La edición (hasta **760 px**) y la comparación de duplicados (hasta **900 px**, registros lado a lado) se abren en diálogos centrados. La comparación permanece abierta al descartar, restaurar o guardar un registro, de modo que se pueden revisar todos sus registros sin reabrirla. La cabecera con título, acciones y estadísticas queda fija al desplazarse, igual que la barra lateral.
+**Estructura:** barra lateral de **220–240 px**, contraíble a iconos (**64 px**); cabecera de **64–72 px**; contenido central flexible. Tabla de datos con encabezado fijo y ordenación explícita (`asc/desc/ninguna`). La edición (hasta **760 px**) y la comparación de duplicados (hasta **900 px**, registros lado a lado) se abren en diálogos centrados. El fondo de la ficha solo la cierra con un clic que empieza y termina en él. La comparación permanece abierta al descartar, restaurar o guardar un registro, de modo que se pueden revisar todos sus registros sin reabrirla. La cabecera con título, acciones y estadísticas queda fija al desplazarse, igual que la barra lateral.
 
 **Tabla por defecto (Duplicados):** sitio, tipo, usuario, cantidad de registros, coincidencias URL/usuario/contraseña, fuentes, estado y acción. **No mostrar la contraseña en texto en la tabla**. Comparaciones solo dentro del grupo, con controles individuales para revelarla. El valor real de usuario es visible (truncar solo visualmente; tooltip/copia accesible).
 
@@ -154,7 +154,7 @@ Acción transversal visible: **Guardar sesión cifrada** (cuando haya una sesió
 4. **Campo secreto:** oculto por defecto, ojo con etiqueta «Mostrar contraseña», botón copiar opcional con aviso de portapapeles; nunca revelar todas al cargar.
 5. **Enlace de servicio:** clic explícito abre **pestaña nueva** solo para URL web `http(s)` validada, con `noopener noreferrer`; si hay credenciales en URL, exigir revisión y no abrirla tal cual. No usar favicons remotos.
 6. **Ficha de revisión:** estado, fecha local si se confirma manualmente, acciones «Marcar revisada» y «Acceso verificado» separadas.
-7. **Aviso de edición:** cambios pendientes, deshacer, indicación de qué cambió; no autoaplicar sobre originales.
+7. **Aviso de edición:** cambios pendientes, deshacer, indicación de qué cambió; no autoaplicar sobre originales. Hoy la ficha avisa con el diálogo de confirmación antes de perder cambios sin guardar al cerrarla («Descartar cambios», en rojo) o al descartar o restaurar el registro desde ella; sin cambios no avisa.
 8. **Desglose de auditoría:** grupos por contraseña reutilizada con número de cuentas, pero **sin el valor de la contraseña en el encabezado**.
 9. **Modal de exportación:** resultados incluidos/excluidos, conflictos pendientes, destino y formato Bitwarden; exige confirmación explícita.
 10. **Bloqueo de sesión:** tras inactividad configurada; oculta la UI y exige reabrir la sesión cifrada cuando proceda.
