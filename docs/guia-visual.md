@@ -84,7 +84,7 @@ Las pantallas actuales se describen en el [flujo de usuario](flujo-usuario.md). 
 
 **Vista Todas:** tabla ordenable y filtrable. Edición en panel, no en una cuadrícula de inputs siempre visible; evita cambios accidentales.
 
-**Interacción teclado:** `Tab` recorre controles, `Enter` abre registro, `Ctrl/Cmd+Z` deshace una operación dentro del editor; confirmar de forma explícita las acciones destructivas. El comportamiento de `Esc` y del cierre de diálogos se describe en el [flujo de usuario](flujo-usuario.md). No utilizar atajos para revelar contraseñas globalmente.
+**Interacción teclado:** `Tab` recorre controles, `Enter` abre registro; confirmar de forma explícita las acciones destructivas. El comportamiento de `Esc` y del cierre de diálogos se describe en el [flujo de usuario](flujo-usuario.md). No utilizar atajos para revelar contraseñas globalmente.
 
 ## 5. Vista móvil: verificación y continuidad
 
