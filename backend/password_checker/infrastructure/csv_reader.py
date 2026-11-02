@@ -18,10 +18,24 @@ URL_COLUMNS = ("url", "origin", "website", "hostname", "loginuri")
 NAME_COLUMNS = ("name", "title")
 USERNAME_COLUMNS = ("username", "user", "login", "loginusername")
 NOTE_COLUMNS = ("note", "notes")
+# How a CSV is read. The origin (domain ORIGINS) only says where it came from.
+FORMATS = ("chromium", "firefox", "generic")
 
 
 def column_key(value):
     return re.sub(r"[\s_-]+", "", value.strip().casefold())
+
+
+def detect_format_and_origin(headers, file_name):
+    """(format, origin): the format from the normalized headers only, with priority
+    Firefox > Chromium > generic; the origin afterwards, without ever changing the format."""
+    keys = {column_key(header) for header in headers}
+    if "httprealm" in keys:
+        return "firefox", "firefox"
+    if keys & {*NAME_COLUMNS, *NOTE_COLUMNS}:
+        name = file_name.casefold()
+        return "chromium", "brave" if "brave" in name else "chrome" if "chrome" in name else "unknown"
+    return "generic", "unknown"
 
 
 def malformed_csv(line, source=None):
@@ -43,8 +57,13 @@ def checked_rows(reader, source):
         yield values
 
 
-def read_export(source, filename):
-    """Lee una exportacion, validando anchura sin perder columnas silenciosamente."""
+def read_export(fmt, filename, source):
+    """Lee una exportacion, validando anchura sin perder columnas silenciosamente.
+
+    *fmt* decide las reglas de lectura; *source* es el origen, solo para mensajes y credenciales.
+    """
+    if fmt not in FORMATS:
+        raise ValueError(f"Formato de CSV no admitido: {fmt}")
     if hasattr(filename, "read"):
         file_context = nullcontext(filename)
     else:
@@ -90,7 +109,7 @@ def read_export(source, filename):
             # the username column, even with the expected number of fields
             # when the final empty note is missing. Only repair this narrowly
             # when the next column is a recognizable, complete URI.
-            if (source in ("chrome", "brave") and name_idx is not None and
+            if (fmt == "chromium" and name_idx is not None and
                     url_idx == name_idx + 1 and len(values) > url_idx + 1 and
                     not supported_uri(values[url_idx]) and supported_uri(values[url_idx + 1])):
                 if len(values) in (expected, expected + 1) and note_last:
@@ -106,7 +125,7 @@ def read_export(source, filename):
                     raise ValueError("{}: linea {}: URI fuera de su columna o invalida; se cancela para proteger la contrasena.".format(source, line))
                 hint = (" Revisa comas sin comillas en notas; vuelve a exportar el archivo"
                         " y comprueba las columnas en privado."
-                        if note_last and source in ("chrome", "brave") else
+                        if note_last and fmt == "chromium" else
                         " Comprueba la exportacion CSV original y su separador.")
                 raise ValueError("{}: linea {}: {} columnas, esperadas {}.{}".format(
                     source, line, len(values), expected, hint))
@@ -132,7 +151,7 @@ def read_export(source, filename):
             note = field(*NOTE_COLUMNS)
             # Firefox no exporta 'name' ni 'note', sino realm y metadatos.
             # El realm ayuda a reconocer cuentas HTTP Basic diferentes.
-            if source == "firefox":
+            if fmt == "firefox":
                 realm = field("httprealm")
                 if realm:
                     note = (note + "\n\n" if note else "") + "Firefox HTTP realm: " + realm
@@ -143,7 +162,7 @@ def read_export(source, filename):
 
 
 def read_upload(file_name, content):
-    """Read an uploaded export from memory as (source, credentials): no plaintext temp file."""
+    """Read an uploaded export from memory as (origin, credentials): no plaintext temp file."""
     if b"\x00" in content:
         raise ValueError("Archivo con bytes nulos; se rechaza la importación")
     text = content.decode("utf-8-sig", errors="strict")
@@ -151,6 +170,5 @@ def read_upload(file_name, content):
         header = next(csv.reader(io.StringIO(text)), [])
     except csv.Error:
         raise ValueError(malformed_csv(1)) from None
-    keys = {column_key(h) for h in header}
-    source = "firefox" if "httprealm" in keys else ("brave" if "brave" in file_name.lower() else "chrome")
-    return source, read_export(source, io.StringIO(text, newline=""))
+    fmt, source = detect_format_and_origin(header, file_name)
+    return source, read_export(fmt, io.StringIO(text, newline=""), source)

@@ -12,7 +12,7 @@ from dataclasses import dataclass, replace
 from typing import Any, Sequence
 
 from ..domain.accounts import duplicate_key
-from ..domain.credential import BROWSER_SOURCES, Credential
+from ..domain.credential import ORIGINS, Credential
 from ..domain.notes import combine_notes
 from . import limits
 from .candidate import ALLOWED_REVIEW, Candidate, identity
@@ -34,7 +34,7 @@ class ImportedFile:
                 or len(self.name) > limits.MAX_SNAPSHOT_FILE_NAME_CHARS
                 or any(unicodedata.category(char) == 'Cc' for char in self.name)):
             raise ValueError('Nombre de archivo no válido')
-        if self.source not in BROWSER_SOURCES:
+        if self.source not in ORIGINS:
             raise ValueError('Origen de archivo no válido')
         object.__setattr__(self, 'credentials', tuple(self.credentials))
 

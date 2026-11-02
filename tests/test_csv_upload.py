@@ -3,11 +3,15 @@ import csv
 import sys
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from backend.password_checker.infrastructure.csv_reader import read_upload
+from backend.password_checker.infrastructure.csv_reader import (
+    detect_format_and_origin,
+    read_upload,
+)
 
 
 class CsvUploadTests(unittest.TestCase):
@@ -147,6 +151,53 @@ class CsvUploadTests(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0].source, 'brave')
         self.assertEqual(rows[0].note, 'Existing note')
+
+
+CHROMIUM = ['name', 'url', 'username', 'password', 'note']
+FIREFOX = ['url', 'username', 'password', 'httpRealm', 'formActionOrigin', 'guid',
+           'timeCreated', 'timeLastUsed', 'timePasswordChanged']
+GENERIC = ['url', 'username', 'password']
+
+
+class FormatOriginTests(unittest.TestCase):
+    """The format says how to read a CSV; the origin only says where it came from."""
+
+    def test_format_comes_from_the_headers_and_origin_from_the_name(self):
+        cases = [
+            (CHROMIUM, 'brave.csv', ('chromium', 'brave')),
+            (CHROMIUM, 'chrome.csv', ('chromium', 'chrome')),
+            (CHROMIUM, 'mis_contrasenas.csv', ('chromium', 'unknown')),
+            (CHROMIUM, 'firefox.csv', ('chromium', 'unknown')),
+            (FIREFOX, 'brave.csv', ('firefox', 'firefox')),
+            (GENERIC, 'chrome.csv', ('generic', 'unknown')),
+            (GENERIC + ['guid'], 'export.csv', ('generic', 'unknown')),
+            (['Name', ' URL ', 'User_Name', 'Password'], 'Brave Passwords.csv', ('chromium', 'brave')),
+            (['url', 'username', 'password', 'Notes'], 'CHROME export.csv', ('chromium', 'chrome')),
+        ]
+        for headers, name, expected in cases:
+            with self.subTest(headers=headers, name=name):
+                self.assertEqual(detect_format_and_origin(headers, name), expected)
+
+    def test_renaming_a_file_only_changes_the_inferred_origin(self):
+        # A missing trailing note is a Chromium repair: it must not depend on the name.
+        data = b'name,url,username,password,note\nSite,https://test.invalid,alice,fake-PW\n'
+        read = {name: read_upload(name, data) for name in (
+            'chrome.csv', 'brave.csv', 'mis_contrasenas.csv', 'my-bravery-awards-backup-2026-11-02.csv')}
+        self.assertEqual({name: origin for name, (origin, _) in read.items()}, {
+            'chrome.csv': 'chrome', 'brave.csv': 'brave', 'mis_contrasenas.csv': 'unknown',
+            'my-bravery-awards-backup-2026-11-02.csv': 'brave'})
+        for name, (origin, rows) in read.items():
+            with self.subTest(name=name):
+                self.assertEqual([row.source for row in rows], [origin])
+        credentials = {tuple(replace(row, source='') for row in rows) for _, rows in read.values()}
+        self.assertEqual(len(credentials), 1)
+        self.assertEqual(next(iter(credentials))[0].note, '')
+
+    def test_generic_csv_imports_with_an_unknown_origin(self):
+        origin, rows = read_upload('chrome.csv', b'url,username,password\nhttps://a.invalid,alice,fake-PW\n')
+        self.assertEqual(origin, 'unknown')
+        self.assertEqual([(row.source, row.url, row.username) for row in rows],
+                         [('unknown', 'https://a.invalid', 'alice')])
 
 
 class UploadReaderTests(unittest.TestCase):

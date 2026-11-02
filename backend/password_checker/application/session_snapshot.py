@@ -6,7 +6,7 @@ from collections.abc import Iterable, Iterator
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from ..domain.credential import BROWSER_SOURCES, Credential
+from ..domain.credential import ORIGINS, Credential
 from . import limits
 from .candidate import ALLOWED_REVIEW, Candidate
 
@@ -122,7 +122,7 @@ def from_payload(payload: dict[str, Any]) -> tuple[dict[str, Candidate], list[di
     for file in files:
         if (not isinstance(file, dict) or set(file) != {'name', 'source', 'count'}
                 or not isinstance(file['name'], str) or len(file['name']) > limits.MAX_SNAPSHOT_FILE_NAME_CHARS
-                or file['source'] not in BROWSER_SOURCES
+                or file['source'] not in ORIGINS
                 or type(file['count']) is not int or file['count'] < 0):
             raise ValueError('Metadatos de archivo no válidos')
         safe_files.append(file)
