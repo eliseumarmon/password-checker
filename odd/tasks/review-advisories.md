@@ -51,7 +51,7 @@ Ya resueltos y fuera de esta lista: papelera sin cambios (`247e830`), regla de �
 - [x] T19. Eliminar el código que solo usaban la CLI y el informe: `host_account`, `masked_username`, `web_origin` e `is_android_source` del dominio, con sus tests, y el parámetro `diagnostics` de `read_export`. Antes de borrar, comprobar con búsqueda en todo el árbol que no tienen otros usos. (S1)
 - [x] T20. La lista de orígenes `('chrome', 'brave', 'firefox')` está repetida en `application/session_snapshot.py` y en `ImportedFile` (`application/workspace.py`): una sola constante con nombre. (S1)
 - [x] T21. `App.vue` decide en cuatro condiciones distintas dónde mostrar `ErrorNotice` (diálogo de sesión, editor, comparación o flotante): un único `computed` con la prioridad sesión > editor > comparación > página, sin cambiar el comportamiento; los E2E de posición del aviso deben seguir pasando. (S1)
-- [ ] T22. El README exige Python 3.12+, pero el `.venv` local usa 3.11.9 y todo funciona; `kw_only=True`, el motivo del cambio, solo necesita 3.10. Decidir con el usuario: recrear el `.venv` con 3.12 o bajar el mínimo documentado y en CI a 3.10. (S4)
+- [x] T22. El README exige Python 3.12+, pero el `.venv` local usa 3.11.9 y todo funciona; `kw_only=True`, el motivo del cambio, solo necesita 3.10. Decidir con el usuario: recrear el `.venv` con 3.12 o bajar el mínimo documentado y en CI a 3.10. (S4)
 
 ## Registro
 
@@ -59,3 +59,4 @@ Ya resueltos y fuera de esta lista: papelera sin cambios (`247e830`), regla de �
 - L2. Para T16 se aprobó mantener el aviso en la parte inferior hasta su cierre, con posición contextual en diálogos.
 - L3 (2026-11-02). Evaluación de `29926df..9b624d1`: T1-T18 correctas; pasan 65 tests unitarios, la comprobación de tipos y 50 E2E. La retirada de la CLI, de `repair_extra_notes` y el mínimo de Python 3.12 fueron decisiones del usuario. «Sí. Añade los puntos 1-4 a la lista de review-advisories.» → T19-T22.
 - L4. T22 necesita una decisión del usuario antes de implementar.
+- L5 (2026-11-02). T22: el sistema tiene Python 3.11 y 3.14, no 3.12, y no tiene `uv`. Decisión del usuario: «Sí, rehaz en 3.14». `.venv` recreado con Python 3.14.7 (el anterior queda en `.venv-3.11-backup/`); pasan 64 tests unitarios y 50 E2E. Se mantiene el mínimo documentado 3.12+ y CI en 3.12.
