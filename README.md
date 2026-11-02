@@ -66,4 +66,4 @@ npx playwright install chromium   # solo la primera vez
 npm run e2e
 ```
 
-Playwright compila el frontend y arranca un backend propio en el puerto 5173 con el Python de `.venv` (otro intérprete: variable `E2E_PYTHON`). No ejecutes `npm run dev` al mismo tiempo porque usa el mismo puerto. Las pruebas E2E todavía no se ejecutan en CI; consulta el [trabajo pendiente](docs/pendiente.md).
+Playwright compila el frontend y arranca un backend propio en el puerto 5173 con el Python de `.venv` (otro intérprete: variable `E2E_PYTHON`). No ejecutes `npm run dev` al mismo tiempo porque usa el mismo puerto. GitHub Actions ejecuta estas mismas pruebas en el job `e2e` con `E2E_PYTHON=python`; si fallan, sube las trazas de Playwright como artefacto `playwright-traces`. Para revisarlas en local: `npx playwright show-trace <traza>.zip`.
