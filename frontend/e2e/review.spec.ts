@@ -347,6 +347,43 @@ test('keeps the comparison open after discarding one record', async ({ page }) =
   await expect(compare.locator('.compare-flags')).toHaveCount(2);
 });
 
+test('marks the other record from the comparison after discarding one', async ({ page }) => {
+  await page.locator('.desktop-table').getByRole('row', { name: /Conflict/ }).getByRole('button', { name: 'Comparar' }).click();
+  const compare = page.getByRole('dialog', { name: 'Comparar duplicados' });
+  const cards = compare.locator('.compare-card');
+  await cards.first().getByRole('button', { name: 'Descartar' }).click();
+  await cards.nth(1).getByRole('button', { name: 'Ver / editar' }).click();
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  await editor.getByLabel('Estado de revisión').selectOption('verified');
+  await editor.getByRole('button', { name: 'Guardar cambios' }).click();
+  await expect(editor).toBeHidden();
+  await expect(compare).toBeVisible();
+  await expect(cards.nth(1)).toContainText('Verificada');
+  await expect(cards.first()).toContainText('En la papelera');
+});
+
+test('does not show another group when an edit moves a record out of the comparison', async ({ page }) => {
+  await page.locator('.desktop-table').getByRole('row', { name: /Conflict/ }).getByRole('button', { name: 'Comparar' }).click();
+  const compare = page.getByRole('dialog', { name: 'Comparar duplicados' });
+  await compare.locator('.compare-card').first().getByRole('button', { name: 'Ver / editar' }).click();
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  await editor.getByLabel('URL o paquete Android').fill('https://example.invalid/login');
+  await editor.getByRole('button', { name: 'Guardar cambios' }).click();
+  await expect(editor).toBeHidden();
+  await expect(compare).toContainText('Ya no quedan duplicados activos en este grupo.');
+  await expect(compare.locator('.compare-flags')).toHaveCount(0);
+});
+
+test('saves a record from the audit and closes the editor without leaving the audit', async ({ page }) => {
+  await sidebar(page).getByRole('button', { name: /Auditoría/ }).click();
+  await page.locator('.audit-block', { hasText: 'Contraseñas poco seguras' }).getByRole('button', { name: 'Revisar' }).first().click();
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  await editor.getByLabel('Estado de revisión').selectOption('reviewed');
+  await editor.getByRole('button', { name: 'Guardar cambios' }).click();
+  await expect(editor).toBeHidden();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Auditoría local');
+});
+
 test('saves an encrypted session and opens it again', async ({ page }) => {
   const passphrase = 'fictional-session-passphrase';
   await page.getByRole('button', { name: 'Fusionar copias exactas' }).click();

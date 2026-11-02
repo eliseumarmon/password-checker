@@ -50,8 +50,9 @@ const trashed = computed(() => records.value.filter(r => !r.included));
 const visibleRows = computed(() => activeRecords.value.filter(r => matches(r)));
 const visibleGroups = computed(() => groups.value.filter(g => matches(g) && (!pendingOnly.value || g.pending)));
 const compareRows = computed(() => (compareIds.value ?? []).flatMap(id => recById.value.get(id) ?? []));
-// Group ids follow their first active member, so the current group is found by membership.
-const compareGroup = computed(() => groups.value.find(g => g.members.some(m => compareIds.value?.includes(m.id))) ?? null);
+// Group ids follow their first active member, so the current group is found by membership;
+// a group with records from outside the comparison is another group, not this one.
+const compareGroup = computed(() => groups.value.find(g => g.members.every(m => compareIds.value?.includes(m.id))) ?? null);
 const progress = computed(() => data.value?.stats.total ? Math.round(100 * data.value.stats.reviewed / data.value.stats.total) : 0);
 // The error notice lives in the topmost open layer: session > editor > comparison > page.
 const errorHost = computed<'session' | 'editor' | 'compare' | 'page' | null>(() => {
@@ -90,7 +91,7 @@ async function openRecord(id: string): Promise<void> {
 async function save(form: RecordEdit): Promise<void> {
   if (!selected.value) return;
   await store.execute(() => api.edit(selected.value!.id, form));
-  if (!store.error) { selected.value = null; compareIds.value = null; }
+  if (!store.error) selected.value = null;
 }
 async function quickEdit(id: string, payload: RecordEdit): Promise<void> {
   await store.execute(() => api.edit(id, payload));
