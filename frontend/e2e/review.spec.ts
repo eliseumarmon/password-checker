@@ -319,6 +319,64 @@ test('asks before closing the editor with unsaved changes', async ({ page }) => 
   await expect(name).toHaveValue('Weak');
 });
 
+test('asks before discarding a record with unsaved changes from the editor', async ({ page }) => {
+  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.locator('.desktop-table').getByRole('row', { name: /carol/ }).getByRole('button', { name: 'Editar' }).click();
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  const name = editor.getByLabel('Nombre');
+  await name.fill('Fictional unsaved name');
+  const warning = page.getByRole('alertdialog', { name: 'Confirmar acción' });
+  await editor.getByRole('button', { name: 'Descartar' }).click();
+  await expect(warning).toContainText('Hay cambios sin guardar en esta credencial. Si continúas, se perderán. ¿Continuar?');
+  await warning.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(editor).toBeVisible();
+  await expect(name).toHaveValue('Fictional unsaved name');
+  await expect(metric(page, 'En la papelera')).toHaveText('0');
+
+  await editor.getByRole('button', { name: 'Descartar' }).click();
+  await confirmWith(page, 'Mover a la papelera');
+  await expect(editor).toBeHidden();
+  await expect(metric(page, 'En la papelera')).toHaveText('1');
+  await sidebar(page).getByRole('button', { name: /Papelera/ }).click();
+  const trashRow = page.locator('.desktop-table').getByRole('row', { name: /carol/ });
+  await expect(trashRow).toContainText('Weak');
+  await expect(trashRow).not.toContainText('Fictional unsaved name');
+});
+
+test('asks before restoring a record with unsaved changes from the editor', async ({ page }) => {
+  await page.locator('.desktop-table').getByRole('row', { name: /Conflict/ }).getByRole('button', { name: 'Comparar' }).click();
+  const compare = page.getByRole('dialog', { name: 'Comparar duplicados' });
+  const card = compare.locator('.compare-card').first();
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  const warning = page.getByRole('alertdialog', { name: 'Confirmar acción' });
+
+  // Without changes, restoring from the editor does not ask.
+  await card.getByRole('button', { name: 'Descartar' }).click();
+  await card.getByRole('button', { name: 'Ver / editar' }).click();
+  await editor.getByRole('button', { name: 'Restaurar' }).click();
+  await expect(editor).toBeHidden();
+  await expect(warning).toHaveCount(0);
+  await expect(metric(page, 'En la papelera')).toHaveText('0');
+
+  await card.getByRole('button', { name: 'Descartar' }).click();
+  await card.getByRole('button', { name: 'Ver / editar' }).click();
+  const name = editor.getByLabel('Nombre');
+  await name.fill('Fictional unsaved name');
+  await editor.getByRole('button', { name: 'Restaurar' }).click();
+  await expect(warning).toContainText('Hay cambios sin guardar en esta credencial. Si continúas, se perderán. ¿Continuar?');
+  await warning.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(editor).toBeVisible();
+  await expect(name).toHaveValue('Fictional unsaved name');
+  await expect(metric(page, 'En la papelera')).toHaveText('1');
+
+  await editor.getByRole('button', { name: 'Restaurar' }).click();
+  await confirmWith(page, 'Restaurar');
+  await expect(editor).toBeHidden();
+  await expect(metric(page, 'En la papelera')).toHaveText('0');
+  await expect(card).toContainText('Conflict');
+  await expect(card).not.toContainText('Fictional unsaved name');
+});
+
 test('closes the editor without asking when edits are reverted or saved', async ({ page }) => {
   await page.getByRole('button', { name: 'Todas (6)' }).click();
   const row = page.locator('.desktop-table').getByRole('row', { name: /carol/ });

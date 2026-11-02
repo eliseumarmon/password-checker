@@ -41,6 +41,18 @@ async function requestClose(): Promise<void> {
   if (dirty.value && !await confirmAction('Hay cambios sin guardar en esta credencial. Si cierras la ficha, se perderán. ¿Continuar?', 'Descartar cambios', true)) return;
   emit('close');
 }
+// Trash and restore act on the saved record and close the editor, dropping any unsaved edit.
+function confirmDroppingEdits(label: string, danger = false): Promise<boolean> {
+  return dirty.value
+    ? confirmAction('Hay cambios sin guardar en esta credencial. Si continúas, se perderán. ¿Continuar?', label, danger)
+    : Promise.resolve(true);
+}
+async function requestTrash(): Promise<void> {
+  if (await confirmDroppingEdits('Mover a la papelera', true)) emit('trash', props.record.id);
+}
+async function requestRestore(): Promise<void> {
+  if (await confirmDroppingEdits('Restaurar')) emit('restore', props.record.id);
+}
 
 async function openSite(url: string): Promise<void> {
   const href = safeWebUrl(url);
@@ -70,7 +82,7 @@ async function openSite(url: string): Promise<void> {
         <p class="hint">Editar esta contraseña guardada NO cambia la contraseña real del servicio.</p>
         <p class="muted">Origen inmutable: {{record.source}} · línea {{record.line}}</p>
       </div>
-      <div class="drawer-actions"><button v-if="record.included" class="danger push-left" :disabled="busy" @click="$emit('trash', record.id)"><TrashIcon /> Descartar</button><button v-else class="push-left" :disabled="busy" @click="$emit('restore', record.id)">Restaurar</button><button @click="requestClose">Cancelar</button><button class="primary" :disabled="busy" @click="$emit('save', form)">Guardar cambios</button></div>
+      <div class="drawer-actions"><button v-if="record.included" class="danger push-left" :disabled="busy" @click="requestTrash"><TrashIcon /> Descartar</button><button v-else class="push-left" :disabled="busy" @click="requestRestore">Restaurar</button><button @click="requestClose">Cancelar</button><button class="primary" :disabled="busy" @click="$emit('save', form)">Guardar cambios</button></div>
       </div>
     </section>
   </div>
