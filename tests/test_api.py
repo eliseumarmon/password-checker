@@ -193,6 +193,27 @@ class APITests(unittest.TestCase):
         self.assertNotIn('session_saved', restored.json())
         self.assertNotIn('session_saved', self.client.get('/api/workspace').json())
 
+    def test_unknown_origin_survives_encrypted_session_round_trip(self):
+        payload = b'url,username,password\nhttps://example.invalid/,alice,fictional-secret-123\n'
+        imported = self.client.post('/api/import', files=[('files', ('export.csv', payload, 'text/csv'))])
+        self.assertEqual(imported.status_code, 200, imported.text)
+        before = imported.json()
+        self.assertEqual(before['files'][0]['source'], 'unknown')
+        self.assertEqual(before['records'][0]['source'], 'unknown')
+        passphrase = 'fictional-session-passphrase-12345'
+        saved = self.client.post('/api/session/save', json={'passphrase': passphrase})
+        self.assertEqual(saved.status_code, 200, saved.text)
+        self.assertNotIn(b'fictional-secret-123', saved.content)
+        other = b'url,username,password\nhttps://other.invalid/,bob,fictional-other-123\n'
+        self.client.post('/api/import', files=[('files', ('other.csv', other, 'text/csv'))])
+        restored = self.client.post('/api/session/load', data={'passphrase': passphrase},
+                                    files={'file': ('session.pwc', saved.content, 'application/octet-stream')})
+        self.assertEqual(restored.status_code, 200, restored.text)
+        self.assertEqual(restored.json()['files'], before['files'])
+        self.assertEqual(restored.json()['records'], before['records'])
+        detail = self.client.get('/api/records/' + before['records'][0]['id']).json()
+        self.assertEqual((detail['original']['source'], detail['password']), ('unknown', 'fictional-secret-123'))
+
     def test_session_passphrase_length_boundary(self):
         payload = b'name,url,username,password,note\nA,https://a.invalid/,alice,fictional-123456,\n'
         imported = self.client.post('/api/import', files=[('files', ('chrome.csv', payload, 'text/csv'))])

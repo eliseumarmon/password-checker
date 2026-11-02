@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
+import { labelOrigin } from '../labels';
 import { PAGE_SIZE } from '../limits';
 import type { CredentialSummary } from '../types';
 
@@ -16,10 +17,10 @@ defineEmits<{ restore: [id: string] }>();
       <DataTable :value="rows" dataKey="id" sortField="name" :sortOrder="1" stripedRows removableSort class="desktop-table" :paginator="rows.length>PAGE_SIZE" :rows="PAGE_SIZE">
         <Column field="name" header="Sitio / App" sortable><template #body="{data:r}"><strong>{{r.name}}</strong><small class="url-truncate">{{r.url}}</small></template></Column>
         <Column field="username" header="Usuario" sortable/>
-        <Column field="source" header="Origen" sortable/>
+        <Column field="source" header="Origen" sortable><template #body="{data:r}">{{labelOrigin(r.source)}}</template></Column>
         <Column header="Acciones"><template #body="{data:r}"><button :disabled="busy" @click="$emit('restore', r.id)">Restaurar</button></template></Column>
       </DataTable>
-      <div class="mobile-cards"><article v-for="r in rows" :key="r.id" class="record-card"><strong>{{r.name}}</strong><p>{{r.username}}</p><p class="muted">{{r.source}}</p><button :disabled="busy" @click="$emit('restore', r.id)">Restaurar</button></article></div>
+      <div class="mobile-cards"><article v-for="r in rows" :key="r.id" class="record-card"><strong>{{r.name}}</strong><p>{{r.username}}</p><p class="muted">{{labelOrigin(r.source)}}</p><button :disabled="busy" @click="$emit('restore', r.id)">Restaurar</button></article></div>
     </template>
   </section>
 </template>

@@ -28,6 +28,22 @@ class CsvUploadTests(unittest.TestCase):
             writer.writerow(headers)
             writer.writerows(rows)
 
+    def test_errors_do_not_expose_raw_origin(self):
+        cases = [
+            b'name,url,username,password,note\nA,https://a.invalid,alice,fake-secret,note,extra\n',
+            b'name,url,username,password,note\nA,https://a.invalid,alice\n',
+            b'name,url,username,password,note\nA,https://a.invalid,alice,"fake-secret"x,\n',
+            b'name,url,username\n',
+            b'name,password\n',
+            b'name,name,url,password\n',
+            b'name,,url,password\n',
+        ]
+        for content in cases:
+            with self.subTest(content=content), self.assertRaises(ValueError) as error:
+                read_upload('export.csv', content)
+            self.assertNotIn('unknown', str(error.exception))
+            self.assertNotIn('fake-secret', str(error.exception))
+
     def test_android_uri_unquoted_comma_in_title(self):
         self.chrome.write_text(
             'name,url,username,password,note\n'

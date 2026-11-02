@@ -48,14 +48,13 @@ def origin_from_name(file_name):
     return "unknown"
 
 
-def malformed_csv(line, origin=None):
+def malformed_csv(line):
     """Message for Python's csv.Error: it names the line, never the cell contents."""
-    where = f"El CSV de {origin}" if origin else "El CSV"
-    return (f"{where} tiene un formato no válido en la línea {line}: revisa las comillas y los separadores, "
+    return (f"El CSV tiene un formato no válido en la línea {line}: revisa las comillas y los separadores, "
             "o si algún campo es demasiado largo.")
 
 
-def checked_rows(reader, origin):
+def checked_rows(reader):
     """Rows of *reader*, turning csv.Error into a readable ValueError."""
     while True:
         try:
@@ -63,14 +62,14 @@ def checked_rows(reader, origin):
         except StopIteration:
             return
         except csv.Error:
-            raise ValueError(malformed_csv(reader.line_num, origin)) from None
+            raise ValueError(malformed_csv(reader.line_num)) from None
         yield values
 
 
 def read_export(fmt, filename, origin):
     """Lee una exportacion, validando anchura sin perder columnas silenciosamente.
 
-    *fmt* decide las reglas de lectura; *origin* solo se usa en los mensajes y en las credenciales.
+    *fmt* decide las reglas de lectura; *origin* identifica la procedencia de las credenciales.
     """
     if fmt not in FORMATS:
         raise ValueError(f"Formato de CSV no admitido: {fmt}")
@@ -79,30 +78,30 @@ def read_export(fmt, filename, origin):
     else:
         path = Path(filename)
         if not path.is_file():
-            raise ValueError("No existe el archivo de {}: {}".format(origin, path))
+            raise ValueError("No existe el archivo CSV: {}".format(path))
         file_context = path.open("r", encoding="utf-8-sig", newline="")
     rows = []
     with file_context as file:
         reader = csv.reader(file, strict=True)
-        lines = checked_rows(reader, origin)
+        lines = checked_rows(reader)
         try:
             headers = next(lines)
         except StopIteration:
-            raise ValueError("El CSV de {} esta vacio".format(origin))
+            raise ValueError("El CSV está vacío")
         headers = [h.strip() for h in headers]
         keys = {}
         for index, header in enumerate(headers):
             if not header:
-                raise ValueError("Cabecera vacia en {}".format(origin))
+                raise ValueError("Cabecera vacía en el CSV")
             normalized = column_key(header)
             if normalized in keys:
-                raise ValueError("Columnas repetidas en {}: {}".format(origin, header))
+                raise ValueError("Columnas repetidas en el CSV: {}".format(header))
             keys[normalized] = index
         if "password" not in keys:
             separator = " ¿El CSV esta separado por punto y coma?" if len(headers) == 1 and ";" in headers[0] else ""
-            raise ValueError("Falta columna 'password' en {}.{}".format(origin, separator))
+            raise ValueError("Falta columna 'password' en el CSV.{}".format(separator))
         if not any(k in keys for k in URL_COLUMNS):
-            raise ValueError("Falta columna de URL en {}".format(origin))
+            raise ValueError("Falta columna de URL en el CSV")
         expected = len(headers)
         note_last = expected > 0 and column_key(headers[-1]) in NOTE_COLUMNS
         url_idx = next((keys[k] for k in URL_COLUMNS if k in keys), None)
@@ -129,24 +128,24 @@ def read_export(fmt, filename, origin):
                     if len(values) == expected - 1:
                         values.append("")
                 else:
-                    raise ValueError("{}: linea {}: URI desplazada; la reconstruccion de nombre es ambigua. No se importara.".format(origin, line))
+                    raise ValueError("CSV: línea {}: URI desplazada; la reconstruccion de nombre es ambigua. No se importara.".format(line))
             if len(values) > expected:
                 if url_idx is not None and not supported_uri(values[url_idx]):
-                    raise ValueError("{}: linea {}: URI fuera de su columna o invalida; se cancela para proteger la contrasena.".format(origin, line))
+                    raise ValueError("CSV: línea {}: URI fuera de su columna o invalida; se cancela para proteger la contrasena.".format(line))
                 hint = (" Revisa comas sin comillas en notas; vuelve a exportar el archivo"
                         " y comprueba las columnas en privado."
                         if note_last and fmt == "chromium" else
                         " Comprueba la exportacion CSV original y su separador.")
-                raise ValueError("{}: linea {}: {} columnas, esperadas {}.{}".format(
-                    origin, line, len(values), expected, hint))
+                raise ValueError("CSV: línea {}: {} columnas, esperadas {}.{}".format(
+                    line, len(values), expected, hint))
             elif len(values) < expected:
                 # Ausencia del unico ultimo campo 'note' se interpreta como
                 # nota vacia. No completar otras ausencias ambiguas.
                 if len(values) == expected - 1 and note_last:
                     values.append("")
                 else:
-                    raise ValueError("{}: linea {}: {} columnas, esperadas {}."
-                                     " No se importara parcialmente.".format(origin, line, len(values), expected))
+                    raise ValueError("CSV: línea {}: {} columnas, esperadas {}."
+                                     " No se importara parcialmente.".format(line, len(values), expected))
 
             def field(*aliases):
                 for alias in aliases:

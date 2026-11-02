@@ -20,3 +20,7 @@ export function labelGroup(kind: DuplicateGroup['kind']): string {
 export function labelType(type: CredentialType): string {
   return type === 'android' ? 'Android' : 'Web';
 }
+
+export function labelOrigin(origin: string): string {
+  return origin === 'unknown' ? 'Desconocido' : origin;
+}

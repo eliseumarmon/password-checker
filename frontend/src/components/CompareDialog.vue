@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import TrashIcon from '../TrashIcon.vue';
-import { labelGroup, labelReview } from '../labels';
+import { labelGroup, labelOrigin, labelReview } from '../labels';
 import type { CredentialSummary, DuplicateGroup } from '../types';
 
 const props = defineProps<{ group: DuplicateGroup | null; rows: CredentialSummary[]; busy: boolean }>();
@@ -21,7 +21,7 @@ const matches = computed(() => new Map(props.group?.members.map(member => [membe
       <p v-else>Ya no quedan duplicados activos en este grupo.</p>
       <div class="compare-grid">
         <div v-for="r in rows" :key="r.id" class="compare-card">
-          <div class="row-between"><strong>{{r.source}} · línea {{r.line}}</strong><span class="status" :class="r.included && r.review">{{r.included ? labelReview(r.review) : 'En la papelera'}}</span></div>
+          <div class="row-between"><strong>{{labelOrigin(r.source)}} · línea {{r.line}}</strong><span class="status" :class="r.included && r.review">{{r.included ? labelReview(r.review) : 'En la papelera'}}</span></div>
           <p>{{r.name}} · {{r.username}}</p><p class="muted" :title="r.url">{{r.url}}</p>
           <div v-if="matches.get(r.id)" class="compare-flags"><span>URL {{matches.get(r.id)!.match_url?'✓':'≠'}}</span><span>Usuario {{matches.get(r.id)!.match_username?'✓':'≠'}}</span><span>Clave {{matches.get(r.id)!.match_password?'✓':'≠'}}</span></div>
           <div class="compare-actions"><button @click="$emit('edit', r.id)">Ver / editar</button><button v-if="r.included" class="danger" :disabled="busy" @click="$emit('trash', r.id)"><TrashIcon /> Descartar</button><button v-else :disabled="busy" @click="$emit('restore', r.id)">Restaurar</button></div>

@@ -3,7 +3,7 @@ import { computed, onUnmounted, ref, watch } from 'vue';
 import TrashIcon from '../TrashIcon.vue';
 import { safeWebUrl } from '../api';
 import { confirmAction } from '../confirm';
-import { labelReview } from '../labels';
+import { labelOrigin, labelReview } from '../labels';
 import type { CredentialDetail, RecordEdit } from '../types';
 
 const props = defineProps<{ record: CredentialDetail; busy: boolean }>();
@@ -92,7 +92,7 @@ async function openSite(url: string): Promise<void> {
         <label>Notas<textarea v-model="form.note" rows="5"></textarea></label>
         <label>Estado de revisión<select v-model="form.review"><option value="pending">{{labelReview('pending')}}</option><option value="reviewed">{{labelReview('reviewed')}} (sin verificar acceso)</option><option value="verified">{{labelReview('verified')}} manualmente</option><option value="incorrect">{{labelReview('incorrect')}}</option></select></label>
         <p class="hint">Editar esta contraseña guardada NO cambia la contraseña real del servicio.</p>
-        <p class="muted">Origen inmutable: {{record.source}} · línea {{record.line}}</p>
+        <p class="muted">Origen inmutable: {{labelOrigin(record.source)}} · línea {{record.line}}</p>
       </div>
       <div class="drawer-actions"><button v-if="record.included" class="danger push-left" :disabled="busy" @click="requestTrash"><TrashIcon /> Descartar</button><button v-else class="push-left" :disabled="busy" @click="requestRestore">Restaurar</button><button @click="requestClose">Cancelar</button><button class="primary" :disabled="busy" @click="$emit('save', form)">Guardar cambios</button></div>
       </div>

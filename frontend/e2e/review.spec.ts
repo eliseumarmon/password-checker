@@ -1127,3 +1127,44 @@ for (const viewport of [{ width: 320, height: 401 }, { width: 844, height: 401 }
     await expect(editor).toHaveCount(0);
   });
 }
+
+test('shows an unknown origin throughout the workspace', async ({ page }) => {
+  const csv = [
+    'url,username,password',
+    'https://example.invalid/,alice,fictional-secret-123',
+    'https://example.invalid/,alice,fictional-secret-123',
+  ].join('\n');
+  const imported = await page.request.post('/api/import', {
+    multipart: { files: { name: 'export.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) } },
+  });
+  expect(imported.ok()).toBe(true);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Todas (2)' }).click();
+  const row = page.locator('.desktop-table').getByRole('row', { name: /alice/ }).first();
+  await expect(row).toContainText('Desconocido');
+  await row.getByRole('button', { name: 'Editar', exact: true }).click();
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  await expect(editor).toContainText('Origen inmutable: Desconocido');
+  await editor.getByRole('button', { name: 'Cerrar', exact: true }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('.mobile-cards .record-card', { hasText: 'alice' }).first()).toContainText('Desconocido');
+
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.getByRole('button', { name: 'Duplicados (1)' }).click();
+  await page.locator('.desktop-table').getByRole('button', { name: 'Comparar' }).click();
+  const compare = page.getByRole('dialog', { name: 'Comparar duplicados' });
+  const cards = compare.locator('.compare-card');
+  await expect(cards).toHaveCount(2);
+  await expect(cards.nth(0)).toContainText('Desconocido');
+  await expect(cards.nth(1)).toContainText('Desconocido');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(cards.nth(0)).toContainText('Desconocido');
+  await expect(cards.nth(1)).toContainText('Desconocido');
+  await cards.first().getByRole('button', { name: 'Descartar' }).click();
+  await compare.getByRole('button', { name: 'Cerrar panel' }).click();
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await sidebar(page).getByRole('button', { name: 'Papelera (1)' }).click();
+  await expect(page.locator('.desktop-table').getByRole('row', { name: /alice/ })).toContainText('Desconocido');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('.mobile-cards .record-card', { hasText: 'alice' })).toContainText('Desconocido');
+});
