@@ -82,10 +82,15 @@ async def import_files(files: list[UploadFile] = File(...)):
     try:
         # Parse every file before touching the workspace: all files or none.
         parsed = []
+        warnings = []
         for name, data in incoming:
-            source, credentials = read_upload(name, data)
+            source, credentials, file_warnings = read_upload(name, data)
             parsed.append(ImportedFile(name=name, source=source, credentials=credentials))
-        return workspace.import_files(parsed)
+            if file_warnings:
+                warnings.append({'file': name, 'imported_count': len(credentials),
+                                 'columns': file_warnings})
+        # Warnings travel only in this response; the workspace snapshot is unchanged.
+        return {**workspace.import_files(parsed), 'warnings': warnings}
     except (ValueError, UnicodeError, OSError) as error:
         raise HTTPException(422, str(error)) from None
 

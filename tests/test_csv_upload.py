@@ -105,7 +105,7 @@ class CsvUploadTests(unittest.TestCase):
         self.assert_readable_error(b'name,url,username,password,' + huge + b'\n', 'fictional-huge-')
 
     def test_valid_quoted_commas_and_line_breaks_still_import(self):
-        source, rows = read_upload('chrome.csv', b'name,url,username,password,note\n'
+        source, rows, _ = read_upload('chrome.csv', b'name,url,username,password,note\n'
                                    b'"A, B",https://a.invalid,alice,"fictional,pw","line one\nline two"\n')
         self.assertEqual((source, rows[0].name, rows[0].password, rows[0].note),
                          ('chrome', 'A, B', 'fictional,pw', 'line one\nline two'))
@@ -135,14 +135,14 @@ class CsvUploadTests(unittest.TestCase):
     def test_bom_quoted_comma_and_multiline_note(self):
         data = ('name,url,username,password,note\n'
                 'Ejemplo,https://example.invalid/login,user,"fake,secret","linea 1\nlinea 2"\n')
-        source, rows = read_upload('chrome.csv', data.encode('utf-8-sig'))
+        source, rows, _ = read_upload('chrome.csv', data.encode('utf-8-sig'))
         self.assertEqual(source, 'chrome')
         self.assertEqual((rows[0].password, rows[0].note), ('fake,secret', 'linea 1\nlinea 2'))
 
     def test_firefox_realm_is_preserved_in_note(self):
         data = (b'url,username,password,httpRealm,formActionOrigin,guid,timeCreated,timeLastUsed,timePasswordChanged\n'
                 b'https://basic.invalid/path,bob,fake-secret,Private,,,,,\n')
-        source, rows = read_upload('export.csv', data)
+        source, rows, _ = read_upload('export.csv', data)
         self.assertEqual(source, 'firefox')
         self.assertEqual(rows[0].note, 'Firefox HTTP realm: Private')
 
@@ -151,7 +151,7 @@ class CsvUploadTests(unittest.TestCase):
             with self.subTest(header=header):
                 data = (f'url,username,password,note,{header}\n'
                         'https://basic.invalid/path,bob,fictional-secret,Existing note,Private realm\n').encode()
-                source, rows = read_upload('Brave Passwords.csv', data)
+                source, rows, _ = read_upload('Brave Passwords.csv', data)
                 self.assertEqual(source, 'firefox')
                 self.assertEqual(len(rows), 1)
                 self.assertEqual(rows[0].source, 'firefox')
@@ -162,7 +162,7 @@ class CsvUploadTests(unittest.TestCase):
     def test_realm_like_header_does_not_detect_firefox(self):
         data = (b'url,username,password,note,http_realm_extra\n'
                 b'https://basic.invalid/path,bob,fictional-secret,Existing note,Private realm\n')
-        source, rows = read_upload('Brave Passwords.csv', data)
+        source, rows, _ = read_upload('Brave Passwords.csv', data)
         self.assertEqual(source, 'brave')
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0].source, 'brave')
@@ -214,18 +214,18 @@ class FormatOriginTests(unittest.TestCase):
         data = b'name,url,username,password,note\nSite,https://test.invalid,alice,fake-PW\n'
         read = {name: read_upload(name, data) for name in (
             'chrome.csv', 'brave.csv', 'mis_contrasenas.csv', 'my-bravery-awards-backup-2026-11-02.csv')}
-        self.assertEqual({name: origin for name, (origin, _) in read.items()}, {
+        self.assertEqual({name: origin for name, (origin, _, _) in read.items()}, {
             'chrome.csv': 'chrome', 'brave.csv': 'brave', 'mis_contrasenas.csv': 'unknown',
             'my-bravery-awards-backup-2026-11-02.csv': 'unknown'})
-        for name, (origin, rows) in read.items():
+        for name, (origin, rows, _) in read.items():
             with self.subTest(name=name):
                 self.assertEqual([row.source for row in rows], [origin])
-        credentials = {tuple(replace(row, source='') for row in rows) for _, rows in read.values()}
+        credentials = {tuple(replace(row, source='') for row in rows) for _, rows, _ in read.values()}
         self.assertEqual(len(credentials), 1)
         self.assertEqual(next(iter(credentials))[0].note, '')
 
     def test_generic_csv_imports_with_an_unknown_origin(self):
-        origin, rows = read_upload('chrome.csv', b'url,username,password\nhttps://a.invalid,alice,fake-PW\n')
+        origin, rows, _ = read_upload('chrome.csv', b'url,username,password\nhttps://a.invalid,alice,fake-PW\n')
         self.assertEqual(origin, 'unknown')
         self.assertEqual([(row.source, row.url, row.username) for row in rows],
                          [('unknown', 'https://a.invalid', 'alice')])
@@ -235,7 +235,7 @@ class UploadReaderTests(unittest.TestCase):
     def test_detects_firefox_without_name_hint(self):
         data = (b'url,username,password,httpRealm,formActionOrigin,guid,timeCreated,timeLastUsed,timePasswordChanged\n'
                 b'https://example.org/login,alice,fictional-abc-123,,,,,,\n')
-        source, rows = read_upload('passwords.csv', data)
+        source, rows, _ = read_upload('passwords.csv', data)
         self.assertEqual(source, 'firefox')
         self.assertEqual(len(rows), 1)
 
@@ -244,6 +244,76 @@ class UploadReaderTests(unittest.TestCase):
         self.assertEqual(read_upload('Brave Passwords.csv', data)[0], 'brave')
         with self.assertRaises(ValueError):
             read_upload('chrome.csv', b'\x00')
+
+
+class ColumnWarningTests(unittest.TestCase):
+    """S5: unknown columns with data are counted per file and reported, never their values."""
+
+    def test_unknown_column_with_data_warns_and_its_value_is_not_imported(self):
+        data = (b'url,username,password,extra_secret\n'
+                b'https://a.invalid,alice,fictional-pw-1,fictional-discarded-1\n'
+                b'https://b.invalid,bob,fictional-pw-2,\n')
+        origin, rows, warnings = read_upload('export.csv', data)
+        self.assertEqual(origin, 'unknown')
+        self.assertEqual(warnings, [{'column': 'extra_secret', 'rows': 1}])
+        self.assertEqual(len(rows), 2)
+        for row in rows:
+            self.assertNotIn('fictional-discarded-1',
+                             (row.name, row.url, row.username, row.password, row.note))
+
+    def test_firefox_metadata_columns_are_ignored_and_realm_is_kept(self):
+        data = (b'url,username,password,httpRealm,formActionOrigin,guid,timeCreated,timeLastUsed,timePasswordChanged\n'
+                b'https://a.invalid,alice,fictional-pw,Realm X,https://form.invalid/,fictional-guid,111,222,333\n')
+        origin, rows, warnings = read_upload('export.csv', data)
+        self.assertEqual((origin, warnings), ('firefox', []))
+        self.assertEqual(rows[0].note, 'Firefox HTTP realm: Realm X')
+        self.assertNotIn('fictional-guid', rows[0].note)
+
+    def test_guid_in_a_generic_csv_warns(self):
+        data = b'url,username,password,guid\nhttps://a.invalid,alice,fictional-pw,fictional-guid-9\n'
+        _, rows, warnings = read_upload('export.csv', data)
+        self.assertEqual(warnings, [{'column': 'guid', 'rows': 1}])
+        self.assertNotIn('fictional-guid-9', rows[0].note)
+
+    def test_chromium_does_not_ignore_firefox_only_metadata(self):
+        data = (b'name,url,username,password,note,guid\n'
+                b'Site,https://a.invalid,alice,fictional-pw,,fictional-guid-9\n')
+        _, _, warnings = read_upload('chrome.csv', data)
+        self.assertEqual(warnings, [{'column': 'guid', 'rows': 1}])
+
+    def test_empty_or_whitespace_unknown_columns_do_not_warn(self):
+        data = (b'url,username,password,extra,other\n'
+                b'https://a.invalid,alice,fictional-pw,,\n'
+                b'https://b.invalid,bob,fictional-pw-2,   ,\t\n')
+        _, rows, warnings = read_upload('export.csv', data)
+        self.assertEqual(warnings, [])
+        self.assertEqual(len(rows), 2)
+
+    def test_two_unknown_columns_count_rows_independently_and_keep_original_headers(self):
+        data = (b'url,username,password, Extra_Secret ,OTRA cosa\n'
+                b'https://a.invalid,alice,fictional-pw,fictional-x,\n'
+                b'https://b.invalid,bob,fictional-pw-2,,fictional-y\n'
+                b'https://c.invalid,carol,fictional-pw-3,fictional-x,\n')
+        _, rows, warnings = read_upload('export.csv', data)
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(warnings, [{'column': 'Extra_Secret', 'rows': 2},
+                                    {'column': 'OTRA cosa', 'rows': 1}])
+
+    def test_row_with_only_unknown_data_still_counts(self):
+        data = (b'url,username,password,extra_secret\n'
+                b'https://a.invalid,alice,fictional-pw,\n'
+                b',,,fictional-only-unknown\n')
+        _, rows, warnings = read_upload('export.csv', data)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(warnings, [{'column': 'extra_secret', 'rows': 1}])
+
+    def test_recognized_aliases_still_read_without_warnings(self):
+        data = (b'website,login,password,notes\n'
+                b'https://a.invalid,alice,fictional-pw,fictional note\n')
+        origin, rows, warnings = read_upload('export.csv', data)
+        self.assertEqual((origin, warnings), ('unknown', []))
+        self.assertEqual((rows[0].url, rows[0].username, rows[0].password, rows[0].note),
+                         ('https://a.invalid', 'alice', 'fictional-pw', 'fictional note'))
 
 
 if __name__ == '__main__':
