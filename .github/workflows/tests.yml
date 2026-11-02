@@ -31,6 +31,7 @@ jobs:
         run: npm run build
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -48,7 +49,9 @@ jobs:
         working-directory: frontend
         run: npx playwright install --with-deps chromium
       # Playwright builds the frontend and starts its own backend on 127.0.0.1:5173.
+      # A step timeout fails the step, so a hang still uploads traces; the job timeout is a backstop.
       - name: End-to-end tests with fictional credentials
+        timeout-minutes: 20
         working-directory: frontend
         env:
           E2E_PYTHON: python

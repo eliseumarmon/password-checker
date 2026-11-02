@@ -2,7 +2,7 @@
 
 Objetivo: cerrar tres riesgos de fiabilidad identificados en la revisión del 2026-11-01 tras retirar la CLI. El producto es la GUI local FastAPI + Vue; Python mínimo: 3.12.
 
-Estado: **pendiente**; T3 planificada para empezar primero (L2). Este documento registra trabajo futuro; no acredita que las correcciones o las pruebas se hayan ejecutado.
+Estado: T3 implementada en `ci/e2e-playwright`, a la espera de su primera ejecución en GitHub Actions; T1 y T2 pendientes. Este documento registra trabajo futuro; no acredita que las correcciones o las pruebas se hayan ejecutado.
 
 ## Contexto y alcance
 
@@ -85,3 +85,4 @@ cd frontend && npm run build && npm run e2e
 - **L1 (2026-11-01):** revisión de `main` tras retirar la CLI: tres riesgos detectados; los tests Python y el build frontend habían terminado correctamente en GitHub Actions, pero E2E no estaba incluido en el workflow. Se crea esta especificación, sin implementación.
 - **L2 (2026-11-02):** una revisión externa, pegada por el usuario, recomienda integrar Playwright en CI antes de seguir ampliando la interfaz. Petición: «Sí» a planificar E2E en CI. Comprobado: `tests.yml` no ejecuta E2E; T1 y T2 siguen pendientes (`api.py` no captura `csv.Error`). Se adelanta T3 y se detalla su implementación; T1 y T2 no cambian.
 - **L3 (2026-11-02):** petición: «Sí» a empezar la implementación. T3 en `ci/e2e-playwright` (encadenada sobre el plan): job `e2e` en `tests.yml` según la implementación prevista; YAML validado con `yaml.safe_load` (jobs `python`, `frontend`, `e2e`). En local, con el `.venv` primero en el `PATH`, `E2E_PYTHON=python` y `CI=1`: 65 pasadas, lo que prueba la resolución por nombre que usará el CI. README y `pendiente.md` actualizados. Pendiente: la primera ejecución real en GitHub Actions (requiere subir la rama) y la revisión independiente.
+- **L4 (2026-11-02):** revisión de riesgo alto (cuatro lentes) de `8fd43c0` aprobada. Aplicado: `timeout-minutes` de 20 en el paso E2E (falla el paso y se suben las trazas) y de 30 en el job; línea de estado actualizada. Descartado: añadir `permissions` al job, porque el workflow ya declara `contents: read` para todos; fijar las acciones por SHA, como en los jobs existentes, queda fuera de alcance. El README afirma que el job existe: la rama no se integra hasta que la primera ejecución en GitHub Actions salga en verde.
