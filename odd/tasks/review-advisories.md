@@ -46,7 +46,16 @@ Ya resueltos y fuera de esta lista: papelera sin cambios (`247e830`), regla de �
 - [x] T17. Resuelta por la redacción vigente de `docs/implementacion-v0.1.md`: ya no afirma que cada pantalla y diálogo sea un componente independiente; no requiere cambios adicionales. (R2-doc-overclaims-frontend-split, trozo 6)
 - [x] T18. Resuelta por T16: se eliminó el comentario sobre «la cabecera fija» al extraer `ErrorNotice.vue`; el nuevo comentario describe su ubicación en el diálogo activo, fuera del contenido desplazable. No procede referirse ahora a `.sticky-head`. (R2-misleading-error-placement-comment, trozo 6)
 
+### Tras retirar la CLI (S1, S4)
+
+- [ ] T19. Eliminar el código que solo usaban la CLI y el informe: `host_account`, `masked_username`, `web_origin` e `is_android_source` del dominio, con sus tests, y el parámetro `diagnostics` de `read_export`. Antes de borrar, comprobar con búsqueda en todo el árbol que no tienen otros usos. (S1)
+- [ ] T20. La lista de orígenes `('chrome', 'brave', 'firefox')` está repetida en `application/session_snapshot.py` y en `ImportedFile` (`application/workspace.py`): una sola constante con nombre. (S1)
+- [ ] T21. `App.vue` decide en cuatro condiciones distintas dónde mostrar `ErrorNotice` (diálogo de sesión, editor, comparación o flotante): un único `computed` con la prioridad sesión > editor > comparación > página, sin cambiar el comportamiento; los E2E de posición del aviso deben seguir pasando. (S1)
+- [ ] T22. El README exige Python 3.12+, pero el `.venv` local usa 3.11.9 y todo funciona; `kw_only=True`, el motivo del cambio, solo necesita 3.10. Decidir con el usuario: recrear el `.venv` con 3.12 o bajar el mínimo documentado y en CI a 3.10. (S4)
+
 ## Registro
 
 - L1. «genera una task con las observaciones de los revisores iremos a por ellas de 1 en 1 en la proxima sesion y haz push a main»
 - L2. Para T16 se aprobó mantener el aviso en la parte inferior hasta su cierre, con posición contextual en diálogos.
+- L3 (2026-11-02). Evaluación de `29926df..9b624d1`: T1-T18 correctas; pasan 65 tests unitarios, la comprobación de tipos y 50 E2E. La retirada de la CLI, de `repair_extra_notes` y el mínimo de Python 3.12 fueron decisiones del usuario. «Sí. Añade los puntos 1-4 a la lista de review-advisories.» → T19-T22.
+- L4. T22 necesita una decisión del usuario antes de implementar.
