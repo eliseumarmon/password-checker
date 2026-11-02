@@ -24,7 +24,7 @@ def column_key(value):
     return re.sub(r"[\s_-]+", "", value.strip().casefold())
 
 
-def read_export(source, filename, diagnostics=None):
+def read_export(source, filename):
     """Lee una exportacion, validando anchura sin perder columnas silenciosamente."""
     if hasattr(filename, "read"):
         file_context = nullcontext(filename)
@@ -79,8 +79,6 @@ def read_export(source, filename, diagnostics=None):
                               values[url_idx + 1:])
                     if len(values) == expected - 1:
                         values.append("")
-                    if diagnostics is not None:
-                        diagnostics.append((source, line, "nombre reconstruido; revisar la fila original"))
                 else:
                     raise ValueError("{}: linea {}: URI desplazada; la reconstruccion de nombre es ambigua. No se importara.".format(source, line))
             if len(values) > expected:
@@ -97,8 +95,6 @@ def read_export(source, filename, diagnostics=None):
                 # nota vacia. No completar otras ausencias ambiguas.
                 if len(values) == expected - 1 and note_last:
                     values.append("")
-                    if diagnostics is not None:
-                        diagnostics.append((source, line, "nota final vacia completada"))
                 else:
                     raise ValueError("{}: linea {}: {} columnas, esperadas {}."
                                      " No se importara parcialmente.".format(source, line, len(values), expected))

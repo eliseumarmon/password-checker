@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 from typing import Any, NamedTuple, Optional
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import urlsplit
 
 # Chrome exports Android app credentials using android://signature@package/.
 # Bitwarden matches Android apps using androidapp://package.
@@ -69,10 +69,6 @@ def parse_url(raw: str) -> UrlInfo:
         return UrlInfo(url, "", False, True, False)
 
 
-def is_android_source(raw: str) -> bool:
-    return ANDROID_SOURCE.fullmatch(raw.strip()) is not None
-
-
 def supported_uri(raw: str) -> bool:
     """Require an explicit, known scheme when detecting shifted columns."""
     if not raw or not raw.strip() or raw != raw.strip():
@@ -96,21 +92,3 @@ def bitwarden_uri(raw: str) -> str:
     """
     package = android_package(raw)
     return "androidapp://" + package if package else raw
-
-
-def web_origin(raw: str) -> Optional[str]:
-    """Website origin only: never path, query, fragment or userinfo (may hold tokens)."""
-    try:
-        parsed = urlsplit(raw)
-        scheme = parsed.scheme.lower()
-        if (scheme not in ("http", "https") or not parsed.hostname
-                or parsed.username is not None or parsed.password is not None):
-            return None
-        host = parsed.hostname.lower()
-        host = "[" + host + "]" if ":" in host else host
-        port = parsed.port
-        if port is not None and port != _default_port(scheme):
-            host += ":" + str(port)
-        return urlunsplit((scheme, host, "/", "", ""))
-    except ValueError:
-        return None
