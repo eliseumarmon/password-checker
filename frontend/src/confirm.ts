@@ -11,7 +11,8 @@ export interface ConfirmRequest {
 export const pendingConfirm = shallowRef<ConfirmRequest | null>(null);
 
 export function confirmAction(message: string, confirmLabel: string, danger = false): Promise<boolean> {
-  settleConfirm(false);
+  // A request while another is open is refused, leaving the open one untouched.
+  if (pendingConfirm.value) return Promise.resolve(false);
   return new Promise(resolve => { pendingConfirm.value = { message, confirmLabel, danger, resolve }; });
 }
 
