@@ -2,6 +2,7 @@
 
 Importar las contraseñas exportadas desde Safari o la app Contraseñas sin perder los códigos 2FA (`OTPAuth`) y conservarlos hasta la exportación a Bitwarden (`login_totp`).
 La aplicación está en desarrollo: el formato de sesión `.pwc` pasa a v2 sin compatibilidad con v1.
+Depende de `odd/tasks/import-format-origin.md`, que se hace antes: Safari entra como formato `safari` con origen `safari`.
 Una rama por tarea desde `main`, encadenadas cuando compartan archivos; test primero; solo credenciales y secretos TOTP ficticios; se mantiene el lector CSV basado en alias, sin adaptadores nuevos.
 
 ## Specs
@@ -56,3 +57,4 @@ Importar el ZIP de Safari; conservar `guid` y fechas de Firefox; diferenciar adi
 - L6. No se introducen adaptadores CSV ni ampliaciones de producto sin necesidad demostrada.
 - L7. T5 revisada: decisión por grupo, caso A/B/C obligatorio con todas sus permutaciones; T1 añade la regresión de Brave por nombre de archivo.
 - L8. «Cuando un grupo de identidad contenga varios TOTP distintos y no vacíos, se conservarán todas sus credenciales sin fusiones automáticas dentro del grupo, incluidas las que no tengan TOTP.»
+- L9. Orden decidido: primero la separación de formato y origen (`import-format-origin.md`); Safari, después.
