@@ -39,7 +39,7 @@ Ya resueltos y fuera de esta lista: papelera sin cambios (`247e830`), regla de �
 
 ### Interfaz (S3)
 
-- [ ] T16. El aviso flotante de error tapa título y acciones de la cabecera (p. ej. «Exportar Bitwarden» en móvil) hasta cerrarlo: decidir con el usuario la posición o un cierre automático, con test. (R3-002, trozo 6)
+- [x] T16. El aviso flotante de error tapa título y acciones de la cabecera (p. ej. «Exportar Bitwarden» en móvil) hasta cerrarlo: aplicar la decisión aprobada de mantenerlo en la parte inferior hasta su cierre, con posición contextual en diálogos y test. (R3-002, trozo 6)
 
 ### Documentación y comentarios (S4)
 
@@ -49,4 +49,4 @@ Ya resueltos y fuera de esta lista: papelera sin cambios (`247e830`), regla de �
 ## Registro
 
 - L1. «genera una task con las observaciones de los revisores iremos a por ellas de 1 en 1 en la proxima sesion y haz push a main»
-- L2. T16 necesita una decisión de producto antes de implementar.
+- L2. Para T16 se aprobó mantener el aviso en la parte inferior hasta su cierre, con posición contextual en diálogos.

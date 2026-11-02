@@ -10,6 +10,8 @@ defineEmits<{ close: []; edit: [id: string]; trash: [id: string] }>();
 <template>
   <div class="overlay modal-overlay" @click.self="$emit('close')">
     <section class="compare-dialog card" role="dialog" aria-modal="true" aria-label="Comparar duplicados">
+      <slot />
+      <div class="dialog-content">
       <div class="drawer-top"><h2>Comparar registros</h2><button aria-label="Cerrar panel" @click="$emit('close')">✕</button></div>
       <p>{{labelGroup(group.kind)}} · {{group.count}} registros. Ninguna contraseña se elimina por defecto.</p>
       <div class="compare-grid">
@@ -21,6 +23,7 @@ defineEmits<{ close: []; edit: [id: string]; trash: [id: string] }>();
         </div>
       </div>
       <p class="hint">Las coincidencias se comparan respecto al primer registro del grupo. Lo descartado va a la papelera y se puede restaurar.</p>
+      </div>
     </section>
   </div>
 </template>

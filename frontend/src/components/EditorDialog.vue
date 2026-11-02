@@ -29,6 +29,8 @@ function openSite(url: string): void {
 <template>
   <div class="overlay modal-overlay" @click.self="$emit('close')">
     <section class="editor-dialog card" role="dialog" aria-modal="true" aria-label="Editar credencial">
+      <slot />
+      <div class="dialog-content">
       <div class="drawer-top"><h2>Editar credencial</h2><button aria-label="Cerrar" @click="$emit('close')">✕</button></div>
       <div class="editor-fields editor-grid">
         <label>Nombre<input v-model="form.name" autocomplete="off" /></label>
@@ -43,6 +45,7 @@ function openSite(url: string): void {
         <p class="muted">Origen inmutable: {{record.source}} · línea {{record.line}}</p>
       </div>
       <div class="drawer-actions"><button v-if="record.included" class="danger push-left" :disabled="busy" @click="$emit('trash', record.id)"><TrashIcon /> Descartar</button><button v-else class="push-left" :disabled="busy" @click="$emit('restore', record.id)">Restaurar</button><button @click="$emit('close')">Cancelar</button><button class="primary" :disabled="busy" @click="$emit('save', form)">Guardar cambios</button></div>
+      </div>
     </section>
   </div>
 </template>

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { api } from './api';
 import { useWorkspace } from './store';
 import TrashIcon from './TrashIcon.vue';
+import ErrorNotice from './components/ErrorNotice.vue';
 import CompareDialog from './components/CompareDialog.vue';
 import EditorDialog from './components/EditorDialog.vue';
 import SessionDialog from './components/SessionDialog.vue';
@@ -26,6 +27,11 @@ const selectedGroup = ref<DuplicateGroup | null>(null);
 const selected = ref<CredentialDetail | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
 const sessionMode = ref<SessionMode | null>(null);
+const stickyHead = ref<HTMLElement | null>(null);
+const mobileNav = ref<HTMLElement | null>(null);
+const headerHeight = ref(0);
+const navHeight = ref(0);
+let layoutObserver: ResizeObserver | undefined;
 // Per-viewer convenience only: storage may be unavailable, so failures are ignored.
 const SIDEBAR_KEY = 'pc.sidebarCollapsed';
 const collapsed = ref(readCollapsed());
@@ -128,11 +134,20 @@ async function submitSession({ passphrase, confirmation, file }: SessionInput): 
 
 
 watch(screen, () => { selected.value = null; selectedGroup.value = null; });
-onMounted(async () => { await store.execute(api.state); });
+onMounted(async () => {
+  layoutObserver = new ResizeObserver(() => {
+    headerHeight.value = stickyHead.value?.offsetHeight ?? 0;
+    navHeight.value = mobileNav.value?.offsetHeight ?? 0;
+  });
+  if (stickyHead.value) layoutObserver.observe(stickyHead.value);
+  if (mobileNav.value) layoutObserver.observe(mobileNav.value);
+  await store.execute(api.state);
+});
+onUnmounted(() => layoutObserver?.disconnect());
 </script>
 
 <template>
-  <div class="shell">
+  <div class="shell" :style="{ '--header-height': headerHeight + 'px', '--nav-height': navHeight + 'px' }">
     <aside class="sidebar" :class="{collapsed}" aria-label="Navegación principal">
       <button class="brand" :aria-label="collapsed?'Expandir menú':'Contraer menú'" :title="collapsed?'Expandir menú':'Contraer menú'" :aria-expanded="!collapsed" @click="collapsed=!collapsed"><span class="brand-mark">◇</span><span class="label"><strong>Password Checker</strong><small>Revisión privada de credenciales</small></span></button>
       <nav>
@@ -142,7 +157,7 @@ onMounted(async () => { await store.execute(api.state); });
     </aside>
 
     <main class="main">
-      <div class="sticky-head">
+      <div ref="stickyHead" class="sticky-head">
       <header class="topbar">
         <div><h1>{{ SCREENS.find(s => s.id === screen)?.title }}</h1><p>Los originales no se modifican · Las contraseñas permanecen ocultas</p></div>
         <div class="top-actions">
@@ -177,11 +192,16 @@ onMounted(async () => { await store.execute(api.state); });
       </template>
     </main>
 
-    <CompareDialog v-if="selectedGroup" :group="selectedGroup" :busy="store.busy" @close="selectedGroup=null" @edit="openRecord" @trash="moveToTrash" />
-    <EditorDialog v-if="selected" :record="selected" :busy="store.busy" @close="closeEditor" @save="save" @trash="moveToTrash" @restore="restore" />
-    <!-- Outside the sticky header, which is its own stacking layer, so it stays above dialogs. -->
-    <div v-if="store.error" class="error" role="alert">{{store.error}} <button @click="store.error=''" aria-label="Cerrar aviso">×</button></div>
-    <SessionDialog v-if="sessionMode" :mode="sessionMode" :busy="store.busy" @close="closeSession" @submit="submitSession" />
-    <nav class="mobile-nav" aria-label="Navegación móvil"><button v-for="s in SCREENS" :key="s.id" :class="{active:screen===s.id}" @click="screen=s.id"><TrashIcon v-if="s.icon.kind==='trash'" /><template v-else>{{s.icon.text}}</template><span>{{s.label}}</span></button></nav>
+    <CompareDialog v-if="selectedGroup" :group="selectedGroup" :busy="store.busy" @close="selectedGroup=null" @edit="openRecord" @trash="moveToTrash">
+      <ErrorNotice v-if="store.error && !selected && !sessionMode" :message="store.error" @close="store.error=''" />
+    </CompareDialog>
+    <EditorDialog v-if="selected" :record="selected" :busy="store.busy" @close="closeEditor" @save="save" @trash="moveToTrash" @restore="restore">
+      <ErrorNotice v-if="store.error && !sessionMode" :message="store.error" @close="store.error=''" />
+    </EditorDialog>
+    <ErrorNotice v-if="store.error && !selectedGroup && !selected && !sessionMode" class="floating-error" :message="store.error" @close="store.error=''" />
+    <SessionDialog v-if="sessionMode" :mode="sessionMode" :busy="store.busy" @close="closeSession" @submit="submitSession">
+      <ErrorNotice v-if="store.error" :message="store.error" @close="store.error=''" />
+    </SessionDialog>
+    <nav ref="mobileNav" class="mobile-nav" aria-label="Navegación móvil"><button v-for="s in SCREENS" :key="s.id" :class="{active:screen===s.id}" @click="screen=s.id"><TrashIcon v-if="s.icon.kind==='trash'" /><template v-else>{{s.icon.text}}</template><span>{{s.label}}</span></button></nav>
   </div>
 </template>

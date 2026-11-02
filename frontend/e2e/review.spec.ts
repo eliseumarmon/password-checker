@@ -561,3 +561,209 @@ test('shows errors above an open dialog', async ({ page }) => {
   });
   expect(onTop).toBe(true);
 });
+
+for (const { name, viewport } of [
+  { name: 'desktop', viewport: { width: 1280, height: 800 } },
+  { name: 'mobile', viewport: { width: 390, height: 844 } },
+]) {
+  test(`keeps the error notice clear of navigation and header on ${name}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.route('**/api/export', route => route.fulfill({ status: 503, body: '' }));
+    const exportButton = page.getByRole('button', { name: 'Exportar Bitwarden' });
+    await exportButton.click();
+    const alert = page.getByRole('alert');
+    await expect(alert).toContainText('No se pudo exportar');
+    const notice = (await alert.boundingBox())!;
+    const header = (await page.locator('.sticky-head').boundingBox())!;
+    expect(notice.y).toBeGreaterThanOrEqual(header.y + header.height);
+    if (name === 'mobile') {
+      const nav = page.getByRole('navigation', { name: 'Navegación móvil' });
+      const navBox = (await nav.boundingBox())!;
+      expect(notice.y + notice.height).toBeLessThanOrEqual(navBox.y);
+      await nav.getByRole('button', { name: 'Ajustes' }).click();
+      await expect(page.getByRole('heading', { name: 'Ajustes', exact: true }).first()).toBeVisible();
+    } else {
+      await exportButton.click();
+    }
+    await expect(alert).toBeVisible();
+    await alert.getByRole('button', { name: 'Cerrar aviso' }).click();
+    await expect(alert).toHaveCount(0);
+  });
+
+  test(`keeps a failed save accessible and retryable on ${name}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.route('**/api/session/save', route => route.fulfill({ status: 503, body: '' }), { times: 1 });
+    await page.getByRole('button', { name: 'Guardar sesión cifrada' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Sesión cifrada' });
+    const password = dialog.getByLabel(/Contraseña de sesión/);
+    const confirmation = dialog.getByLabel('Confirmar contraseña');
+    const save = dialog.getByRole('button', { name: 'Descargar archivo cifrado' });
+    await password.fill('fictional-session-passphrase');
+    await confirmation.fill('fictional-session-passphrase');
+    await save.click();
+    const alert = dialog.getByRole('alert');
+    await expect(alert).toContainText('No se pudo guardar la sesión');
+    await expect(password).toHaveValue('fictional-session-passphrase');
+    await expect(confirmation).toHaveValue('fictional-session-passphrase');
+    for (const control of [password, confirmation, save]) {
+      await control.scrollIntoViewIfNeeded();
+      const unobstructed = await control.evaluate(element => {
+        const box = element.getBoundingClientRect();
+        const target = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+        return element === target || element.contains(target);
+      });
+      expect(unobstructed).toBe(true);
+      const controlBox = (await control.boundingBox())!;
+      const alertBox = (await alert.boundingBox())!;
+      expect(controlBox.y).toBeGreaterThanOrEqual(alertBox.y + alertBox.height);
+    }
+    const download = page.waitForEvent('download');
+    await save.click();
+    expect((await download).suggestedFilename()).toBe('password-checker-session.pwc');
+    await expect(dialog).toHaveCount(0);
+  });
+}
+
+test('keeps a long notice between the header and navigation in a short viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 320 });
+  const message = 'Error largo de prueba. '.repeat(100);
+  await page.route('**/api/export', route => route.fulfill({
+    status: 503, contentType: 'application/json', body: JSON.stringify({ detail: message }),
+  }));
+  await page.getByRole('button', { name: 'Exportar Bitwarden' }).click();
+  const alert = page.getByRole('alert');
+  await expect(alert).toContainText(message);
+  const box = (await alert.boundingBox())!;
+  const header = (await page.locator('.sticky-head').boundingBox())!;
+  const nav = (await page.getByRole('navigation', { name: 'Navegación móvil' }).boundingBox())!;
+  expect(box.y).toBeGreaterThanOrEqual(header.y + header.height);
+  expect(box.y + box.height).toBeLessThanOrEqual(nav.y);
+  const close = alert.getByRole('button', { name: 'Cerrar aviso' });
+  expect(await close.evaluate(element => {
+    const box = element.getBoundingClientRect();
+    return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2) === element;
+  })).toBe(true);
+  const scrollable = await alert.locator('span').evaluate(element => element.scrollHeight > element.clientHeight);
+  expect(scrollable).toBe(true);
+  await close.focus();
+  await page.keyboard.press('Enter');
+  await expect(alert).toHaveCount(0);
+  await page.getByRole('button', { name: 'Exportar Bitwarden' }).click();
+  await expect(alert).toBeVisible();
+  await page.getByRole('navigation', { name: 'Navegación móvil' }).getByRole('button', { name: 'Ajustes' }).click();
+  await page.waitForTimeout(6000);
+  await expect(alert).toBeVisible();
+});
+
+test('moves the persistent notice into the active dialog', async ({ page }) => {
+  await page.route('**/api/export', route => route.fulfill({ status: 503, body: '' }));
+  await page.getByRole('button', { name: 'Exportar Bitwarden' }).click();
+  const alert = page.getByRole('alert');
+  await expect(alert).toHaveCount(1);
+  await page.locator('.desktop-table').getByRole('row', { name: /Conflict/ }).getByRole('button', { name: 'Comparar' }).click();
+  const compare = page.getByRole('dialog', { name: 'Comparar duplicados' });
+  await expect(compare.getByRole('alert')).toBeVisible();
+  await expect(alert).toHaveCount(1);
+  await compare.getByRole('button', { name: 'Ver / editar' }).first().click();
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  await expect(editor.getByRole('alert')).toBeVisible();
+  await expect(alert).toHaveCount(1);
+  await editor.getByLabel('Notas').fill('Edit remains usable');
+  await editor.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(compare.getByRole('alert')).toBeVisible();
+  await compare.getByRole('button', { name: 'Cerrar panel' }).click();
+  await expect(alert).toBeVisible();
+  await alert.getByRole('button', { name: 'Cerrar aviso' }).click();
+  await expect(alert).toHaveCount(0);
+});
+
+for (const viewport of [{ width: 320, height: 320 }, { width: 390, height: 250 }]) {
+  test(`keeps the notice close control usable at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.route('**/api/export', route => route.fulfill({
+      status: 503, contentType: 'application/json', body: JSON.stringify({ detail: 'Error largo. '.repeat(100) }),
+    }));
+    await page.getByRole('button', { name: 'Exportar Bitwarden' }).click();
+    const alert = page.getByRole('alert');
+    await expect(alert).toBeVisible();
+    const noticeBox = (await alert.boundingBox())!;
+    const headerBox = (await page.locator('.sticky-head').boundingBox())!;
+    const navBox = (await page.getByRole('navigation', { name: 'Navegación móvil' }).boundingBox())!;
+    expect(noticeBox.y).toBeGreaterThanOrEqual(headerBox.y + headerBox.height);
+    expect(noticeBox.y + noticeBox.height).toBeLessThanOrEqual(navBox.y);
+    const close = alert.getByRole('button', { name: 'Cerrar aviso' });
+    const closeBox = (await close.boundingBox())!;
+    expect(closeBox.y).toBeGreaterThanOrEqual(noticeBox.y);
+    expect(closeBox.y + closeBox.height).toBeLessThanOrEqual(noticeBox.y + noticeBox.height);
+    expect(await close.evaluate(element => {
+      const box = element.getBoundingClientRect();
+      return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2) === element;
+    })).toBe(true);
+    await close.click();
+    await expect(alert).toHaveCount(0);
+  });
+}
+
+for (const viewport of [{ width: 320, height: 320 }, { width: 390, height: 250 }, { width: 844, height: 250 }]) {
+  test(`keeps failed save fields and retry usable at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.route('**/api/session/save', route => route.fulfill({
+      status: 503, contentType: 'application/json', body: JSON.stringify({ detail: 'Error largo. '.repeat(100) }),
+    }), { times: 1 });
+    await page.getByRole('button', { name: 'Guardar sesión cifrada' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Sesión cifrada' });
+    const password = dialog.getByLabel(/Contraseña de sesión/);
+    const confirmation = dialog.getByLabel('Confirmar contraseña');
+    const save = dialog.getByRole('button', { name: 'Descargar archivo cifrado' });
+    const value = 'fictional-session-passphrase';
+    await password.fill(value);
+    await confirmation.fill(value);
+    await save.click();
+    await expect(dialog.getByRole('alert')).toBeVisible();
+    await expect(password).toHaveValue(value);
+    await expect(confirmation).toHaveValue(value);
+    for (const field of [password, confirmation]) {
+      await field.scrollIntoViewIfNeeded();
+      expect(await field.evaluate(element => {
+        const box = element.getBoundingClientRect();
+        return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2) === element;
+      })).toBe(true);
+      await field.click();
+      await field.fill(value);
+    }
+    await save.scrollIntoViewIfNeeded();
+    expect(await save.evaluate(element => {
+      const box = element.getBoundingClientRect();
+      return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2) === element;
+    })).toBe(true);
+    const download = page.waitForEvent('download');
+    await save.click();
+    expect((await download).suggestedFilename()).toBe('password-checker-session.pwc');
+    await expect(dialog).toHaveCount(0);
+  });
+}
+
+for (const viewport of [{ width: 320, height: 401 }, { width: 844, height: 401 }]) {
+  test(`keeps editor fields clear of actions with a notice at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+    await page.getByRole('button', { name: 'Todas (6)' }).click();
+    await page.locator('.desktop-table').getByRole('button', { name: 'Editar' }).first().click();
+    await page.setViewportSize(viewport);
+    const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+    const save = editor.getByRole('button', { name: 'Guardar cambios' });
+    await page.route('**/api/records/*', route => route.fulfill({
+      status: 503, contentType: 'application/json', body: JSON.stringify({ detail: 'Error largo. '.repeat(100) }),
+    }), { times: 1 });
+    await save.click();
+    await expect(editor.getByRole('alert')).toBeVisible();
+    const url = editor.getByLabel('URL o paquete Android');
+    await url.scrollIntoViewIfNeeded();
+    expect(await url.evaluate(element => {
+      const box = element.getBoundingClientRect();
+      return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2) === element;
+    })).toBe(true);
+    await url.click();
+    await url.fill('https://edited.invalid/');
+    await save.click();
+    await expect(editor).toHaveCount(0);
+  });
+}

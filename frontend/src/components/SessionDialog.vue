@@ -15,6 +15,8 @@ const file = ref<File | null>(null);
 <template>
   <div class="overlay modal-overlay" @click.self="$emit('close')">
     <section class="session-dialog card" role="dialog" aria-modal="true" aria-label="Sesión cifrada">
+      <slot />
+      <div class="dialog-content">
       <div class="drawer-top"><h2>{{mode==='save'?'Guardar sesión cifrada':'Abrir sesión anterior'}}</h2><button aria-label="Cerrar" @click="$emit('close')">✕</button></div>
       <p v-if="mode==='save'">Descarga un archivo cifrado para continuar la revisión otro día, incluso desde otro equipo. No podremos recuperar la contraseña que elijas.</p>
       <p v-else>Selecciona el archivo .pwc y escribe la contraseña con la que lo guardaste.</p>
@@ -29,6 +31,7 @@ const file = ref<File | null>(null);
       </label>
       <p class="hint">La contraseña de sesión nunca se guarda en el navegador ni se envía a Internet.</p>
       <div class="drawer-actions"><button @click="$emit('close')">Cancelar</button><button class="primary" :disabled="busy" @click="$emit('submit', { passphrase, confirmation, file })">{{mode==='save'?'Descargar archivo cifrado':'Abrir sesión'}}</button></div>
+      </div>
     </section>
   </div>
 </template>
