@@ -260,6 +260,7 @@ test('keeps the editor open when a text selection ends outside it', async ({ pag
   await page.mouse.up();
   await expect(editor).toBeVisible();
   await expect(notes).toHaveValue('Fictional note to select');
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
 });
 
 test('keeps the editor open when a press on the backdrop ends inside it', async ({ page }) => {
@@ -276,6 +277,7 @@ test('keeps the editor open when a press on the backdrop ends inside it', async 
   await page.mouse.up();
   await expect(editor).toBeVisible();
   await expect(notes).toHaveValue('Fictional note kept');
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
 });
 
 test('closes the editor with a click on the backdrop', async ({ page }) => {
@@ -286,6 +288,55 @@ test('closes the editor with a click on the backdrop', async ({ page }) => {
   await expectBackdropAt(page, 5, 5);
   await page.mouse.click(5, 5);
   await expect(editor).toBeHidden();
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
+});
+
+test('asks before closing the editor with unsaved changes', async ({ page }) => {
+  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  const row = page.locator('.desktop-table').getByRole('row', { name: /carol/ });
+  await row.getByRole('button', { name: 'Editar' }).click();
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  const name = editor.getByLabel('Nombre');
+  await name.fill('Fictional unsaved name');
+  const warning = page.getByRole('alertdialog', { name: 'Confirmar acción' });
+  for (const close of [
+    () => editor.getByRole('button', { name: 'Cerrar' }).click(),
+    () => editor.getByRole('button', { name: 'Cancelar' }).click(),
+    async () => { await expectBackdropAt(page, 5, 5); await page.mouse.click(5, 5); },
+  ]) {
+    await close();
+    await expect(warning).toContainText('Hay cambios sin guardar en esta credencial. Si cierras la ficha, se perderán. ¿Continuar?');
+    await warning.getByRole('button', { name: 'Cancelar' }).click();
+    await expect(warning).toBeHidden();
+    await expect(editor).toBeVisible();
+    await expect(name).toHaveValue('Fictional unsaved name');
+  }
+  await editor.getByRole('button', { name: 'Cancelar' }).click();
+  await confirmWith(page, 'Descartar cambios');
+  await expect(editor).toBeHidden();
+  await expect(row).toContainText('Weak');
+  await row.getByRole('button', { name: 'Editar' }).click();
+  await expect(name).toHaveValue('Weak');
+});
+
+test('closes the editor without asking when edits are reverted or saved', async ({ page }) => {
+  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  const row = page.locator('.desktop-table').getByRole('row', { name: /carol/ });
+  await row.getByRole('button', { name: 'Editar' }).click();
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  const name = editor.getByLabel('Nombre');
+  await name.fill('Fictional temporary name');
+  await name.fill('Weak');
+  await editor.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(editor).toBeHidden();
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
+
+  await row.getByRole('button', { name: 'Editar' }).click();
+  await name.fill('Fictional saved name');
+  await editor.getByRole('button', { name: 'Guardar cambios' }).click();
+  await expect(editor).toBeHidden();
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
+  await expect(row).toContainText('Fictional saved name');
 });
 
 test('discards a record from the editor into the trash', async ({ page }) => {
@@ -871,6 +922,7 @@ test('moves the persistent notice into the active dialog', async ({ page }) => {
   await expect(alert).toHaveCount(1);
   await editor.getByLabel('Notas').fill('Edit remains usable');
   await editor.getByRole('button', { name: 'Cancelar' }).click();
+  await confirmWith(page, 'Descartar cambios');
   await expect(compare.getByRole('alert')).toBeVisible();
   await compare.getByRole('button', { name: 'Cerrar panel' }).click();
   await expect(alert).toBeVisible();
