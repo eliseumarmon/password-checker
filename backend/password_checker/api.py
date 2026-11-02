@@ -13,8 +13,9 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from .infrastructure.bitwarden import bitwarden_csv_bytes
 from .infrastructure.csv_reader import read_upload
-from .infrastructure.sessions import (MAX_SESSION_BYTES, MAX_SESSION_PASSPHRASE_LENGTH,
+from .infrastructure.sessions import (MAX_SESSION_PASSPHRASE_LENGTH,
                                       MIN_SESSION_PASSPHRASE_LENGTH, decrypt_session, encrypt_session)
+from .application import limits
 from .application.limits import MAX_WORKSPACE_FILES
 from .application.workspace import ImportedFile, Workspace
 
@@ -121,11 +122,16 @@ def trash_records(request: TrashRecords):
         return workspace.trash(request.ids)
     except KeyError:
         raise HTTPException(404, 'Credencial no encontrada') from None
+    except ValueError as error:
+        raise HTTPException(422, str(error)) from None
 
 
 @app.post('/api/merge-exact')
 def merge_exact():
-    return workspace.merge_exact()
+    try:
+        return workspace.merge_exact()
+    except ValueError as error:
+        raise HTTPException(422, str(error)) from None
 
 
 @app.post('/api/undo')
@@ -156,7 +162,7 @@ def save_session(credentials: SessionPassphrase):
 async def load_session(file: UploadFile = File(...), passphrase: str = Form(...)):
     if not (file.filename or '').endswith('.pwc'):
         raise HTTPException(400, 'Selecciona un archivo de sesión .pwc')
-    content = await file.read(MAX_SESSION_BYTES + 1)
+    content = await file.read(limits.MAX_SESSION_BYTES + 1)
     try:
         return workspace.restore(decrypt_session(content, passphrase))
     except ValueError as error:

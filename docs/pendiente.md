@@ -14,6 +14,8 @@ Este documento reúne lo que la aplicación todavía no hace: limitaciones conoc
 - Una revisión más amplia de accesibilidad y teclado.
 - La revisión de dependencias.
 - Una evaluación local de fortaleza más completa.
+- Límites de sesión: cuando la revisión ya supera un límite y un cambio empeora otro, el mensaje de rechazo puede nombrar el límite que no empeoró; y faltan pruebas por HTTP de esos rechazos al importar y al editar. Detalle en [reliability-hardening](../odd/tasks/reliability-hardening.md#deuda-técnica-registrada) (DT1 y DT2).
+- Limpiar los avisos existentes de `ruff`, hoy fuera de CI (DT3).
 
 ## Ideas de diseño sin implementar
 

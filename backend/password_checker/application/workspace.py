@@ -14,10 +14,10 @@ from typing import Any, Sequence
 from ..domain.accounts import duplicate_key
 from ..domain.credential import BROWSER_SOURCES, Credential
 from ..domain.notes import combine_notes
+from . import limits
 from .candidate import ALLOWED_REVIEW, Candidate, identity
-from .limits import MAX_SNAPSHOT_FILE_NAME_CHARS
 from .review_state import detail, review_state
-from .session_snapshot import from_payload, to_payload
+from .session_snapshot import from_payload, session_fit, to_payload
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -31,7 +31,7 @@ class ImportedFile:
     def __post_init__(self) -> None:
         if (not isinstance(self.name, str) or not self.name.strip()
                 or self.name in ('.', '..') or '/' in self.name or '\\' in self.name
-                or len(self.name) > MAX_SNAPSHOT_FILE_NAME_CHARS
+                or len(self.name) > limits.MAX_SNAPSHOT_FILE_NAME_CHARS
                 or any(unicodedata.category(char) == 'Cc' for char in self.name)):
             raise ValueError('Nombre de archivo no válido')
         if self.source not in BROWSER_SOURCES:
@@ -53,6 +53,20 @@ class Workspace:
         if len(self._history) > 30:
             self._history.pop(0)
 
+    def _ensure_restorable(self, records: dict[str, Candidate], files: list[dict[str, Any]], *,
+                           allow_reduction: bool = True) -> None:
+        """Refuse a new state that could not be saved to a session file and opened again.
+
+        Once over a limit, a change that does not make the excess worse is still accepted,
+        so the user can fix it.
+        """
+        fit = session_fit(list(records.values()), files)
+        if fit.problem is None:
+            return
+        if allow_reduction and fit.no_worse_than(session_fit(list(self._records.values()), self._files)):
+            return
+        raise ValueError(fit.problem)
+
     def import_files(self, files: list[ImportedFile]) -> dict[str, Any]:
         """Replace the workspace with already parsed files."""
         candidates = [Candidate.from_source(row) for file in files for row in file.credentials]
@@ -60,8 +74,10 @@ class Workspace:
                     for file in files]
         if not candidates:
             raise ValueError('No se encontraron credenciales válidas')
+        records = {r.id: r for r in candidates}
         with self._lock:
-            self._records = {r.id: r for r in candidates}
+            self._ensure_restorable(records, metadata, allow_reduction=False)
+            self._records = records
             self._files = metadata
             self._history.clear()
             return self.snapshot()
@@ -96,8 +112,10 @@ class Workspace:
                 updated = replace(updated, review='pending')
             if updated == before:
                 return self.snapshot()
+            records = {**self._records, identifier: updated}
+            self._ensure_restorable(records, self._files)
             self._checkpoint()
-            self._records[identifier] = updated
+            self._records = records
             return self.snapshot()
 
     def trash(self, identifiers: list[str]) -> dict[str, Any]:
@@ -113,9 +131,10 @@ class Workspace:
             pending = [i for i in dict.fromkeys(identifiers) if self._records[i].included]
             if not pending:
                 return self.snapshot()
+            records = {**self._records, **{i: replace(self._records[i], included=False) for i in pending}}
+            self._ensure_restorable(records, self._files)
             self._checkpoint()
-            for identifier in pending:
-                self._records[identifier] = replace(self._records[identifier], included=False)
+            self._records = records
             return self.snapshot()
 
     def merge_exact(self) -> dict[str, Any]:
@@ -129,12 +148,15 @@ class Workspace:
             groups = [g for g in by_identity.values() if len(g) > 1]
             if not groups:
                 return self.snapshot()
-            self._checkpoint()
+            records = dict(self._records)
             for group in groups:
                 primary = group[0]
-                self._records[primary.id] = replace(primary, note=combine_notes(r.note for r in group))
+                records[primary.id] = replace(primary, note=combine_notes(r.note for r in group))
                 for r in group[1:]:
-                    self._records[r.id] = replace(r, included=False)
+                    records[r.id] = replace(r, included=False)
+            self._ensure_restorable(records, self._files)
+            self._checkpoint()
+            self._records = records
             return self.snapshot()
 
     def undo(self) -> dict[str, Any]:
@@ -156,12 +178,16 @@ class Workspace:
         with self._lock:
             if not self._records:
                 raise ValueError('No hay ninguna sesión cargada')
-            return to_payload(list(self._records.values()), self._files)
+            payload = to_payload(list(self._records.values()), self._files)
+            # Defensive: never hand out a snapshot that restore() would reject.
+            from_payload(payload)
+            return payload
 
     def restore(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Validate the entire untrusted snapshot before committing any change."""
         records, files = from_payload(payload)
         with self._lock:
+            self._ensure_restorable(records, files, allow_reduction=False)
             self._records = records
             self._files = files
             self._history.clear()
