@@ -19,16 +19,6 @@ Este documento reúne lo que la aplicación todavía no hace: limitaciones conoc
 - Optimización del bundle frontend: analizar el aviso de Vite por un chunk superior a 500 kB; valorar división de código y carga diferida sin ocultar el aviso aumentando únicamente el umbral.
 - Identidad de servicios y duplicados: definir si las credenciales se identifican por la URL/URI encontrada al importar o si se vinculan a un servicio lógico común (web, Android, iOS). Conservar las asociaciones originales y evaluar las consecuencias para la detección de duplicados; pertenecer al mismo servicio no implica fusionarlas automáticamente.
 
-## Observaciones P3 de revisión (opcionales, pendientes de decisión)
-
-De la revisión independiente de T4 del plan [importación: formato y origen](../odd/tasks/import-format-origin.md) (registro L10; integrado en `main` con el merge `36aea1e`, commit `abc7bdb`). Ninguna añade un requisito nuevo ni supuso corregir código: son decisiones opcionales que quedan pendientes.
-
-1. `WarningNotice.vue` mantiene `expanded` en `true` cuando llega una nueva importación con avisos mientras el componente sigue montado. Pendiente: decidir si se recuerda o se resetea el despliegue; una vez decidido, una prueba con dos importaciones de 4 o más columnas descartadas.
-2. `store.ts`: al abrir un `.pwc` en la misma página se conservan los avisos anteriores, porque la carga usa `execute`, que no toca los avisos; S6 no especifica este caso. Pendiente: decidir si conservarlos o limpiarlos solo cuando la carga termina con éxito, manteniendo los avisos si se cancela o falla, según se elija; prueba según la decisión. No implementar todavía.
-3. `NoticeBase.vue` usa la misma etiqueta accesible «Cerrar aviso» para el aviso de error y para el de advertencia. Pendiente: valorar una etiqueta accesible diferenciada por tipo; criterio: un lector de pantalla distingue ambos sin contexto visual.
-4. `style.css` usa `:has` en el apilado de avisos de la página, que requiere navegadores modernos. Pendiente: definir una compatibilidad mínima o un fallback si se admiten navegadores antiguos, con una prueba corta de accesibilidad según la política elegida. Sin añadir soporte de Safari (va en su propio plan) ni imponer versiones concretas.
-5. `store.ts` duplica el manejo de `busy`/`error` en `execute` e `importFiles`. Pendiente: evaluar una extracción mínima que no mezcle los avisos con el snapshot ni cambie que solo una importación confirmada con éxito los reemplaza o elimina y los fallos los preservan; es una mejora opcional de mantenibilidad, justificada con el estado actual. No refactorizar ahora.
-
 ## Funcionalidades planificadas
 
 Tienen especificación y tareas en su plan, que es donde se sigue su avance:

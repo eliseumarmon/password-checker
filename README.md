@@ -20,6 +20,8 @@ python app.py
 
 Abre `http://127.0.0.1:8000` en el mismo ordenador. El servidor escucha en loopback; no lo expongas en `0.0.0.0`, ya que maneja contraseñas.
 
+La interfaz necesita un navegador actual: solo usa características web [Baseline Widely Available](https://web.dev/baseline) (por ejemplo, el selector CSS `:has()`) y no incluye alternativas para navegadores que no las admitan.
+
 Para desarrollo, ejecuta `python app.py` y, en otra terminal, `cd frontend && npm run dev`. Vite crea un proxy de `/api` y muestra la interfaz en `http://127.0.0.1:5173`.
 
 ## Uso y sesiones
