@@ -244,6 +244,26 @@ class FormatOriginTests(unittest.TestCase):
             with self.subTest(name=name):
                 self.assertEqual([row.totp for row in read_upload(name, data)[1]], [''])
 
+    def test_a_blank_otpauth_cell_is_no_totp_and_any_other_value_is_kept_verbatim(self):
+        cells = {
+            '': '', '   ': '', '\t': '', ' \t  \t': '',
+            'otpauth://totp/fictional-a': 'otpauth://totp/fictional-a',
+            'not-a-uri fictional': 'not-a-uri fictional',
+            '  otpauth://totp/fictional-b \t': '  otpauth://totp/fictional-b \t',
+        }
+        for cell, expected in cells.items():
+            with self.subTest(cell=cell):
+                data = ('Title,URL,Username,Password,Notes,OTPAuth\n'
+                        f'A,https://a.invalid/,alice,fictional-pw,  note  ,"{cell}"\n').encode()
+                row = read_upload('Passwords.csv', data)[1][0]
+                self.assertEqual(row.totp, expected)
+                # Only OTPAuth is normalized: the other fields keep today's reading.
+                self.assertEqual(row.note, '  note  ')
+
+    def test_a_safari_row_with_only_a_blank_totp_is_an_empty_row(self):
+        data = b'Title,URL,Username,Password,Notes,OTPAuth\n,,,,,"  \t "\n'
+        self.assertEqual(read_upload('Passwords.csv', data)[1], [])
+
     def test_a_safari_row_with_only_a_totp_is_kept(self):
         data = b'Title,URL,Username,Password,Notes,OTPAuth\n,,,,,otpauth://totp/fictional-only\n'
         self.assertEqual([row.totp for row in read_upload('Passwords.csv', data)[1]], ['otpauth://totp/fictional-only'])

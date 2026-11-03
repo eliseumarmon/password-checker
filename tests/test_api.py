@@ -332,6 +332,23 @@ class APITests(unittest.TestCase):
         self.client.patch('/api/records/' + identifier, json={'totp': longest})
         self.assertEqual(self.client.get('/api/records/' + identifier).json()['totp'], longest)
 
+    def test_a_blank_otpauth_cell_never_blocks_a_merge_and_real_totps_reach_the_export_verbatim(self):
+        padded = '  otpauth://totp/fictional-padded \t'
+        payload = ('Title,URL,Username,Password,Notes,OTPAuth\n'
+                   'A,https://a.invalid/,alice,fictional-1,,otpauth://totp/fictional-a\n'
+                   'A,https://a.invalid/,alice,fictional-1,,"   "\n'
+                   'B,https://b.invalid/,bob,fictional-2,,"\t"\n'
+                   'B,https://b.invalid/,bob,fictional-2,,\n'
+                   f'C,https://c.invalid/,carol,fictional-3,,"{padded}"\n').encode()
+        imported = self.client.post('/api/import', files=[('files', ('Passwords.csv', payload, 'text/csv'))])
+        self.assertEqual(imported.status_code, 200, imported.text)
+        self.assertEqual(sorted(group['kind'] for group in imported.json()['groups']), ['exact', 'exact'])
+        merged = self.client.post('/api/merge-exact')
+        self.assertEqual(merged.json()['stats']['excluded'], 2)
+        rows = csv.DictReader(io.StringIO(self.client.get('/api/export').content.decode('utf-8-sig')))
+        self.assertEqual(sorted((row['login_username'], row['login_totp']) for row in rows), [
+            ('alice', 'otpauth://totp/fictional-a'), ('bob', ''), ('carol', padded)])
+
     def test_unknown_origin_survives_encrypted_session_round_trip(self):
         payload = b'url,username,password\nhttps://example.invalid/,alice,fictional-secret-123\n'
         imported = self.client.post('/api/import', files=[('files', ('export.csv', payload, 'text/csv'))])

@@ -189,6 +189,9 @@ def read_export(fmt, filename, origin):
             password = field("password")
             note = field(*NOTE_COLUMNS)
             totp = field("otpauth") if fmt == "safari" else ""
+            # A blank cell is no secret; any other value is kept exactly as exported.
+            if not totp.strip():
+                totp = ""
             # Firefox no exporta 'name' ni 'note', sino realm y metadatos.
             # El realm ayuda a reconocer cuentas HTTP Basic diferentes.
             if fmt == "firefox":
