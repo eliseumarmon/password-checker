@@ -244,6 +244,19 @@ test('lists up to three discarded columns directly and summarizes from four, acr
   await expect(notice).toContainText('e2: 1 fila con datos');
 });
 
+test('collapses the details again for each new import with a summary', async ({ page }) => {
+  await importViaUi(page, [csvFile('four.csv', FOUR_COLUMN_CSV)]);
+  const notice = warning(page);
+  const toggle = notice.getByRole('button', { name: 'Ver detalles' });
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  // The warning stays mounted while the next import replaces it.
+  await importViaUi(page, [csvFile('four-again.csv', FOUR_COLUMN_CSV)]);
+  await expect(notice.locator('ul.warning-files')).toContainText('four-again.csv');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(notice.locator('ul.warning-files')).toBeHidden();
+});
+
 test('stays behind comparison, editor, session and confirmation, and returns when they close', async ({ page }) => {
   await importViaUi(page, [csvFile('adv.csv', TWO_COLUMN_CSV)]);
   const notice = warning(page);

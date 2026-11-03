@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import NoticeBase from './NoticeBase.vue';
 import type { ImportWarning } from '../types';
 
@@ -10,6 +10,8 @@ const props = defineProps<{ warnings: ImportWarning[] }>();
 defineEmits<{ close: [] }>();
 
 const expanded = ref(false);
+// Each successful import brings a new list: its details start collapsed.
+watch(() => props.warnings, () => { expanded.value = false; });
 const totalColumns = computed(() => props.warnings.reduce((sum, file) => sum + file.columns.length, 0));
 const summarized = computed(() => totalColumns.value >= 4);
 function rowsLabel(rows: number): string {
