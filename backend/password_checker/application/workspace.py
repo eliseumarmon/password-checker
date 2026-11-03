@@ -153,7 +153,10 @@ class Workspace:
             records = dict(self._records)
             for group, totp in groups:
                 primary = group[0]
-                records[primary.id] = replace(primary, note=combine_notes(r.note for r in group), totp=totp)
+                # A secret the kept record did not have has not been checked yet, as in change().
+                review = primary.review if primary.totp == totp else 'pending'
+                records[primary.id] = replace(primary, note=combine_notes(r.note for r in group),
+                                              totp=totp, review=review)
                 for r in group[1:]:
                     records[r.id] = replace(r, included=False)
             self._ensure_restorable(records, self._files)
