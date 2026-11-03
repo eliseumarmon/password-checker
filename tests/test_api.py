@@ -54,7 +54,10 @@ class APITests(unittest.TestCase):
             merged = self.client.post('/api/merge-exact')
         self.assertEqual(merged.status_code, 422)
         self.assertIn('«notas»', merged.json()['detail'])
-        with patch.object(limits, 'MAX_SESSION_BYTES', 64):
+        # Measured in plaintext bytes: the real .pwc size rounds to Base64 blocks of 3 bytes,
+        # so the one byte that trashing adds ("false") would only sometimes make the file grow.
+        with patch.object(limits, 'MAX_SESSION_BYTES', 64), \
+                patch.object(limits, 'session_file_size', lambda plaintext_bytes: plaintext_bytes):
             trashed = self.client.post('/api/records/trash', json={'ids': [before['records'][0]['id']]})
         self.assertEqual(trashed.status_code, 422)
         self.assertNotIn('fictional-secret-123', merged.text + trashed.text)
@@ -199,6 +202,40 @@ class APITests(unittest.TestCase):
         self.assertEqual(restored.json()['stats']['verified'], 1)
         self.assertNotIn('session_saved', restored.json())
         self.assertNotIn('session_saved', self.client.get('/api/workspace').json())
+
+    def test_safari_totp_survives_a_v2_session_and_a_v1_session_is_refused(self):
+        from backend.password_checker.infrastructure.sessions import encrypt_session
+        payload = (b'Title,URL,Username,Password,Notes,OTPAuth\n'
+                   b'A,https://example.invalid/,alice,fictional-123456,,otpauth://totp/fictional-imported\n')
+        imported = self.client.post('/api/import', files=[('files', ('Passwords.csv', payload, 'text/csv'))])
+        self.assertEqual(imported.status_code, 200, imported.text)
+        identifier = imported.json()['records'][0]['id']
+        workspace.change(identifier, {'totp': 'otpauth://totp/fictional-edited'})
+        passphrase = 'fictional-session-passphrase-12345'
+        saved = self.client.post('/api/session/save', json={'passphrase': passphrase})
+        self.assertEqual(saved.status_code, 200, saved.text)
+        self.assertNotIn(b'fictional-edited', saved.content)
+        workspace.change(identifier, {'totp': ''})
+
+        restored = self.client.post('/api/session/load', data={'passphrase': passphrase},
+                                    files={'file': ('session.pwc', saved.content, 'application/octet-stream')})
+        self.assertEqual(restored.status_code, 200, restored.text)
+        self.assertNotIn('fictional-', restored.text.replace('fictional-123456', ''))
+        row = workspace._records[identifier]
+        self.assertEqual((row.original.totp, row.totp),
+                         ('otpauth://totp/fictional-imported', 'otpauth://totp/fictional-edited'))
+
+        legacy = workspace.serialize()
+        legacy['version'] = 1
+        for record in legacy['records']:
+            del record['totp'], record['original']['totp']
+        before = workspace.snapshot()
+        refused = self.client.post('/api/session/load', data={'passphrase': passphrase},
+                                   files={'file': ('old.pwc', encrypt_session(legacy, passphrase),
+                                                   'application/octet-stream')})
+        self.assertEqual(refused.status_code, 422)
+        self.assertIn('versión anterior', refused.json()['detail'])
+        self.assertEqual(workspace.snapshot(), before)
 
     def test_unknown_origin_survives_encrypted_session_round_trip(self):
         payload = b'url,username,password\nhttps://example.invalid/,alice,fictional-secret-123\n'

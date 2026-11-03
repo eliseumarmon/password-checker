@@ -95,7 +95,7 @@ class Workspace:
             return detail(row)
 
     def change(self, identifier: str, changes: dict[str, Any]) -> dict[str, Any]:
-        allowed = {'name', 'url', 'username', 'password', 'note', 'included', 'review'}
+        allowed = {'name', 'url', 'username', 'password', 'note', 'totp', 'included', 'review'}
         if not changes or not set(changes).issubset(allowed):
             raise ValueError('Cambios vacíos o campos no permitidos')
         if 'review' in changes and changes['review'] not in ALLOWED_REVIEW:
@@ -108,7 +108,7 @@ class Workspace:
             # Editing identifying/secret fields always invalidates the review, even when
             # the same edit sets one: the new values have not been checked yet.
             if any(getattr(before, key) != getattr(updated, key)
-                   for key in ('url', 'username', 'password')):
+                   for key in ('url', 'username', 'password', 'totp')):
                 updated = replace(updated, review='pending')
             if updated == before:
                 return self.snapshot()

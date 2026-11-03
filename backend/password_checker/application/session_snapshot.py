@@ -10,11 +10,14 @@ from ..domain.credential import ORIGINS, Credential
 from . import limits
 from .candidate import ALLOWED_REVIEW, Candidate
 
-FIELD_LABELS = {'name': 'nombre', 'url': 'URL', 'username': 'usuario', 'password': 'contraseña', 'note': 'notas'}
+FIELD_LABELS = {'name': 'nombre', 'url': 'URL', 'username': 'usuario', 'password': 'contraseña', 'note': 'notas',
+                'totp': 'TOTP'}
+# v2 adds the TOTP to the original and the candidate; v1 files are refused, never migrated.
+SESSION_VERSION = 2
 
 
 def to_payload(records: list[Candidate], files: list[dict[str, Any]]) -> dict[str, Any]:
-    return {'version': 1, 'files': list(files), 'records': [asdict(row) for row in records]}
+    return {'version': SESSION_VERSION, 'files': list(files), 'records': [asdict(row) for row in records]}
 
 
 def encode_payload(payload: dict[str, Any]) -> bytes:
@@ -83,7 +86,9 @@ def session_fit(records: list[Candidate], files: list[dict[str, Any]]) -> Sessio
 
 def from_payload(payload: dict[str, Any]) -> tuple[dict[str, Candidate], list[dict[str, Any]]]:
     """Validate the entire untrusted snapshot; return (records by id, file metadata)."""
-    if payload.get('version') != 1 or not isinstance(payload.get('records'), list):
+    if payload.get('version') == 1:
+        raise ValueError('Esta sesión es de una versión anterior y ya no se puede abrir: vuelve a importar los CSV.')
+    if payload.get('version') != SESSION_VERSION or not isinstance(payload.get('records'), list):
         raise ValueError('Formato de sesión no compatible')
     items = payload['records']
     if not 1 <= len(items) <= limits.MAX_SESSION_RECORDS:
@@ -92,20 +97,20 @@ def from_payload(payload: dict[str, Any]) -> tuple[dict[str, Candidate], list[di
     if not isinstance(files, list) or len(files) > limits.MAX_WORKSPACE_FILES:
         raise ValueError('Metadatos de sesión no válidos')
     validated = {}
-    expected = {'id', 'original', 'name', 'url', 'username', 'password', 'note', 'included', 'review'}
-    original_keys = {'source', 'line', 'name', 'url', 'username', 'password', 'note'}
+    expected = {'id', 'original', 'name', 'url', 'username', 'password', 'note', 'totp', 'included', 'review'}
+    original_keys = {'source', 'line', 'name', 'url', 'username', 'password', 'note', 'totp'}
     for raw in items:
         if not isinstance(raw, dict) or set(raw) != expected or not isinstance(raw.get('original'), dict):
             raise ValueError('Credencial cifrada no válida')
         origin = raw['original']
         if set(origin) != original_keys:
             raise ValueError('Origen de credencial no válido')
-        for key in ('source', 'name', 'url', 'username', 'password', 'note'):
+        for key in ('source', 'name', 'url', 'username', 'password', 'note', 'totp'):
             if not isinstance(origin[key], str) or len(origin[key]) > limits.MAX_SNAPSHOT_TEXT_CHARS:
                 raise ValueError('Datos de origen no válidos')
         if type(origin['line']) is not int or origin['line'] < 1:
             raise ValueError('Línea de origen no válida')
-        for key in ('id', 'name', 'url', 'username', 'password', 'note'):
+        for key in ('id', 'name', 'url', 'username', 'password', 'note', 'totp'):
             if not isinstance(raw[key], str) or len(raw[key]) > limits.MAX_SNAPSHOT_TEXT_CHARS:
                 raise ValueError('Campo de credencial no válido')
         if not raw['id'] or raw['id'] in validated or not isinstance(raw['included'], bool):
@@ -115,7 +120,7 @@ def from_payload(payload: dict[str, Any]) -> tuple[dict[str, Candidate], list[di
         validated[raw['id']] = Candidate(
             id=raw['id'], original=Credential(**origin),
             name=raw['name'], url=raw['url'], username=raw['username'],
-            password=raw['password'], note=raw['note'],
+            password=raw['password'], note=raw['note'], totp=raw['totp'],
             included=raw['included'], review=raw['review'],
         )
     safe_files = []

@@ -37,6 +37,26 @@ class SessionTests(unittest.TestCase):
         self.assertEqual(restored.get(self.record_id)['note'], 'updated note')
         self.assertEqual(restored.get(self.record_id)['password'], 'fictional-secret-987654')
 
+    def test_roundtrip_keeps_the_original_and_the_edited_totp_encrypted(self):
+        original = Credential('safari', 3, 'Example', 'https://example.org/login', 'user',
+                              'fictional-secret-987654', '', 'otpauth://totp/fictional-imported')
+        record = Candidate.from_source(original)
+        self.workspace._records[record.id] = record
+        self.workspace.change(record.id, {'review': 'verified'})
+        self.workspace.change(record.id, {'totp': 'otpauth://totp/fictional-edited'})
+        encrypted = encrypt_session(self.workspace.serialize(), self.password)
+        self.assertNotIn(b'fictional-imported', encrypted)
+        self.assertNotIn(b'fictional-edited', encrypted)
+        restored = Workspace()
+        restored.restore(decrypt_session(encrypted, self.password))
+        row = restored._records[record.id]
+        self.assertEqual((row.original.totp, row.totp),
+                         ('otpauth://totp/fictional-imported', 'otpauth://totp/fictional-edited'))
+        # A new secret has not been checked yet, like a new password.
+        self.assertEqual(row.review, 'pending')
+        restored.change(record.id, {'totp': ''})
+        self.assertEqual(restored._records[record.id].totp, '')
+
     def test_wrong_password_and_tamper_dont_modify_workspace(self):
         encrypted = encrypt_session(self.workspace.serialize(), self.password)
         with self.assertRaises(ValueError):
