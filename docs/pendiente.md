@@ -12,7 +12,7 @@ Este documento reúne lo que la aplicación todavía no hace: limitaciones conoc
 
 - Validación con usuarios: no se han realizado entrevistas ni pruebas observadas con personas ni con contraseñas reales (véase [Validación con personas](#validación-con-personas)).
 - Una revisión más amplia de accesibilidad y teclado.
-- La revisión de dependencias.
+- El endurecimiento de dependencias: diagnóstico en la [auditoría de dependencias](auditoria-dependencias.md) y plan propuesto, pendiente de aprobación, en [dependency-hardening](../odd/tasks/dependency-hardening.md).
 - Una evaluación local de fortaleza más completa.
 - Optimización del bundle frontend: analizar el aviso de Vite por un chunk superior a 500 kB; valorar división de código y carga diferida sin ocultar el aviso aumentando únicamente el umbral.
 - Identidad de servicios y duplicados: definir si las credenciales se identifican por la URL/URI encontrada al importar o si se vinculan a un servicio lógico común (web, Android, iOS). Conservar las asociaciones originales y evaluar las consecuencias para la detección de duplicados; pertenecer al mismo servicio no implica fusionarlas automáticamente.
