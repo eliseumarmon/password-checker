@@ -54,9 +54,9 @@ Plan de endurecimiento (**aprobado en L4**; cada rama se integra solo con la apr
 - [ ] P4 — Restricciones de Python con todas las versiones fijadas y límites inferiores seguros (H4, R1). Prioridad: alta. Depende de: P3 (para no fijar una `cryptography` vulnerable).
   - Archivos: `backend/constraints.txt` (nuevo), `backend/requirements.txt`, `backend/requirements-dev.txt`, `.github/workflows/tests.yml` (jobs `python` y `e2e`: `-c backend/constraints.txt`) y `README.md` (instalación, pruebas y cómo regenerar).
   - Aceptación:
-    - `constraints.txt` fija con `==` todas las dependencias de `requirements-dev.txt` y sus transitivas. Se genera con `pip freeze` en un entorno limpio con Python 3.12.
-    - `pip freeze` en Linux omite colorama, así que **se añade a mano** (el valor de `click` en Windows) y el README documenta ese paso.
-    - En la CI, las líneas `Successfully installed` del job `python` coinciden exactamente con `constraints.txt` (salvo colorama), y las del job `e2e` son un subconjunto.
+    - `constraints.txt` fija con `==` todas las dependencias de `requirements-dev.txt` y sus transitivas. **Corregido en L11:** la versión inicial son exactamente las que instaló la CI de `main` (run `41650001412`, Linux con Python 3.12), sin `pytest` y sus dependencias, para no actualizar nada en esta rama. Para regenerarlo se usa `pip freeze` en un entorno limpio.
+    - colorama solo se instala en Windows (la pide `click`, con `platform_system == "Windows"`). Va en `constraints.txt` con ese marcador explícito, y el README explica que `pip freeze` en Linux la omite.
+    - En la CI, un paso del job `python` falla si algún paquete instalado no está fijado en `constraints.txt` o tiene otra versión (L11). Las líneas `Successfully installed` del job `e2e` son un subconjunto.
     - Límite inferior `python-multipart>=0.0.31`. Ninguna versión conocida de FastAPI ni de uvicorn exige `starlette>=1.3.1` ni `h11>=0.16` (FastAPI 0.162.0 pide `starlette>=0.46.0`; uvicorn, `h11>=0.8`), así que esos mínimos se fijan en `constraints.txt`.
   - Pruebas: suite, Ruff, build y E2E en CI. Instalación en limpio en local con `-c` y Python 3.14.
   - Regresión:
@@ -69,9 +69,9 @@ Plan de endurecimiento (**aprobado en L4**; cada rama se integra solo con la apr
   - Pruebas: ninguna ejecutable; revisar el texto.
   - Regresión: ninguna.
   - Revisión independiente: no.
-- [ ] P6 — Decidir sobre `pytest` (H8). Prioridad: baja. Depende de: decisión del usuario.
-  - Archivos: `backend/requirements-dev.txt` y, si se conserva, `README.md`.
-  - Aceptación: o se retira (y la CI sigue en verde con `unittest`), o se documenta como ejecutor local opcional.
+- [ ] P6 — Retirar `pytest` (H8). **Decidido en L11:** se retira y `unittest` queda como único ejecutor oficial, en local y en CI. Prioridad: baja.
+  - Archivos: `backend/requirements-dev.txt`, `backend/constraints.txt` y `README.md` (si hace falta).
+  - Aceptación: ninguna prueba, configuración ni herramienta depende de `pytest`; se retira de `requirements-dev.txt` y no entra en las restricciones; la CI sigue en verde con `unittest`. Las pruebas existentes no cambian.
   - Pruebas: suite.
   - Regresión: el IDE configurado con pytest dejaría de encontrarlo.
   - Revisión independiente: no.
@@ -415,3 +415,26 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
     - **Discrepancia 2 (Python 3.12 en local):** P4 dice «se genera con `pip freeze` en un entorno limpio con Python 3.12», pero en esta máquina solo hay Python 3.14 y 3.11 (`py -0`). En 3.12 solo se puede verificar en la CI (Linux).
     - **Decisión pendiente (P6):** si `pytest` se conserva, `pytest` y sus dependencias (iniconfig, packaging, pluggy, Pygments y colorama en Windows) entran en `constraints.txt`.
   - Implementación en pausa hasta la respuesta del usuario.
+- **L11 (2026-11-03):** decisión sobre `pytest`, literal:
+
+  > Retira `pytest` de `requirements-dev.txt` y mantén `unittest` como único ejecutor oficial de pruebas, tanto en local como en CI.
+  >
+  > Antes, comprueba que ninguna prueba, configuración o herramienta del proyecto depende realmente de `pytest`.
+  >
+  > Actualiza las restricciones y la documentación correspondiente, sin modificar innecesariamente las pruebas existentes.
+  >
+  > Continúa con H4 según el plan aprobado, incluyendo la verificación de instalaciones reproducibles en Python 3.12 y 3.14.
+  >
+  > Mantén el flujo de revisión independiente y no integres en `main` sin mi aprobación.
+
+  - **Ninguna dependencia de `pytest` (comprobado):**
+    - `git grep` solo encuentra `pytest` en `backend/requirements-dev.txt`, en `.pytest_cache/` de `.gitignore` y en el comentario `# flake8-pytest-style` de `ruff.toml`.
+    - Las reglas `PT` de `ruff.toml` son análisis estático: no necesitan `pytest` instalado y forman parte del conjunto por defecto de Ruff 0.17.3 que reproduce `select`, así que se mantienen.
+    - No hay `conftest.py`, `pytest.ini`, `pyproject.toml`, `setup.cfg` ni `tox.ini`.
+    - Todas las clases de prueba heredan de `unittest.TestCase`, sin fixtures de pytest.
+    - `.vscode/settings.json` (sin versionar) no configura ningún ejecutor de pruebas.
+  - **Decisiones de implementación** (anunciadas al usuario antes de L11 y no objetadas):
+    - Las versiones iniciales de `constraints.txt` son las de la CI de `main`, sin actualizar nada.
+    - Python 3.14 se verifica con una instalación limpia en Windows; Python 3.12, en la CI (Linux), porque no está instalado en local.
+    - Un paso de CI comprueba que todo lo instalado está fijado: evita que un paquete nuevo en una versión de Python o en una plataforma se instale sin fijar (falsa reproducibilidad).
+    - `python-multipart>=0.0.31` en `requirements.txt` (R1).
