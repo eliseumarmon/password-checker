@@ -311,6 +311,26 @@ class APITests(unittest.TestCase):
                 self.assertNotIn('FICTIONAL-T6', response.text)
                 self.assertTrue(all(set(error) == {'type', 'loc', 'msg'} for error in response.json()['detail']))
         self.assertEqual(self.client.get('/api/records/' + identifier).json(), before)
+        # The same rule holds on every endpoint, not only the record edit.
+        for path, body in (('/api/records/trash', {'ids': 'FICTIONAL-T6-ids'}),
+                           ('/api/session/save', {'passphrase': ['FICTIONAL-T6-passphrase']})):
+            with self.subTest(path=path):
+                response = self.client.post(path, json=body)
+                self.assertEqual(response.status_code, 422)
+                self.assertNotIn('FICTIONAL-T6', response.text)
+                self.assertEqual(response.json()['detail'][0]['loc'][0], 'body')
+
+    def test_the_totp_can_be_set_up_to_its_limit_and_cleared_through_the_api(self):
+        payload = b'name,url,username,password,note\nA,https://a.invalid,u,fake-1,\n'
+        identifier = self.client.post('/api/import', files=[('files', ('chrome.csv', payload, 'text/csv'))]).json()['records'][0]['id']
+        longest = 'otpauth://totp/' + 'x' * (4096 - 15)
+        for value, status in ((longest, 200), ('', 200), (None, 422)):
+            with self.subTest(length=None if value is None else len(value)):
+                response = self.client.patch('/api/records/' + identifier, json={'totp': value})
+                self.assertEqual(response.status_code, status, response.text)
+        self.assertEqual(self.client.get('/api/records/' + identifier).json()['totp'], '')
+        self.client.patch('/api/records/' + identifier, json={'totp': longest})
+        self.assertEqual(self.client.get('/api/records/' + identifier).json()['totp'], longest)
 
     def test_unknown_origin_survives_encrypted_session_round_trip(self):
         payload = b'url,username,password\nhttps://example.invalid/,alice,fictional-secret-123\n'
