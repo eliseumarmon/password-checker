@@ -21,11 +21,13 @@ Este documento reúne lo que la aplicación todavía no hace: limitaciones conoc
 
 ## Funcionalidades planificadas
 
-No hay ninguna en curso. La última, el [soporte de Safari](../odd/tasks/safari-support.md) (exportación de Safari o de la app Contraseñas con sus códigos 2FA hasta Bitwarden y sesión `.pwc` v2), se completó con T8.
+No hay ninguna en curso. La última, el [soporte de Safari](../odd/tasks/safari-support.md) (exportación de Safari o de la app Contraseñas con sus códigos 2FA hasta Bitwarden y contenido de sesión `.pwc` v2), se completó con T8.
 
 ## Ideas de diseño sin implementar
 
-Proceden de la propuesta de diseño inicial y de las mejoras anotadas en el flujo. No se han validado con usuarios.
+Este apartado reúne tanto las mejoras de la propuesta visual inicial como las ideas debatidas para evolucionar Password Checker de consolidador de CSV a gestor de secretos. **No son funcionalidades disponibles ni un plan de trabajo aprobado.** Su estado se indica expresamente: «dirección acordada» describe una intención de producto; «propuesta» es una opción por diseñar; «decisión pendiente» requiere investigación o acuerdo antes de crear tareas. No se han validado con usuarios.
+
+### Mejoras de la interfaz actual
 
 - **Interfaz general:** tema claro; ajustes de idioma, tema y caducidad por inactividad, y una sección de ayuda; botón «Ocultar todo» en la cabecera; filtro por estado y selector de orden junto a la búsqueda; en «Todas», orden por riesgo y por URL, con los grupos de una misma URL contiguos; continuidad de filtros; atajo `Ctrl/Cmd+Z` para el «Deshacer» de la aplicación (hoy solo funciona el deshacer nativo dentro de los campos de texto).
 - **Comparación:** revelar contraseñas de forma individual dentro de la comparación; panel comparativo que muestre de cada registro la URL original, el nombre, el usuario, la contraseña oculta, las notas y el estado, y permita conservar A, B o ambos, fusionar notas y editar el candidato final, distinguiendo los datos originales (inmutables) de la salida editable; en móvil, acciones «Elegir para exportación», «Conservar ambas» y «Fusionar notas»; una comparación más completa de originales.
@@ -34,6 +36,52 @@ Proceden de la propuesta de diseño inicial y de las mejoras anotadas en el fluj
 - **Sesión:** bloqueo tras una inactividad configurada que oculte la interfaz y exija reabrir la sesión cifrada; en la cabecera móvil, un indicador de sesión local o bloqueada.
 - **Android:** en el teléfono, «Abrir aplicación (si existe mecanismo compatible)», «Buscar en tienda» y «Marcar verificada».
 - **Acceso móvil:** un mecanismo seguro que no dependa de configurar ADB a mano.
+
+### Evolución futura: gestor de secretos con bóveda persistente
+
+La evolución planteada conserva la revisión y auditoría de credenciales que ya existen. No implica sustituirlas ni alterar ahora el funcionamiento de importación, fusión o exportación.
+
+#### Bóveda, almacenamiento y copias de seguridad
+
+- **Dirección acordada — bóveda persistente:** pasar del workspace temporal en memoria a una bóveda que conserve los elementos entre ejecuciones, cifrada en reposo y accesible desde la interfaz. **SQLite es una candidata** para la persistencia, no una arquitectura de almacenamiento ni una elección criptográfica cerrada. Estudiar esquema, migraciones, claves, índices y qué metadatos pueden quedar visibles sin desbloquearla.
+- **Dirección acordada — `.pwc` como respaldo portable:** mantener el archivo cifrado para exportar, transportar, verificar y restaurar copias de la bóveda, en lugar de usarlo como único mecanismo de persistencia. La futura copia debería poder incluir diferentes tipos de elementos, sus adjuntos y metadatos necesarios, con comprobación de integridad y restauración atómica. Decidir si restaurar reemplaza la bóveda, permite fusionar o presenta conflictos; nunca sobrescribir secretos silenciosamente.
+- **Decisión pendiente — versiones y migraciones:** definir la evolución del contenido de `.pwc` y las migraciones de la futura base de datos. **Estado actual:** el envoltorio cifrado del archivo sigue en versión 1; el contenido de la sesión es versión 2 y rechaza el contenido v1 tras descifrarlo. No prometer compatibilidad retrospectiva ni reintroducir la lectura de v1 sin una decisión nueva.
+- **Propuesta — contraseña maestra y ciclo de bloqueo:** desbloquear la bóveda con un secreto maestro y bloquearla por inactividad o a petición del usuario; estudiar derivación de claves, exposición de secretos en memoria, cambio de contraseña, reautenticación para operaciones sensibles y comportamiento ante pérdida de la contraseña. Un diseño de recuperación no debe crear una puerta trasera.
+- **Propuesta — historial y auditoría:** registrar cambios de elementos, accesos y operaciones sensibles con fecha, actor y resultado cuando exista identidad de usuario; valorar versiones y recuperación de cambios sin guardar secretos en registros de actividad ni mostrar valores anteriores por defecto. Separar el historial de modificaciones del actual estado «Pendiente/Revisada/Verificada».
+
+#### Modelo de datos y relación entre servicios
+
+- **Propuesta — elemento de bóveda extensible:** un modelo conceptual como `VaultItem`, separado de los registros temporales de importación, con tipo, nombre, identificador estable, etiquetas/colección, notas, campos públicos y campos secretos. Admitir **campos personalizados** y, cuando proceda, adjuntos binarios cifrados. La estructura definitiva, las validaciones y los límites de tamaño están pendientes.
+- **Decisión pendiente — servicio, cuenta y acceso:** distinguir una cuenta de sus accesos web, Android, iOS y, quizá, escritorio. Una misma cuenta podría tener varias URL, dominios afiliados o identificadores de paquete, conservando siempre las referencias originales importadas. Estudiar relaciones con servicios lógicos para reducir falsos duplicados y reutilizaciones aparentes; **compartir servicio no autoriza una fusión automática**. Extensiones a accesos SSH, bases de datos o red serían tipos o relaciones nuevas, no categorías disponibles hoy.
+- **Propuesta — organización y búsqueda:** colecciones personales o de equipo, carpetas/etiquetas, búsqueda en metadatos permitidos, filtros por tipo, estado y pertenencia, y fichas adaptadas a los datos de cada elemento. Determinar qué metadatos podrían usarse en índices sin filtrar información sensible.
+
+#### Tipos de secretos considerados
+
+- **Credenciales de acceso:** usuario, contraseña, URL/identificadores de aplicaciones, TOTP y notas. La importación desde navegadores y la auditoría actuales serían una vía de entrada a la bóveda; generación de códigos TOTP, autocompletado de formularios y comprobación de validez son funciones distintas, **no implementadas ni aprobadas como parte de Safari**.
+- **Notas seguras y secretos técnicos:** textos privados, tokens de API, credenciales de servicios, conexiones a bases de datos y redes, contraseñas de servidores y datos de desarrollo. Diseñar sus campos y permisos sin convertir cada caso en un modelo rígido.
+- **Tarjetas de pago — propuesta:** tipo distinto de una credencial web, con alias, titular, número, entidad/marca, caducidad y notas. Mostrar el número enmascarado (por ejemplo, los cuatro últimos dígitos) y exigir una acción explícita para revelar o copiar. **No almacenar inicialmente PIN ni CVV** es una cautela propuesta, no una política ya decidida. Importar datos de Google/Wallet o proporcionar autocompletado se estudiaría después de comprobar qué formatos y campos se pueden obtener legítimamente.
+- **Archivos secretos y material criptográfico:** claves SSH, certificados, pares de claves, keystores `.jks`/`.p12`/`.pfx`, claves de firma y otros adjuntos. Un elemento debe poder agrupar **archivo cifrado + contraseñas/alias secretos + metadatos de uso** (propósito, proyecto, huellas o fechas), evitando dispersarlos en entradas inconexas. Caso ilustrativo discutido: un keystore de firma de Android, como `app-dev.jks`, junto con su alias, contraseñas y huella; nunca incluir archivos o claves reales en pruebas ni documentación.
+- **Decisión pendiente — importadores y exportadores:** evaluar otros formatos o servicios y la futura importación de elementos no basados en contraseñas. Hoy solo deben darse por disponibles las importaciones y la exportación realmente documentadas en el [flujo de usuario](flujo-usuario.md). Cualquier extensión debe preservar secretos no reconocidos o avisar de su descarte; no asumir que los CSV de terceros incluyen toda la información.
+
+#### Compartición, equipos y verificación en dos pasos
+
+- **Propuesta — multiusuario y roles:** estudiar bóvedas personales y de organización, usuarios, grupos/departamentos, colecciones compartidas y permisos por elemento o colección. Caso de uso planteado: informática accede a credenciales de servidores; marketing, a cuentas de Google/SEO/YouTube; la dirección podría tener acceso más amplio. Aplicar mínimo privilegio, distinguir lectura, modificación, compartición y administración, y no confundir «ser administrador» con poseer automáticamente todos los secretos sin definirlo.
+- **Propuesta — seguridad de las cuentas compartidas:** resolver la dependencia de códigos SMS o recuperación vinculados al teléfono particular de una persona. Investigar autenticadores TOTP compartidos cuando el servicio lo permita, códigos de recuperación, passkeys/FIDO2, cuentas o delegación institucional y procedimientos de alta, baja y sustitución de empleados. Esto **no implica saltarse verificaciones 2FA** ni que todos los proveedores permitan compartirlas.
+- **Decisión pendiente — arquitectura de claves y recuperación empresarial:** definir quién puede descifrar qué en un sistema multiusuario, cómo se conceden y revocan accesos, qué ocurre al cambiar miembros o contraseñas y si existe recuperación organizativa. Resolver el modelo de amenazas antes de elegir cifrado, servidor o sincronización. La seguridad de una bóveda compartida no se consigue solo con filtrar elementos en la interfaz.
+- **Propuesta — trazabilidad organizativa:** historial de cambios y accesos, atribución a usuarios, permisos auditables, rotación/traspaso de secretos y aviso de accesos sensibles, sin registrar contraseñas, TOTP ni contenidos de adjuntos en claro.
+
+#### Dispositivos, sincronización e integraciones
+
+- **Decisión pendiente — modo local o centralizado:** valorar primero la experiencia local y después un servicio autohospedado para acceso desde varios equipos, incluso fuera de la LAN mediante un canal seguro. Estudiar sincronización, conflictos, copias, modo sin conexión, disponibilidad del servidor y separación entre cifrado del lado del cliente y almacenamiento del servidor; no hay arquitectura de red ni proveedor seleccionado.
+- **Propuesta — experiencia multiplataforma:** acceso seguro desde Windows, Linux y móvil, con bloqueo, protección al revelar/copiar secretos y, si se justifica, integración con navegadores o autocompletado. No presuponer que una GUI servida localmente puede exponerse directamente a Internet sin autenticación, autorización y controles adicionales.
+- **Restricción vigente — sin CLI:** la interfaz y la arquitectura de la bóveda son el camino actual. **No reintroducir la CLI eliminada**, ni comandos de extracción de secretos o de inyección/ejecución (`run`), como dependencia de estas ideas. Solo reconsiderarlo si el usuario cambia expresamente esta decisión.
+
+#### Preguntas a resolver antes de elaborar un plan
+
+- Elegir el primer alcance útil: bóveda personal local, tipos de elementos básicos y respaldos, o requisitos empresariales desde el inicio; evitar mezclar estas fases en una sola implementación.
+- Concretar modelo de amenazas, cifrado autenticado, derivación y rotación de claves, tratamiento de adjuntos, recuperación, límites y protección frente a exposición en API, logs, portapapeles y archivos temporales.
+- Definir migración de registros actuales a elementos persistentes; esquema, IDs, identidades de servicio, conflictos y garantías de no perder TOTP u otros campos durante cambios de modelo.
+- Investigar las implicaciones de compartir secretos y 2FA, gestionar permisos y revocaciones y elegir cómo probar todo ello con datos ficticios antes de utilizarlo con credenciales empresariales.
 
 ## Validación con personas
 
