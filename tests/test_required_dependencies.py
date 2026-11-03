@@ -1,5 +1,6 @@
 """Mandatory dependencies fail loudly: a missing package must never turn the crypto or API tests into skips."""
 import json
+import re
 import subprocess
 import sys
 import unittest
@@ -24,16 +25,21 @@ class RequiredDependencyTests(unittest.TestCase):
         return json.loads(completed.stdout.strip().splitlines()[-1])
 
     def test_a_missing_mandatory_dependency_is_an_error_not_a_skip(self):
-        for package, module in [('cryptography', 'test_sessions'), ('argon2', 'test_sessions'),
-                                ('cryptography', 'test_session_limits'), ('fastapi', 'test_api'),
-                                ('httpx', 'test_api')]:
+        # Starlette's test client turns a missing httpx into a RuntimeError that asks for httpx2.
+        for package, module, exception, named in [('cryptography', 'test_sessions', 'ModuleNotFoundError', 'cryptography'),
+                                                  ('argon2', 'test_sessions', 'ModuleNotFoundError', 'argon2'),
+                                                  ('cryptography', 'test_session_limits', 'ModuleNotFoundError', 'cryptography'),
+                                                  ('fastapi', 'test_api', 'ModuleNotFoundError', 'fastapi'),
+                                                  ('httpx', 'test_api', 'RuntimeError', 'httpx2')]:
             with self.subTest(package=package, module=module):
                 outcome = self.outcome_without(package, module)
                 self.assertEqual(outcome['skipped'], 0)
                 self.assertTrue(outcome['errors'])
-                # Each error is caused by the blocked package, not by an unrelated collection problem.
+                # The final exception of each error is caused by the blocked package, not by another collection problem.
                 for error in outcome['errors']:
-                    self.assertIn(package, error)
+                    cause = [line for line in error.splitlines() if re.match(r'\w+Error: ', line)][-1]
+                    self.assertTrue(cause.startswith(exception + ':'), cause)
+                    self.assertRegex(cause, rf'\b{re.escape(named)}\b')
 
 
 if __name__ == '__main__':
