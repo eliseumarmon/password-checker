@@ -340,3 +340,78 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
   - **Cambio:** `backend/requirements.txt` pasa a `cryptography>=50.0.2`. La auditoría (H1) registra la corrección aplicada.
   - **Riesgo aceptado:** una versión 51 o posterior podría romper la API usada. Hasta H4, cada instalación nueva tomará la última versión publicada. La CI (unitarias de `.pwc` y E2E) es la red frente a esa rotura, y P2 garantiza que un fallo de importación no se convierta en un salto.
   - **Local:** `pip check` sin problemas, suite 139 OK y Ruff sin avisos.
+- **L9 (2026-11-03):** integraciones en `main`, ambas con `--no-ff` y aprobadas por el usuario en L8.
+  - **`9fbd786` — Merge `docs/dependency-audit`:** solo los 3 documentos (`docs/auditoria-dependencias.md`, `docs/pendiente.md` y este plan). En local: suite y Ruff en verde. CI de `main`: run `41649641545`, en verde en `python`, `frontend` y `e2e`.
+  - **`2bd5a23` — Merge `fix/cryptography-50`:** comprobado antes de integrar que el diff con `main` solo contenía lo aprobado: 8 archivos (`requirements.txt`, las guardas retiradas en tres pruebas, `tests/test_required_dependencies.py` y la documentación), sin código de producción ni CI. En local: suite 139 OK, Ruff sin avisos y `pip check` limpio. CI de `main`: run `41650001412`, en verde con Python 3.12.15, 139 pruebas, Ruff, 88 E2E y `cryptography` 50.0.2.
+  - **Ramas borradas:** después de comprobar que no tenían commits fuera de `main`, se eliminaron `docs/dependency-audit` (solo existía en local) y `fix/cryptography-50` (en local y en remoto).
+- **L10 (2026-11-03):** H4, petición literal:
+
+  > Continúa con **H4 — Instalaciones reproducibles**, siguiendo el plan aprobado en `odd/tasks/dependency-hardening.md` y el flujo ODD habitual.
+  >
+  > ### 1. Preparación
+  >
+  > - Parte de `main` actualizado y crea la rama `chore/reproducible-installs`.
+  > - Registra como L9 las integraciones anteriores (`9fbd786` y `2bd5a23`) y sus verificaciones.
+  > - Elimina las ramas `docs/dependency-audit` y `fix/cryptography-50`, tanto locales como remotas, después de verificar que están completamente integradas.
+  > - Revisa las especificaciones y criterios de aceptación de H4 antes de implementar. Si detectas contradicciones o decisiones pendientes, informa antes de continuar.
+  >
+  > ### 2. Dependencias reproducibles de Python
+  >
+  > Implementa la estrategia de `backend/constraints.txt` acordada en el plan.
+  >
+  > - Fija las versiones de las dependencias directas y transitivas.
+  > - Conserva `backend/requirements.txt` como declaración de dependencias compatibles, incluida `cryptography>=50.0.2`.
+  > - No introduzcas nuevas herramientas permanentes si no son necesarias.
+  > - Asegúrate de que las instalaciones locales y de CI utilizan las restricciones.
+  > - Revisa los jobs Python y E2E de GitHub Actions.
+  > - Comprueba la resolución e instalación con Python 3.12 y 3.14.
+  > - Si existen diferencias entre versiones de Python o plataformas, utiliza una solución explícita y mantenible. No fuerces una falsa reproducibilidad.
+  > - Documenta el procedimiento para actualizar las restricciones sin convertirlas en un bloqueo indefinido de actualizaciones de seguridad.
+  >
+  > ### 3. Frontend
+  >
+  > - Conserva `package-lock.json` como fuente de versiones resueltas.
+  > - Sustituye `npm install` por `npm ci` en las instrucciones destinadas a instalaciones reproducibles.
+  > - Comprueba que el desarrollo local y CI utilizan correctamente el lockfile.
+  > - No actualices dependencias del frontend salvo que sea imprescindible para completar H4.
+  >
+  > ### 4. Pruebas y verificación
+  >
+  > Comprueba como mínimo:
+  >
+  > - Instalación limpia de dependencias Python respetando las restricciones.
+  > - Compatibilidad con Python 3.12 y 3.14.
+  > - `pip check` sin conflictos.
+  > - Las 139 pruebas del backend.
+  > - Ruff sin avisos.
+  > - Typecheck y build del frontend.
+  > - Las 88 pruebas E2E.
+  > - Ejecución correcta de CI.
+  >
+  > Usa esos recuentos únicamente como referencia inicial; si han cambiado legítimamente, documenta la diferencia.
+  >
+  > Solicita una revisión independiente centrada en reproducibilidad, mantenimiento, seguridad de dependencias y posibles regresiones.
+  >
+  > ### 5. Límites
+  >
+  > - No implementes todavía P8 ni el workflow de auditoría.
+  > - No introduzcas hashes ni gestores de dependencias adicionales sin una justificación clara.
+  > - No cambies el código de producción, el cifrado ni el formato `.pwc`.
+  > - No recuperes la CLI eliminada.
+  > - No aproveches esta rama para actualizar dependencias ajenas a H4.
+  > - Respeta la organización documental actual y evita duplicar información.
+  >
+  > ### 6. Entrega
+  >
+  > Documenta las decisiones técnicas, los resultados de las pruebas y cualquier riesgo residual en el plan existente.
+  >
+  > Puedes subir la rama para ejecutar CI, pero **no la integres en `main` sin mi aprobación**.
+  >
+  > Cuando H4 esté terminada y revisada, presenta un resumen de los cambios, las verificaciones realizadas y las posibles observaciones pendientes.
+
+  El usuario indica además que activará las alertas de Dependabot (P7). A 2026-11-03, `vulnerability-alerts` sigue devolviendo 404.
+  - **Revisión de las specs de H4 antes de implementar:**
+    - **Discrepancia 1 (colorama):** en Windows, colorama la requieren tanto `click` (`platform_system == "Windows"`) como `pytest` (`sys_platform == "win32"`), no solo `click`. El resto de marcadores del cierre de dependencias no cambia el conjunto entre 3.12 y 3.14: `exceptiongroup` y `tomli` solo se instalan con Python < 3.11; `typing_extensions` se instala en ambas versiones (anyio la pide en < 3.15); `argon2-cffi-bindings` pide `cffi>=1.0.1` en < 3.14 y `cffi>=2` en ≥ 3.14, y `cffi` 2.1.1 cumple las dos.
+    - **Discrepancia 2 (Python 3.12 en local):** P4 dice «se genera con `pip freeze` en un entorno limpio con Python 3.12», pero en esta máquina solo hay Python 3.14 y 3.11 (`py -0`). En 3.12 solo se puede verificar en la CI (Linux).
+    - **Decisión pendiente (P6):** si `pytest` se conserva, `pytest` y sus dependencias (iniconfig, packaging, pluggy, Pygments y colorama en Windows) entran en `constraints.txt`.
+  - Implementación en pausa hasta la respuesta del usuario.
