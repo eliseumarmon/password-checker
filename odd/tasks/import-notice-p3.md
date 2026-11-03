@@ -14,7 +14,7 @@ Una rama desde `main` (`fix/import-notice-p3`), test primero cuando aplique y un
 ## Tareas
 
 - [x] T1. «Ver detalles» vuelve a contraerse con cada importación correcta (S1): E2E con dos importaciones de 4 o más columnas descartadas.
-- [ ] T2. Abrir un `.pwc` correctamente borra los avisos; cancelar o fallar los conserva (S2): E2E de los tres casos.
+- [x] T2. Abrir un `.pwc` correctamente borra los avisos; cancelar o fallar los conserva (S2): E2E de los tres casos.
 - [ ] T3. Etiquetas de cierre por tipo en `NoticeBase.vue` (S3): selectores E2E actualizados y prueba de que son distintas.
 - [ ] T4. Documentación (S2-S5): `docs/flujo-usuario.md` con el nuevo comportamiento al abrir un `.pwc`; política de navegadores en el README; comentario en `store.ts` sobre la separación intencionada; observaciones 1-5 retiradas de `docs/pendiente.md`.
 

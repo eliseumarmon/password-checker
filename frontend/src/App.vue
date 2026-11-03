@@ -137,6 +137,8 @@ async function submitSession({ passphrase, confirmation, file }: SessionInput): 
       if (data.value?.stats.total && !await confirmAction('Abrir otra sesión reemplazará los cambios que estén en memoria. ¿Continuar?', 'Abrir sesión')) return;
       await store.execute(() => api.loadSession(file, passphrase));
       if (store.error) return;
+      // Only a session that really opened replaces what the warnings described.
+      store.warnings = [];
       screen.value = 'credentials';
       subtab.value = 'duplicates';
       selected.value = null; compareIds.value = null;

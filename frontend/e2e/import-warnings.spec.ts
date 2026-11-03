@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 // Fictional credentials only, built in memory: real exports never touch the repo.
@@ -315,6 +316,54 @@ test('shows zero imported counts and repeated basenames as separate entries', as
   await expect(notice.locator('ul.warning-files > li')).toHaveCount(2);
   await expect(notice).toContainText('extra: 1 fila con datos');
   await expect(notice).toContainText('pin: 1 fila con datos');
+});
+
+test('clears the warning only when a session opens successfully', async ({ page }) => {
+  const passphrase = 'fictional-session-passphrase';
+  await importViaUi(page, [csvFile('adv.csv', TWO_COLUMN_CSV)]);
+  const notice = warning(page);
+  await expect(notice).toBeVisible();
+
+  await page.getByRole('button', { name: 'Guardar sesión cifrada' }).click();
+  const saveDialog = page.getByRole('dialog', { name: 'Sesión cifrada' });
+  await saveDialog.getByLabel(/Contraseña de sesión/).fill(passphrase);
+  await saveDialog.getByLabel('Confirmar contraseña').fill(passphrase);
+  const download = page.waitForEvent('download');
+  await saveDialog.getByRole('button', { name: 'Descargar archivo cifrado' }).click();
+  const saved = await download;
+  const file = { name: saved.suggestedFilename(), mimeType: 'application/octet-stream', buffer: await readFile(await saved.path()) };
+  await expect(saveDialog).toBeHidden();
+
+  const loadDialog = page.getByRole('dialog', { name: 'Sesión cifrada' });
+  async function openSession(secret: string): Promise<void> {
+    await page.getByRole('complementary', { name: 'Navegación principal' }).getByRole('button', { name: /Ajustes/ }).click();
+    await page.getByRole('button', { name: 'Abrir', exact: true }).click();
+    await loadDialog.getByLabel('Archivo cifrado').setInputFiles(file);
+    await loadDialog.getByLabel(/Contraseña de sesión/).fill(secret);
+    await loadDialog.getByRole('button', { name: 'Abrir sesión' }).click();
+  }
+
+  // Failed: wrong passphrase, after confirming the replacement.
+  await openSession('fictional-wrong-passphrase');
+  await confirmWith(page, 'Abrir sesión');
+  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(notice).toHaveCount(1);
+  await loadDialog.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(notice).toBeVisible();
+
+  // Cancelled at the replace confirmation.
+  await openSession(passphrase);
+  await confirmWith(page, 'Cancelar');
+  await loadDialog.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(notice).toBeVisible();
+  await expect(notice).toContainText('adv.csv');
+
+  // Opened: the warning no longer describes the workspace.
+  await openSession(passphrase);
+  await confirmWith(page, 'Abrir sesión');
+  await expect(loadDialog).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Todas (3)' })).toBeVisible();
+  await expect(notice).toHaveCount(0);
 });
 
 test('does not survive a reload and is not stored in the browser', async ({ page }) => {
