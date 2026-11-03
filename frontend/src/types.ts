@@ -9,7 +9,7 @@ export interface CredentialSummary {
   http: boolean; invalid_uri: boolean; embedded_auth: boolean; host: string;
 }
 export interface CredentialDetail extends CredentialSummary {
-  password: string; note: string;
+  password: string; note: string; totp: string;
   original: { name: string; url: string; username: string; source: string; line: number };
 }
 export interface GroupMember extends CredentialSummary {
@@ -34,4 +34,4 @@ export type ImportResponse = WorkspaceState & { warnings: ImportWarning[] };
 export type SessionMode = 'save' | 'load';
 export type SessionRequestEmits = { sessionRequested: [mode: SessionMode] };
 export interface SessionInput { passphrase: string; confirmation: string; file: File | null }
-export type RecordEdit = Partial<Pick<CredentialDetail, 'name' | 'url' | 'username' | 'password' | 'note' | 'included' | 'review'>>;
+export type RecordEdit = Partial<Pick<CredentialDetail, 'name' | 'url' | 'username' | 'password' | 'note' | 'totp' | 'included' | 'review'>>;
