@@ -15,7 +15,7 @@ function onDrop(event: DragEvent): void {
 <template>
   <section class="welcome card">
     <h2>Empieza importando tus contraseñas</h2>
-    <p>Arrastra varios CSV de Chrome, Brave y Firefox. Se compararán antes de fusionar nada.</p>
+    <p>Arrastra varios CSV de Chrome, Brave, Firefox y Safari. Se compararán antes de fusionar nada.</p>
     <div class="dropzone" :class="{dragging}" @dragenter.prevent="dragging=true" @dragover.prevent @dragleave.prevent="dragging=false" @drop.prevent="onDrop">
       <span class="big-icon">⇧</span><strong>Arrastra aquí los CSV</strong>
       <span>o utiliza el selector de archivos</span>

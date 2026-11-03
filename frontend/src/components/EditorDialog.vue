@@ -28,11 +28,14 @@ function onBackdropClick(event: MouseEvent): void {
 const form = ref<RecordEdit>({});
 const loaded = ref<RecordEdit>({});
 const revealed = ref(false);
+// The 2FA secret has its own visibility, independent of the password's.
+const revealedTotp = ref(false);
 watch(() => props.record, record => {
   loaded.value = { name: record.name, url: record.url, username: record.username,
-    password: record.password, note: record.note, review: record.review };
+    password: record.password, totp: record.totp, note: record.note, review: record.review };
   form.value = { ...loaded.value };
   revealed.value = false;
+  revealedTotp.value = false;
 }, { immediate: true });
 // Edits only reach the server on save, so any other way out of the editor discards them.
 const dirty = computed(() => (Object.keys(loaded.value) as (keyof RecordEdit)[]).some(key => form.value[key] !== loaded.value[key]));
@@ -89,6 +92,7 @@ async function openSite(url: string): Promise<void> {
         <p v-else class="muted">Las URI de Android no son enlaces web. Comprueba la app manualmente en el teléfono.</p>
         <label>Usuario<input v-model="form.username" autocomplete="off" /></label>
         <label>Contraseña <span class="secret-input"><input v-model="form.password" :type="revealed?'text':'password'" autocomplete="new-password" spellcheck="false" /><button :aria-label="revealed?'Ocultar contraseña':'Mostrar contraseña'" @click="revealed=!revealed">{{revealed?'Ocultar':'Mostrar'}}</button></span></label>
+        <label>Código 2FA (TOTP) <span class="secret-input"><input v-model="form.totp" aria-label="Código 2FA (TOTP)" :type="revealedTotp?'text':'password'" autocomplete="off" spellcheck="false" /><button :aria-label="revealedTotp?'Ocultar código 2FA':'Mostrar código 2FA'" @click="revealedTotp=!revealedTotp">{{revealedTotp?'Ocultar':'Mostrar'}}</button></span></label>
         <label>Notas<textarea v-model="form.note" rows="5"></textarea></label>
         <label>Estado de revisión<select v-model="form.review"><option value="pending">{{labelReview('pending')}}</option><option value="reviewed">{{labelReview('reviewed')}} (sin verificar acceso)</option><option value="verified">{{labelReview('verified')}} manualmente</option><option value="incorrect">{{labelReview('incorrect')}}</option></select></label>
         <p class="hint">Editar esta contraseña guardada NO cambia la contraseña real del servicio.</p>
