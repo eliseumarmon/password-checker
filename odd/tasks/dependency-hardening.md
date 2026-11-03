@@ -85,7 +85,7 @@ Plan de endurecimiento (**aprobado en L4**; cada rama se integra solo con la apr
   - No verificado: que GitHub detecte `cryptography` con requisitos que solo tienen rangos. Para Python, las alertas probablemente solo cubran dependencias directas, así que la red real es P8.
   - Pruebas y regresión: ninguna.
   - Revisión independiente: no.
-- [ ] P8 — Workflow de auditoría separado (H5). Prioridad: media. Depende de: P3 y P4. **Ajustado en L19 (S12):**
+- [x] P8 — Workflow de auditoría separado (H5). Commits `26b1553`, `334b631`, `28c138e` y `48a3b85` (L20). El run manual, después de integrar. Prioridad: media. Depende de: P3 y P4. **Ajustado en L19 (S12):**
   - Además de `schedule`, `workflow_dispatch` y `pull_request`, se dispara con `push` limitado a los mismos `paths`, para poder verificarlo antes de integrar.
   - `pip-audit` y sus dependencias van fijados en `.github/audit-requirements.txt`.
   - Un script versionado (`.github/scripts/dependency_audit.py`), con pruebas unitarias, interpreta los JSON. Falla ante vulnerabilidades, ante un error de la herramienta y cuando se analizan menos paquetes de los fijados.
@@ -589,3 +589,33 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
     - `pip-audit==2.10.1` y sus 26 dependencias van fijadas en `.github/audit-requirements.txt`, se instalan con `--no-deps` y se comprueban con `pip check`. Sin esa lista, cada run tomaría las últimas versiones de requests, rich, cyclonedx y demás.
     - Con Python 3.12, `cyclonedx-python-lib` también pide `typing_extensions` (`python_version < "3.13"`), que va con ese marcador explícito.
     - Ni `requirements-dev.txt` ni las 24 restricciones de H4 cambian.
+- **L20 (2026-11-03):** implementación y verificación de P8.
+  - **`26b1553`** (prueba primero; RED: el módulo no existía):
+    - `.github/scripts/dependency_audit.py`, en Python estándar, interpreta los JSON de `pip-audit` y `npm audit`.
+    - Publica una tabla en el resumen del run: paquete, versión, producción o desarrollo, gravedad (solo npm la da), avisos y versión que los corrige.
+    - Devuelve 1 si hay vulnerabilidades o si el informe no es fiable: no hay JSON o tiene otro formato; la herramienta falló (código distinto de 0 sin vulnerabilidades); hay paquetes omitidos (`skip_reason`); se analizaron menos paquetes o a otra versión que los fijados; `auditReportVersion` no es 2; npm analizó un total distinto del número de paquetes de `package-lock.json`, o el lockfile está vacío.
+    - `tests/test_dependency_audit.py` usa estructuras como las de las salidas reales capturadas.
+    - El caso del lockfile vacío se añadió después, también con prueba primero (RED → GREEN).
+  - **`334b631`:** `.github/workflows/dependency-audit.yml` y `.github/audit-requirements.txt`.
+    - Se ejecuta cada lunes a las 06:17 UTC, con `workflow_dispatch` y con `push` o `pull_request` limitados a los archivos de dependencias, de la auditoría y del propio workflow.
+    - `permissions: contents: read`; `tests.yml` no cambia.
+    - **Job `python`:** instala la herramienta fijada con `--no-deps`, ejecuta `pip check` y audita `backend/constraints.txt` (`--no-deps --disable-pip`).
+    - **Job `npm`:** `npm audit` completo y `--omit=dev`; después `npm ci --ignore-scripts` y `npm audit signatures`.
+    - El código de salida de las herramientas no decide: se pasa al script.
+  - **`28c138e`:** README («Auditoría de vulnerabilidades») y auditoría (excepciones, ninguna por ahora; limitaciones).
+  - **Verificación en local:**
+    - El script con las salidas reales capturadas da 0 o 1 en los 8 casos según lo esperado (limpio, vulnerable, sin dependencias, sin JSON, error de red y proyecto vacío, en Python y en npm).
+    - La herramienta se instaló desde la lista fijada en un entorno limpio con 3.14: `pip check` limpio y 24 paquetes auditados.
+    - Suite 157 OK y Ruff sin avisos.
+  - **Verificación en GitHub:**
+    - **Rama de P8, `28c138e`:** `Dependency audit` en verde. `pip-audit` 2.10.1 y `pip check` limpio con Python 3.12 (el marcador de `typing_extensions` funciona); 24 paquetes de Python y 119 de npm sin vulnerabilidades; 70 firmas y 37 atestaciones verificadas. `Tests` en verde (157 y 88 E2E).
+    - **Rama desechable `test/dependency-audit-negative`** (4 commits de prueba, nunca integrada, borrada en local y en remoto al terminar):
+      1. **Vulnerables:** `cryptography==46.0.7`, `lodash` 4.17.20 en producción y `minimist` 1.2.5 en desarrollo, añadidos solo al lockfile y sin ejecutar scripts. Los dos jobs fallan y la tabla lista `cryptography` (4 avisos, corregido en 48.0.1 o 49.0.0…), `lodash` como producción/high y `minimist` como desarrollo/critical.
+      2. **Restricciones vacías:** **falso negativo real.** El job `python` pasó con «No known vulnerabilities in 0 packages», porque la comparación con lo fijado es vacía si el propio `constraints.txt` está vacío. Corregido en `48a3b85` (prueba primero): el script falla si las restricciones no fijan ningún paquete o falta alguno de los declarados en `requirements*.txt`, que el workflow le pasa con `--requirements`. Verificado en local con las salidas reales y con un `constraints.txt` sin `fastapi`. En GitHub, el mismo caso falla con «the constraints pin no packages, so nothing would be analysed».
+      3. **Caída simulada de los servicios** (`HTTPS_PROXY` inexistente para `pip-audit`; `--registry` inexistente para npm): los dos jobs fallan como «The audit cannot be trusted», con la causa (sin JSON de `pip-audit`; `ECONNREFUSED` en npm).
+    - **Rama de P8, `48a3b85`:** `Dependency audit` y `Tests` en verde (159 pruebas).
+  - **Decisiones:**
+    - Sin reintentos automáticos: una caída se ve como fallo, nunca como éxito, y solo afecta a los runs de la auditoría, no a los PR ajenos a dependencias.
+    - `npm audit` falla con cualquier gravedad, igual que `pip-audit`; el triaje sigue la política de actualización.
+    - npm es el que trae Node 22. El script exige `auditReportVersion` 2, así que un cambio de formato falla en vez de pasar.
+  - **Pendiente:** el run manual (`workflow_dispatch`) después de integrar, y comprobar que un commit sin cambios de dependencias no lanza la auditoría (L21). P7 sigue sin activar.

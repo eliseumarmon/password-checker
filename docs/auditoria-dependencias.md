@@ -242,7 +242,7 @@ Las cuatro acciones son de GitHub y se fijan por etiqueta mayor (`@v7`), que pue
 
 Implementada en P8 ([`dependency-audit.yml`](../.github/workflows/dependency-audit.yml), plan en [dependency-hardening](../odd/tasks/dependency-hardening.md)).
 
-- **Fallos sin éxito falso:** un run falla tanto si encuentra vulnerabilidades como si el resultado no es fiable: la herramienta falló, no hay JSON o su formato es desconocido, o se analizaron menos paquetes de los fijados en `constraints.txt` o de los listados en `package-lock.json`.
+- **Fallos sin éxito falso:** un run falla tanto si encuentra vulnerabilidades como si el resultado no es fiable: la herramienta falló, no hay JSON o su formato es desconocido, o se analizaron menos paquetes de los fijados en `constraints.txt` o de los listados en `package-lock.json`. También falla si `constraints.txt` no fija ningún paquete o le falta alguno declarado en `requirements*.txt`.
 - **Resultados:** una tabla en el resumen del run con cada paquete afectado, su versión, si es de producción o de desarrollo, la gravedad (solo npm la da), los avisos y la versión que los corrige.
 - **Excepciones:** ninguna. Solo se admite ignorar un aviso de Python que no sea alcanzable en Password Checker, verificado como en H1. Se hace con `--ignore-vuln <ID>` en el paso de `pip-audit` y una fila en esta tabla, con su justificación y una fecha de revisión. `npm audit` no permite ignorar avisos: un aviso del frontend se corrige o se deja fallando el run mientras se valora, siguiendo la política de actualización.
 
