@@ -34,8 +34,8 @@ def summarize(row: Candidate) -> dict[str, Any]:
 
 
 def detail(row: Candidate) -> dict[str, Any]:
-    """One record with its secrets, for the editor only."""
-    return {**summarize(row), 'password': row.password, 'note': row.note,
+    """One record with its secrets, for the editor only: the only response that carries the TOTP."""
+    return {**summarize(row), 'password': row.password, 'note': row.note, 'totp': row.totp,
             'original': {'name': row.original.name, 'url': row.original.url,
                          'username': row.original.username, 'source': row.original.source,
                          'line': row.original.line}}

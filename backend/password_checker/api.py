@@ -6,7 +6,8 @@ from typing import Optional
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, Response
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -56,8 +57,17 @@ class EditRecord(BaseModel):
     username: Optional[str] = Field(default=None, max_length=1024)
     password: Optional[str] = Field(default=None, max_length=8192)
     note: Optional[str] = Field(default=None, max_length=100_000)
+    totp: Optional[str] = Field(default=None, max_length=4096)
     included: Optional[bool] = None
     review: Optional[str] = None
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error(request: Request, error: RequestValidationError):
+    # Built from allowed fields only: the default body echoes the rejected value ('input'),
+    # which can be a password or a TOTP secret.
+    errors = [{'type': item['type'], 'loc': list(item['loc']), 'msg': item['msg']} for item in error.errors()]
+    return JSONResponse({'detail': errors}, status_code=422)
 
 
 @app.get('/api/workspace')
