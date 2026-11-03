@@ -78,6 +78,8 @@ def read_columns(fmt):
     keys = {*URL_COLUMNS, *NAME_COLUMNS, *USERNAME_COLUMNS, *NOTE_COLUMNS, "password"}
     if fmt == "firefox":
         keys.add("httprealm")
+    if fmt == "safari":
+        keys.add("otpauth")
     return keys
 
 
@@ -186,15 +188,16 @@ def read_export(fmt, filename, origin):
             username = field(*USERNAME_COLUMNS)
             password = field("password")
             note = field(*NOTE_COLUMNS)
+            totp = field("otpauth") if fmt == "safari" else ""
             # Firefox no exporta 'name' ni 'note', sino realm y metadatos.
             # El realm ayuda a reconocer cuentas HTTP Basic diferentes.
             if fmt == "firefox":
                 realm = field("httprealm")
                 if realm:
                     note = (note + "\n\n" if note else "") + "Firefox HTTP realm: " + realm
-            if not any((name, url, username, password, note)):
+            if not any((name, url, username, password, note, totp)):
                 continue
-            rows.append(Credential(origin, start_line, name, url, username, password, note))
+            rows.append(Credential(origin, start_line, name, url, username, password, note, totp))
     warnings = [{"column": headers[index], "rows": count}
                 for index, count in unknown_counts.items() if count]
     return rows, warnings

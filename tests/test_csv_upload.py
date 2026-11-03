@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from backend.password_checker.application.candidate import Candidate
 from backend.password_checker.infrastructure.csv_reader import (
     detect_format_and_origin,
     read_upload,
@@ -224,13 +225,28 @@ class FormatOriginTests(unittest.TestCase):
                          [('safari', 'Example', 'https://example.invalid/', 'alice', 'fictional-pw-1', 'a note')])
         self.assertEqual(warnings, [])
 
-    def test_safari_totp_with_data_is_reported_never_dropped_silently(self):
-        # Until the TOTP is imported (T2), its column warns like any unknown column, without the secret.
+    def test_safari_totp_is_imported_into_the_credential_and_its_candidate(self):
         data = (b'Title,URL,Username,Password,Notes,OTPAuth\n'
-                b'Example,https://example.invalid/,alice,fictional-pw-1,,otpauth://totp/fictional-secret\n')
+                b'Example,https://example.invalid/,alice,fictional-pw-1,,otpauth://totp/fictional-secret\n'
+                b'Other,https://other.invalid/,bob,fictional-pw-2,,\n')
         _, rows, warnings = read_upload('Passwords.csv', data)
-        self.assertEqual(warnings, [{'column': 'OTPAuth', 'rows': 1}])
-        self.assertNotIn('fictional-secret', repr((rows, warnings)))
+        self.assertEqual(warnings, [])
+        self.assertEqual([row.totp for row in rows], ['otpauth://totp/fictional-secret', ''])
+        self.assertEqual([Candidate.from_source(row).totp for row in rows], ['otpauth://totp/fictional-secret', ''])
+
+    def test_exports_without_an_otpauth_column_import_an_empty_totp(self):
+        exports = {
+            'chrome.csv': b'name,url,username,password,note\nA,https://a.invalid,u,fake-1,\n',
+            'firefox.csv': b'url,username,password,httpRealm\nhttps://a.invalid,u,fake-1,\n',
+            'export.csv': b'url,username,password\nhttps://a.invalid,u,fake-1\n',
+        }
+        for name, data in exports.items():
+            with self.subTest(name=name):
+                self.assertEqual([row.totp for row in read_upload(name, data)[1]], [''])
+
+    def test_a_safari_row_with_only_a_totp_is_kept(self):
+        data = b'Title,URL,Username,Password,Notes,OTPAuth\n,,,,,otpauth://totp/fictional-only\n'
+        self.assertEqual([row.totp for row in read_upload('Passwords.csv', data)[1]], ['otpauth://totp/fictional-only'])
 
     def test_safari_never_repairs_a_shifted_title_like_chromium(self):
         # Same row and notes-last layout: Chromium rebuilds the title, Safari rejects the row.

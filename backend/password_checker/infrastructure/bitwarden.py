@@ -1,4 +1,4 @@
-"""Bitwarden (csv) export format. Output contains plaintext passwords."""
+"""Bitwarden (csv) export format. Output contains plaintext passwords and TOTP secrets."""
 from __future__ import annotations
 
 import csv
@@ -17,6 +17,7 @@ class LoginRecord(Protocol):
     username: str
     password: str
     note: str
+    totp: str
 
 
 def bitwarden_row(item: LoginRecord) -> Dict[str, str]:
@@ -25,7 +26,9 @@ def bitwarden_row(item: LoginRecord) -> Dict[str, str]:
         "name": item.name, "notes": item.note, "fields": "",
         "reprompt": "0", "login_uri": item.url,
         "login_username": item.username,
-        "login_password": item.password, "login_totp": "",
+        "login_password": item.password,
+        # Written verbatim: Bitwarden stores it as is and accepts otpauth:// URIs.
+        "login_totp": item.totp,
     }
 
 

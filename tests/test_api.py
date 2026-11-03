@@ -1,4 +1,6 @@
 """HTTP contract tests with synthetic data; no production secrets."""
+import csv
+import io
 import sys
 import unittest
 from pathlib import Path
@@ -54,7 +56,10 @@ class APITests(unittest.TestCase):
             merged = self.client.post('/api/merge-exact')
         self.assertEqual(merged.status_code, 422)
         self.assertIn('«notas»', merged.json()['detail'])
-        with patch.object(limits, 'MAX_SESSION_BYTES', 64):
+        # Measured in plaintext bytes: the real .pwc size rounds to Base64 blocks of 3 bytes,
+        # so the one byte that trashing adds ("false") would only sometimes make the file grow.
+        with patch.object(limits, 'MAX_SESSION_BYTES', 64), \
+                patch.object(limits, 'session_file_size', lambda plaintext_bytes: plaintext_bytes):
             trashed = self.client.post('/api/records/trash', json={'ids': [before['records'][0]['id']]})
         self.assertEqual(trashed.status_code, 422)
         self.assertNotIn('fictional-secret-123', merged.text + trashed.text)
@@ -199,6 +204,72 @@ class APITests(unittest.TestCase):
         self.assertEqual(restored.json()['stats']['verified'], 1)
         self.assertNotIn('session_saved', restored.json())
         self.assertNotIn('session_saved', self.client.get('/api/workspace').json())
+
+    def test_safari_totp_survives_a_v2_session_and_a_v1_session_is_refused(self):
+        from backend.password_checker.infrastructure.sessions import encrypt_session
+        payload = (b'Title,URL,Username,Password,Notes,OTPAuth\n'
+                   b'A,https://example.invalid/,alice,fictional-123456,,otpauth://totp/fictional-imported\n')
+        imported = self.client.post('/api/import', files=[('files', ('Passwords.csv', payload, 'text/csv'))])
+        self.assertEqual(imported.status_code, 200, imported.text)
+        identifier = imported.json()['records'][0]['id']
+        workspace.change(identifier, {'totp': 'otpauth://totp/fictional-edited'})
+        passphrase = 'fictional-session-passphrase-12345'
+        saved = self.client.post('/api/session/save', json={'passphrase': passphrase})
+        self.assertEqual(saved.status_code, 200, saved.text)
+        self.assertNotIn(b'fictional-edited', saved.content)
+        workspace.change(identifier, {'totp': ''})
+
+        restored = self.client.post('/api/session/load', data={'passphrase': passphrase},
+                                    files={'file': ('session.pwc', saved.content, 'application/octet-stream')})
+        self.assertEqual(restored.status_code, 200, restored.text)
+        self.assertNotIn('fictional-', restored.text.replace('fictional-123456', ''))
+        row = workspace._records[identifier]
+        self.assertEqual((row.original.totp, row.totp),
+                         ('otpauth://totp/fictional-imported', 'otpauth://totp/fictional-edited'))
+
+        legacy = workspace.serialize()
+        legacy['version'] = 1
+        for record in legacy['records']:
+            del record['totp'], record['original']['totp']
+        before = workspace.snapshot()
+        refused = self.client.post('/api/session/load', data={'passphrase': passphrase},
+                                   files={'file': ('old.pwc', encrypt_session(legacy, passphrase),
+                                                   'application/octet-stream')})
+        self.assertEqual(refused.status_code, 422)
+        self.assertIn('versión anterior', refused.json()['detail'])
+        self.assertEqual(workspace.snapshot(), before)
+
+    def test_export_writes_the_current_totp_of_each_record(self):
+        payload = (b'Title,URL,Username,Password,Notes,OTPAuth\n'
+                   b'A,https://a.invalid/,alice,fictional-1,,otpauth://totp/fictional-a\n'
+                   b'B,https://b.invalid/,bob,fictional-2,,otpauth://totp/fictional-b\n'
+                   b'C,https://c.invalid/,carol,fictional-3,,\n')
+        imported = self.client.post('/api/import', files=[('files', ('Passwords.csv', payload, 'text/csv'))]).json()
+        ids = {record['username']: record['id'] for record in imported['records']}
+        workspace.change(ids['bob'], {'totp': 'otpauth://totp/fictional-b-edited'})
+        exported = self.client.get('/api/export')
+        self.assertEqual(exported.status_code, 200, exported.text)
+        rows = csv.DictReader(io.StringIO(exported.content.decode('utf-8-sig')))
+        self.assertEqual({row['login_username']: row['login_totp'] for row in rows},
+                         {'alice': 'otpauth://totp/fictional-a', 'bob': 'otpauth://totp/fictional-b-edited', 'carol': ''})
+
+    def test_two_different_totps_survive_merging_and_reach_the_export(self):
+        payload = (b'Title,URL,Username,Password,Notes,OTPAuth\n'
+                   b'A,https://a.invalid/,alice,fictional-1,,otpauth://totp/fictional-a1\n'
+                   b'A,https://a.invalid/,alice,fictional-1,,otpauth://totp/fictional-a2\n'
+                   b'A,https://a.invalid/,alice,fictional-1,,\n'
+                   b'B,https://b.invalid/,bob,fictional-2,,\n'
+                   b'B,https://b.invalid/,bob,fictional-2,,otpauth://totp/fictional-b\n')
+        imported = self.client.post('/api/import', files=[('files', ('Passwords.csv', payload, 'text/csv'))])
+        self.assertEqual(imported.status_code, 200, imported.text)
+        merged = self.client.post('/api/merge-exact')
+        self.assertEqual(merged.status_code, 200, merged.text)
+        # Only bob's copies merge: alice's group holds two different TOTPs.
+        self.assertEqual(merged.json()['stats']['excluded'], 1)
+        rows = list(csv.DictReader(io.StringIO(self.client.get('/api/export').content.decode('utf-8-sig'))))
+        self.assertEqual(sorted((row['login_username'], row['login_totp']) for row in rows), [
+            ('alice', ''), ('alice', 'otpauth://totp/fictional-a1'), ('alice', 'otpauth://totp/fictional-a2'),
+            ('bob', 'otpauth://totp/fictional-b')])
 
     def test_unknown_origin_survives_encrypted_session_round_trip(self):
         payload = b'url,username,password\nhttps://example.invalid/,alice,fictional-secret-123\n'

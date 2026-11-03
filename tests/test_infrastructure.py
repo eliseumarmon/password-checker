@@ -1,4 +1,5 @@
 """Bitwarden adapter tests with fictional credentials."""
+import csv
 import io
 import sys
 import unittest
@@ -17,6 +18,15 @@ class BitwardenTests(unittest.TestCase):
         self.assertEqual(count, 1)
         self.assertEqual(lines[0], ','.join(BITWARDEN_FIELDS))
         self.assertEqual(lines[1], ',,login,Site,n,,0,https://a.invalid,u,"fake,pw",')
+
+    def test_writes_the_totp_exactly_as_an_otpauth_uri(self):
+        # Bitwarden's importer stores login_totp verbatim and its SDK parses otpauth:// keys.
+        totp = 'otpauth://totp/Example:u?secret=FICTIONALSECRET&issuer=Example,Inc&digits=8'
+        buffer = io.StringIO(newline='')
+        write_bitwarden_csv(buffer, [Credential('safari', 2, 'Site', 'https://a.invalid', 'u', 'fake-pw', '', totp),
+                                     Credential('safari', 3, 'Other', 'https://b.invalid', 'v', 'fake-pw', '')])
+        rows = list(csv.DictReader(io.StringIO(buffer.getvalue())))
+        self.assertEqual([row['login_totp'] for row in rows], [totp, ''])
 
 
 if __name__ == '__main__':

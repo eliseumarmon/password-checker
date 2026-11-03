@@ -15,7 +15,7 @@ from ..domain.accounts import duplicate_key
 from ..domain.credential import ORIGINS, Credential
 from ..domain.notes import combine_notes
 from . import limits
-from .candidate import ALLOWED_REVIEW, Candidate, identity
+from .candidate import ALLOWED_REVIEW, Candidate, identity, merged_totp
 from .review_state import detail, review_state
 from .session_snapshot import from_payload, session_fit, to_payload
 
@@ -95,7 +95,7 @@ class Workspace:
             return detail(row)
 
     def change(self, identifier: str, changes: dict[str, Any]) -> dict[str, Any]:
-        allowed = {'name', 'url', 'username', 'password', 'note', 'included', 'review'}
+        allowed = {'name', 'url', 'username', 'password', 'note', 'totp', 'included', 'review'}
         if not changes or not set(changes).issubset(allowed):
             raise ValueError('Cambios vacíos o campos no permitidos')
         if 'review' in changes and changes['review'] not in ALLOWED_REVIEW:
@@ -108,7 +108,7 @@ class Workspace:
             # Editing identifying/secret fields always invalidates the review, even when
             # the same edit sets one: the new values have not been checked yet.
             if any(getattr(before, key) != getattr(updated, key)
-                   for key in ('url', 'username', 'password')):
+                   for key in ('url', 'username', 'password', 'totp')):
                 updated = replace(updated, review='pending')
             if updated == before:
                 return self.snapshot()
@@ -145,13 +145,18 @@ class Workspace:
                 key = duplicate_key(identity(r)) if r.included else None
                 if key is not None:
                     by_identity[key].append(r)
-            groups = [g for g in by_identity.values() if len(g) > 1]
+            # Copies with two different TOTPs are not exact copies (S6): none of them merges.
+            groups = [(g, merged_totp(g)) for g in by_identity.values() if len(g) > 1]
+            groups = [(g, totp) for g, totp in groups if totp is not None]
             if not groups:
                 return self.snapshot()
             records = dict(self._records)
-            for group in groups:
+            for group, totp in groups:
                 primary = group[0]
-                records[primary.id] = replace(primary, note=combine_notes(r.note for r in group))
+                # A secret the kept record did not have has not been checked yet, as in change().
+                review = primary.review if primary.totp == totp else 'pending'
+                records[primary.id] = replace(primary, note=combine_notes(r.note for r in group),
+                                              totp=totp, review=review)
                 for r in group[1:]:
                     records[r.id] = replace(r, included=False)
             self._ensure_restorable(records, self._files)
