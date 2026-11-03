@@ -1,11 +1,10 @@
 <script setup lang="ts">
+import NoticeBase from './NoticeBase.vue';
+
 defineProps<{ message: string }>();
 defineEmits<{ close: [] }>();
 </script>
 
 <template>
-  <div class="error" role="alert">
-    <span>{{ message }}</span>
-    <button aria-label="Cerrar aviso" @click="$emit('close')">×</button>
-  </div>
+  <NoticeBase kind="error" @close="$emit('close')">{{ message }}</NoticeBase>
 </template>

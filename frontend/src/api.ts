@@ -1,4 +1,4 @@
-import type { CredentialDetail, RecordEdit, WorkspaceState } from './types';
+import type { CredentialDetail, ImportResponse, RecordEdit, WorkspaceState } from './types';
 
 /** The server's reason when it sends one as text; validation errors (lists) keep the fallback. */
 async function failure(response: Response, fallback: string): Promise<Error> {
@@ -24,7 +24,7 @@ export const api = {
   importFiles: (files: File[]) => {
     const form = new FormData();
     files.forEach(file => form.append('files', file));
-    return fetch('/api/import', { method: 'POST', body: form }).then(parse<WorkspaceState>);
+    return fetch('/api/import', { method: 'POST', body: form }).then(parse<ImportResponse>);
   },
   detail: (id: string) => fetch(`/api/records/${encodeURIComponent(id)}`, { cache: 'no-store' }).then(parse<CredentialDetail>),
   edit: (id: string, data: RecordEdit) => fetch(`/api/records/${encodeURIComponent(id)}`, {
