@@ -1,8 +1,8 @@
 # Exact version of every Python package that requirements-dev.txt installs, transitive ones included.
 # requirements*.txt declare the compatible ranges; this file pins what local and CI installs use:
 #   python -m pip install -r backend/requirements-dev.txt -c backend/constraints.txt
-# Regenerate it deliberately, and at least monthly or on a security alert (README, "Actualizar dependencias").
-# CI fails if it installs a package that is missing here or has another version.
+# Regenerate it deliberately, and at least monthly or on a security alert (README, "Dependencias").
+# CI fails if it installs a package that is missing here or pinned to another version.
 annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.16.0

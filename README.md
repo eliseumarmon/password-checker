@@ -95,9 +95,11 @@ Las versiones fijadas no son un techo: se renuevan al menos una vez al mes y, fu
 **Renovar todas las de Python.** En un entorno limpio fuera del repositorio, preferiblemente con Python 3.12 (el de la CI):
 
 ```bash
-python3.12 -m venv /tmp/pwc-deps       # Windows: py -3.12 -m venv %TEMP%\pwc-deps
+python3.12 -m venv /tmp/pwc-deps
 /tmp/pwc-deps/bin/python -m pip install -r backend/requirements-dev.txt   # sin -c: lo último que admiten los rangos
 /tmp/pwc-deps/bin/python -m pip freeze
+# Windows PowerShell: py -3.12 -m venv $env:TEMP\pwc-deps
+# y después $env:TEMP\pwc-deps\Scripts\python.exe en lugar de /tmp/pwc-deps/bin/python
 ```
 
 1. Sustituye las líneas de versiones de `backend/constraints.txt` por la salida de `pip freeze`, conservando la cabecera.

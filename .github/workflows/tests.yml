@@ -35,7 +35,7 @@ jobs:
           unpinned = sorted(f'{dist.name}=={dist.version}' for dist in importlib.metadata.distributions()
                             if canonical(dist.name) != 'pip' and pins.get(canonical(dist.name)) != dist.version)
           if unpinned:
-              sys.exit('Installed but not pinned in backend/constraints.txt: ' + ', '.join(unpinned))
+              sys.exit('Missing from backend/constraints.txt or installed at another version: ' + ', '.join(unpinned))
           print(f'All installed packages match backend/constraints.txt ({len(pins)} pins)')
           EOF
       - name: Unit tests with fictional credentials
