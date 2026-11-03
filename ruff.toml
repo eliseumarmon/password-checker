@@ -111,3 +111,7 @@ select = [
     # tryceratops
     "TRY002", "TRY004", "TRY201", "TRY203", "TRY401",
 ]
+
+[lint.flake8-bugbear]
+# FastAPI declares upload parameters with File(...) as a default: a marker, not shared mutable state.
+extend-immutable-calls = ["fastapi.File"]

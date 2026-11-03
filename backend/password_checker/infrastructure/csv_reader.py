@@ -130,6 +130,13 @@ def read_export(fmt, filename, origin):
         note_last = expected > 0 and column_key(headers[-1]) in NOTE_COLUMNS
         url_idx = next((keys[k] for k in URL_COLUMNS if k in keys), None)
         name_idx = next((keys[k] for k in NAME_COLUMNS if k in keys), None)
+
+        def field(values, *aliases):
+            for alias in aliases:
+                if alias in keys:
+                    return values[keys[alias]]
+            return ""
+
         # Algunos exportadores omiten los ultimos campos vacios; SOLO el
         # campo final de nota se puede rellenar sin desplazar columnas.
         for values in lines:
@@ -176,25 +183,19 @@ def read_export(fmt, filename, origin):
                 if values[index].strip():
                     unknown_counts[index] += 1
 
-            def field(*aliases):
-                for alias in aliases:
-                    if alias in keys:
-                        return values[keys[alias]]
-                return ""
-
-            name = field(*NAME_COLUMNS)
-            url = field(*URL_COLUMNS).strip()
-            username = field(*USERNAME_COLUMNS)
-            password = field("password")
-            note = field(*NOTE_COLUMNS)
-            totp = field("otpauth") if fmt == "safari" else ""
+            name = field(values, *NAME_COLUMNS)
+            url = field(values, *URL_COLUMNS).strip()
+            username = field(values, *USERNAME_COLUMNS)
+            password = field(values, "password")
+            note = field(values, *NOTE_COLUMNS)
+            totp = field(values, "otpauth") if fmt == "safari" else ""
             # A blank cell is no secret; any other value is kept exactly as exported.
             if not totp.strip():
                 totp = ""
             # Firefox no exporta 'name' ni 'note', sino realm y metadatos.
             # El realm ayuda a reconocer cuentas HTTP Basic diferentes.
             if fmt == "firefox":
-                realm = field("httprealm")
+                realm = field(values, "httprealm")
                 if realm:
                     note = (note + "\n\n" if note else "") + "Firefox HTTP realm: " + realm
             if not any((name, url, username, password, note, totp)):

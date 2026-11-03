@@ -37,7 +37,8 @@ def _key(passphrase: str, salt: bytes) -> bytes:
 
 def _decode(text: Any, expected_size: int | None = None) -> bytes:
     if not isinstance(text, str):
-        raise ValueError('Formato cifrado no válido')
+        # ValueError, not TypeError: an untrusted file is malformed, which the API reports as a 422.
+        raise ValueError('Formato cifrado no válido')  # noqa: TRY004
     try:
         data = base64.b64decode(text, validate=True)
     except (ValueError, binascii.Error) as error:
@@ -85,5 +86,5 @@ def decrypt_session(blob: bytes, passphrase: str) -> dict[str, Any]:
     except (InvalidTag, UnicodeDecodeError, json.JSONDecodeError) as error:
         raise ValueError('Contraseña incorrecta o archivo de sesión dañado') from error
     if not isinstance(result, dict):
-        raise ValueError('Contenido de sesión no válido')
+        raise ValueError('Contenido de sesión no válido')  # noqa: TRY004 (see _decode)
     return result

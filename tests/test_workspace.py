@@ -39,7 +39,6 @@ class WorkspaceTests(unittest.TestCase):
         self.assertEqual(android['url'], 'androidapp://com.example.app')
 
     def test_explicit_merge_undo_and_preserve_conflict(self):
-        rows = self.workspace.snapshot()['records']
         self.workspace.merge_exact()
         snapshot = self.workspace.snapshot()
         self.assertEqual(snapshot['stats']['included'], 4)

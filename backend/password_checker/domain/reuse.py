@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Callable, Hashable, Sequence
-from typing import Any, Protocol, TypeVar
+from typing import Any, Protocol
 
 from .accounts import origin_account
 
@@ -12,11 +12,8 @@ class HasPassword(Protocol):
     password: str
 
 
-T = TypeVar("T", bound=HasPassword)
-
-
-def shared_password_groups(items: Sequence[T],
-                           account_of: Callable[[T], Hashable | None]) -> list[list[T]]:
+def shared_password_groups[T: HasPassword](items: Sequence[T],
+                                           account_of: Callable[[T], Hashable | None]) -> list[list[T]]:
     """Group items by password when more than one distinct account uses it.
 
     Items with an empty password, or whose account is None, are ignored.
@@ -33,6 +30,6 @@ def shared_password_groups(items: Sequence[T],
     return [group for password, group in members.items() if len(accounts[password]) > 1]
 
 
-def reused_password_groups(items: Sequence[T]) -> list[list[T]]:
+def reused_password_groups[T: HasPassword](items: Sequence[T]) -> list[list[T]]:
     """The reuse rule used by the workspace audit."""
     return shared_password_groups(items, origin_account)

@@ -50,7 +50,7 @@ def detect_groups(rows: list[Candidate]) -> list[dict[str, Any]]:
         if key is not None:
             by_uri[key].append(row)
     result = []
-    for _, members in by_uri.items():
+    for members in by_uri.values():
         if len(members) < 2:
             continue
         base = members[0]
