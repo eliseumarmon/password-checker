@@ -19,7 +19,7 @@ NAME_COLUMNS = ("name", "title")
 USERNAME_COLUMNS = ("username", "user", "login", "loginusername")
 NOTE_COLUMNS = ("note", "notes")
 # How a CSV is read. The origin (domain ORIGINS) only says where it came from.
-FORMATS = ("safari", "firefox", "chromium", "generic")
+FORMATS = ("chromium", "firefox", "generic", "safari")
 # Columns each format recognizes but deliberately discards (normalized keys).
 # httpRealm is read only by firefox, so it is NOT ignored a priori elsewhere.
 IGNORED_COLUMNS = {

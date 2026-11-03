@@ -224,6 +224,22 @@ class FormatOriginTests(unittest.TestCase):
                          [('safari', 'Example', 'https://example.invalid/', 'alice', 'fictional-pw-1', 'a note')])
         self.assertEqual(warnings, [])
 
+    def test_safari_totp_with_data_is_reported_never_dropped_silently(self):
+        # Until the TOTP is imported (T2), its column warns like any unknown column, without the secret.
+        data = (b'Title,URL,Username,Password,Notes,OTPAuth\n'
+                b'Example,https://example.invalid/,alice,fictional-pw-1,,otpauth://totp/fictional-secret\n')
+        _, rows, warnings = read_upload('Passwords.csv', data)
+        self.assertEqual(warnings, [{'column': 'OTPAuth', 'rows': 1}])
+        self.assertNotIn('fictional-secret', repr((rows, warnings)))
+
+    def test_safari_never_repairs_a_shifted_title_like_chromium(self):
+        # Same row and notes-last layout: Chromium rebuilds the title, Safari rejects the row.
+        row = b'Shop, Inc,https://shop.invalid/,alice,fictional-pw-1,,\n'
+        chromium = read_upload('chrome.csv', b'name,url,username,password,extra,note\n' + row)[1]
+        self.assertEqual(chromium[0].name, 'Shop, Inc')
+        with self.assertRaises(ValueError):
+            read_upload('Passwords.csv', b'Title,URL,Username,Password,OTPAuth,Notes\n' + row)
+
     def test_origin_needs_brave_or_chrome_as_a_separate_word(self):
         cases = {
             'Brave Passwords.csv': 'brave', 'brave-export.csv': 'brave', 'brave_export.csv': 'brave',
