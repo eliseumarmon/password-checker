@@ -89,6 +89,11 @@ class PythonAuditTests(unittest.TestCase):
         with self.assertRaisesRegex(audit.UntrustedReport, 'cryptography'):
             audit.python_findings(report, CONSTRAINTS, REQUIREMENTS, 0)
 
+    def test_a_marker_pin_audited_at_another_version_is_not_a_pass(self):
+        report = python_report(dep('cryptography', '50.0.2'), dep('fastapi', '0.162.0'), dep('tomli', '2.4.0'))
+        with self.assertRaisesRegex(audit.UntrustedReport, 'tomli'):
+            audit.python_findings(report, CONSTRAINTS, REQUIREMENTS, 0)
+
     def test_a_skipped_package_is_not_a_pass(self):
         skipped = {'name': 'fastapi', 'skip_reason': 'Dependency not found on PyPI'}
         with self.assertRaisesRegex(audit.UntrustedReport, 'fastapi'):
@@ -171,6 +176,24 @@ class CommandLineTests(unittest.TestCase):
                                            '--requirements', str(requirements), '--exit-code', '0')
             self.assertEqual(status, 0)
             self.assertIn('No known vulnerabilities in 2 packages', output)
+
+    def test_an_unexpected_report_shape_fails_with_its_cause_in_the_summary(self):
+        with tempfile.TemporaryDirectory() as folder:
+            constraints = Path(folder, 'constraints.txt')
+            constraints.write_text(CONSTRAINTS)
+            requirements = Path(folder, 'requirements.txt')
+            requirements.write_text(REQUIREMENTS)
+            report = Path(folder, 'report.out')
+            report.write_text(json.dumps(python_report({'name': 'cryptography'})))
+            status, output = self.run_main('python', '--report', str(report), '--constraints', str(constraints),
+                                           '--requirements', str(requirements), '--exit-code', '0')
+            self.assertEqual(status, 1)
+            self.assertIn('cannot be trusted: unexpected report content', output)
+
+    def test_table_cells_keep_their_columns(self):
+        finding = audit.Finding('pkg', '1.0', 'production', 'high', ['Title with | pipe\nand newline (url)'], 'pkg 1.1')
+        row = audit.render('Title', [finding], 1).splitlines()[-1]
+        self.assertEqual(row, '| pkg | 1.0 | production | high | Title with \\| pipe and newline (url) | pkg 1.1 |')
 
     def test_npm_command_fails_and_lists_the_affected_packages(self):
         with tempfile.TemporaryDirectory() as folder:

@@ -128,10 +128,16 @@ def npm_findings(full, production, lockfile, exit_full, exit_production):
     return findings
 
 
+def cell(text):
+    """Keep advisory text inside its Markdown table cell."""
+    return ' '.join(str(text).split()).replace('|', '\\|')
+
+
 def render(title, findings, analysed):
     if not findings:
         return f'### {title}\n\nNo known vulnerabilities in {analysed} packages.\n'
-    rows = [f'| {f.package} | {f.version} | {f.scope} | {f.severity} | {"<br>".join(f.advisories)} | {f.fix} |'
+    rows = ['| ' + ' | '.join([cell(f.package), cell(f.version), f.scope, cell(f.severity),
+                               '<br>'.join(cell(advisory) for advisory in f.advisories), cell(f.fix)]) + ' |'
             for f in findings]
     return '\n'.join([f'### {title}', '', f'{len(findings)} of {analysed} analysed packages have known vulnerabilities.', '',
                       '| Package | Version | Scope | Severity | Advisories | Fixed in |',
@@ -183,6 +189,10 @@ def main(argv=None):
             analysed = len([path for path in lockfile['packages'] if path])
     except UntrustedReport as error:
         publish(f'### {title}\n\nThe audit cannot be trusted: {error}.\n')
+        return 1
+    except (KeyError, TypeError, AttributeError, OSError) as error:
+        publish(f'### {title}\n\nThe audit cannot be trusted: unexpected report content '
+                f'({type(error).__name__}: {error}).\n')
         return 1
     publish(render(title, findings, analysed))
     return 1 if findings else 0
