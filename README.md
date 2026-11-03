@@ -10,9 +10,9 @@ Se necesita Python 3.12+, Node.js 22+ y npm. Desde la raíz del repositorio:
 python -m venv .venv
 # Linux: source .venv/bin/activate
 # Windows PowerShell: .venv\Scripts\Activate.ps1
-python -m pip install -r backend/requirements.txt
+python -m pip install -r backend/requirements.txt -c backend/constraints.txt
 cd frontend
-npm install
+npm ci
 npm run build
 cd ..
 python app.py
@@ -62,15 +62,17 @@ El dominio en `backend/password_checker/domain/` contiene las reglas puras. `app
 ## Pruebas
 
 ```bash
-python -m pip install -r backend/requirements-dev.txt
+python -m pip install -r backend/requirements-dev.txt -c backend/constraints.txt
 python -m unittest discover -s tests -v
 ruff check .
 ```
 
+`unittest` es el único ejecutor de pruebas del proyecto, en local y en CI.
+
 `ruff check .` usa [`ruff.toml`](ruff.toml), la misma configuración en local y en CI; GitHub Actions lo ejecuta en el job `python` y falla si hay algún aviso. Sus reglas se enumeran una a una en `select` y Ruff está fijado a una versión exacta en `backend/requirements-dev.txt`, de modo que lo que se comprueba no cambia sin una decisión explícita:
 
 - **Ampliar las reglas:** añade los códigos a `select` (consulta `ruff rule <código>`), ejecuta `ruff check .` y corrige los avisos en el mismo cambio. Evita añadir familias enteras sin revisar qué reglas incluyen. Para un patrón legítimo de una biblioteca, usa la opción de configuración de la regla con un comentario que lo justifique; para un caso aislado, `# noqa: <código>` en la línea.
-- **Actualizar Ruff:** cambia la versión en `backend/requirements-dev.txt`, reinstala y ejecuta `ruff check .`. Una versión nueva no activa sus reglas nuevas por defecto aquí, porque `select` es explícito, pero puede cambiar cómo se comportan las reglas listadas; corrige o decide cada aviso nuevo en ese mismo cambio. Para ver qué reglas activaría por defecto la versión nueva, compara la lista `linter.rules.enabled` de `ruff check --isolated --show-settings backend/password_checker/api.py` (valores por defecto, sin `ruff.toml`) con la de `ruff check --show-settings backend/password_checker/api.py` (las de `select`); las que quieras adoptar se añaden como en el punto anterior.
+- **Actualizar Ruff:** cambia la versión en `backend/requirements-dev.txt` y en `backend/constraints.txt`, reinstala y ejecuta `ruff check .`. Una versión nueva no activa sus reglas nuevas por defecto aquí, porque `select` es explícito, pero puede cambiar cómo se comportan las reglas listadas; corrige o decide cada aviso nuevo en ese mismo cambio. Para ver qué reglas activaría por defecto la versión nueva, compara la lista `linter.rules.enabled` de `ruff check --isolated --show-settings backend/password_checker/api.py` (valores por defecto, sin `ruff.toml`) con la de `ruff check --show-settings backend/password_checker/api.py` (las de `select`); las que quieras adoptar se añaden como en el punto anterior.
 
 Las pruebas utilizan credenciales ficticias. Para las pruebas E2E de la interfaz:
 
@@ -82,3 +84,30 @@ npm run e2e
 ```
 
 Playwright compila el frontend y arranca un backend propio en el puerto 5173 con el Python de `.venv` (otro intérprete: variable `E2E_PYTHON`). No ejecutes `npm run dev` al mismo tiempo porque usa el mismo puerto. GitHub Actions ejecuta estas mismas pruebas en el job `e2e` con `E2E_PYTHON=python`; si fallan, sube las trazas de Playwright como artefacto `playwright-traces`. Para revisarlas en local: `npx playwright show-trace <traza>.zip`.
+
+## Dependencias
+
+- **Python:** `backend/requirements.txt` (aplicación) y `backend/requirements-dev.txt` (pruebas y lint) declaran los rangos compatibles. [`backend/constraints.txt`](backend/constraints.txt) fija la versión exacta de todos los paquetes que instalan, también de los transitivos. Instala siempre con `-c backend/constraints.txt`. La CI hace lo mismo y falla si instala algún paquete que no esté fijado o que tenga otra versión.
+- **Frontend:** `frontend/package-lock.json` fija las versiones. Instala con `npm ci`, que respeta el lockfile sin modificarlo.
+
+Las versiones fijadas no son un techo: se renuevan al menos una vez al mes y, fuera de ese calendario, cuando un aviso de seguridad afecte a una de ellas.
+
+**Renovar todas las de Python.** En un entorno limpio fuera del repositorio, preferiblemente con Python 3.12 (el de la CI):
+
+```bash
+python3.12 -m venv /tmp/pwc-deps
+/tmp/pwc-deps/bin/python -m pip install -r backend/requirements-dev.txt   # sin -c: lo último que admiten los rangos
+/tmp/pwc-deps/bin/python -m pip freeze
+# Windows PowerShell: py -3.12 -m venv $env:TEMP\pwc-deps
+# y después $env:TEMP\pwc-deps\Scripts\python.exe en lugar de /tmp/pwc-deps/bin/python
+```
+
+1. Sustituye las líneas de versiones de `backend/constraints.txt` por la salida de `pip freeze`, conservando la cabecera.
+2. Revisa el diff paquete a paquete.
+3. Instala con `-c` en tu entorno y ejecuta `pip check`, las pruebas, Ruff y las E2E.
+
+Hoy se instalan los mismos paquetes en Linux y Windows y con Python 3.12 y 3.14. Si al renovar aparece uno que solo se instala en una plataforma o versión de Python, añádelo con su marcador (por ejemplo, `paquete==1.0 ; sys_platform == "win32"`). La CI solo detecta los que faltan en Linux con Python 3.12. Cada paquete va en una sola línea con `==`: el paso de la CI rechaza duplicados y otros operadores, así que un paquete no puede tener versiones distintas según el entorno.
+
+**Un solo paquete de Python**, por ejemplo por un aviso de seguridad: cambia su línea, y las de las dependencias que exija la versión nueva, y reinstala con `-c`. Para cambiar un rango o añadir una dependencia, edita `requirements*.txt` y renueva las versiones.
+
+**Frontend:** `npm update` (dentro de los rangos de `package.json`) o `npm install <paquete>@<versión>`, siempre de forma deliberada, porque reescriben `package-lock.json`. Revisa el diff del lockfile y ejecuta la compilación y las E2E.
