@@ -18,6 +18,7 @@ class Credential:
     username: str
     password: str
     note: str
+    totp: str = ""  # 2FA secret (Safari OTPAuth), as confidential as the password.
 
 
 def display_name(name: str, url: str) -> str:

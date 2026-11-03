@@ -19,6 +19,7 @@ class Candidate:
     username: str
     password: str
     note: str
+    totp: str = ''
     included: bool = True
     review: str = 'pending'
 
@@ -29,7 +30,7 @@ class Candidate:
             id=secrets.token_hex(12), original=row,
             name=display_name(row.name, row.url),
             url=bitwarden_uri(row.url), username=row.username,
-            password=row.password, note=row.note,
+            password=row.password, note=row.note, totp=row.totp,
         )
 
 
