@@ -161,6 +161,15 @@ class WorkspaceSessionLimitTests(unittest.TestCase):
             self.assert_rejected_without_trace(
                 lambda: self.workspace.change(other_id, {'note': 'u' * 40}), '«notas».*línea 3,')
 
+    def test_rejection_names_the_already_oversized_field_that_grew(self):
+        self.over_text_limit()
+        other_id = self.before['records'][1]['id']
+        self.workspace.change(other_id, {'note': 'u' * 40})
+        with patch.object(limits, 'MAX_SNAPSHOT_TEXT_CHARS', 30):
+            # Both notes are 10 characters over; only the second one grows.
+            self.assert_rejected_without_trace(
+                lambda: self.workspace.change(other_id, {'note': 'u' * 45}), '«notas».*línea 3,')
+
     def test_changes_that_reduce_the_character_excess_are_accepted(self):
         record_id = self.over_text_limit()
         with patch.object(limits, 'MAX_SNAPSHOT_TEXT_CHARS', 30):
