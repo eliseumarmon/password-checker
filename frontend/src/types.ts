@@ -27,6 +27,10 @@ export interface WorkspaceState {
   stats: { total: number; included: number; excluded: number; reviewed: number; verified: number };
   can_undo: boolean;
 }
+export interface ImportWarningColumn { column: string; rows: number }
+export interface ImportWarning { file: string; imported_count: number; columns: ImportWarningColumn[] }
+/** Only a successful /api/import answers the ephemeral warnings channel; the workspace snapshot never carries it. */
+export type ImportResponse = WorkspaceState & { warnings: ImportWarning[] };
 export type SessionMode = 'save' | 'load';
 export type SessionRequestEmits = { sessionRequested: [mode: SessionMode] };
 export interface SessionInput { passphrase: string; confirmation: string; file: File | null }

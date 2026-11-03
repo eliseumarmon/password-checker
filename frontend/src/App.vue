@@ -4,6 +4,7 @@ import { api } from './api';
 import { useWorkspace } from './store';
 import TrashIcon from './TrashIcon.vue';
 import ErrorNotice from './components/ErrorNotice.vue';
+import WarningNotice from './components/WarningNotice.vue';
 import ConfirmDialog from './components/ConfirmDialog.vue';
 import CompareDialog from './components/CompareDialog.vue';
 import EditorDialog from './components/EditorDialog.vue';
@@ -81,7 +82,7 @@ async function loadFileList(files: FileList | File[]): Promise<void> {
   if (fileInput.value) fileInput.value.value = '';
   if (!selectedFiles.length) { store.error = 'Selecciona archivos CSV'; return; }
   if (data.value?.stats.total && !await confirmAction('Importar reemplazará la sesión actual sin guardar. ¿Continuar?', 'Importar')) return;
-  await store.execute(() => api.importFiles(selectedFiles));
+  await store.importFiles(selectedFiles);
   compareIds.value = null; selected.value = null; subtab.value = 'duplicates'; screen.value = 'credentials';
 }
 function openGroup(group: DuplicateGroup): void {
@@ -210,7 +211,11 @@ onUnmounted(() => layoutObserver?.disconnect());
     <EditorDialog v-if="selected" :record="selected" :busy="store.busy" @close="closeEditor" @save="save" @trash="moveToTrash" @restore="restore">
       <ErrorNotice v-if="errorHost==='editor'" :message="store.error" @close="store.error=''" />
     </EditorDialog>
-    <ErrorNotice v-if="errorHost==='page'" class="floating-error" :message="store.error" @close="store.error=''" />
+    <!-- Page-layer notice stack: below every dialog overlay, error on top of the warning. -->
+    <div v-if="store.warnings.length || errorHost==='page'" class="page-notices">
+      <ErrorNotice v-if="errorHost==='page'" :message="store.error" @close="store.error=''" />
+      <WarningNotice v-if="store.warnings.length" :warnings="store.warnings" @close="store.warnings=[]" />
+    </div>
     <SessionDialog v-if="sessionMode" :mode="sessionMode" :busy="store.busy" @close="closeSession" @submit="submitSession">
       <ErrorNotice v-if="errorHost==='session'" :message="store.error" @close="store.error=''" />
     </SessionDialog>
