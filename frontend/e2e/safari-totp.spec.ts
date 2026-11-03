@@ -34,6 +34,11 @@ async function openEditor(page: Page, user: string): Promise<Locator> {
   return editor;
 }
 
+function passwordField(editor: Locator): Locator {
+  // The other new-password field of the editor; the TOTP field is told apart by its own name.
+  return editor.locator('input[autocomplete="new-password"]:not([aria-label="Código 2FA (TOTP)"])');
+}
+
 function totpField(editor: Locator): Locator {
   return editor.getByLabel('Código 2FA (TOTP)', { exact: true });
 }
@@ -45,9 +50,14 @@ test('keeps the Safari TOTP hidden, editable and intact up to the Bitwarden expo
 
   let editor = await openEditor(page, 'alice');
   const totp = totpField(editor);
-  const password = editor.locator('input[autocomplete="new-password"]');
+  const password = passwordField(editor);
   await expect(totp).toHaveAttribute('type', 'password');
   await expect(totp).toHaveValue(IMPORTED_TOTP);
+  // Browsers and password managers must not fill a saved site password into the 2FA secret.
+  await expect(totp).toHaveAttribute('autocomplete', 'new-password');
+  for (const optOut of ['data-1p-ignore', 'data-lpignore', 'data-bwignore']) {
+    await expect(totp).toHaveAttribute(optOut);
+  }
   // Each secret has its own visibility control.
   await editor.getByRole('button', { name: 'Mostrar contraseña' }).click();
   await expect(password).toHaveAttribute('type', 'text');
@@ -67,7 +77,7 @@ test('keeps the Safari TOTP hidden, editable and intact up to the Bitwarden expo
   editor = await openEditor(page, 'alice');
   await expect(totpField(editor)).toHaveValue(EDITED_TOTP);
   await expect(totpField(editor)).toHaveAttribute('type', 'password');
-  await expect(editor.locator('input[autocomplete="new-password"]')).toHaveValue('fictional-Pw-123');
+  await expect(passwordField(editor)).toHaveValue('fictional-Pw-123');
   await editor.getByRole('button', { name: 'Cancelar' }).click();
   editor = await openEditor(page, 'bob');
   await expect(totpField(editor)).toHaveValue('');
@@ -107,6 +117,17 @@ test('keeps the Safari TOTP hidden, editable and intact up to the Bitwarden expo
   expect(rows[0].split(',').at(-1)).toBe('login_totp');
   expect(rows.find(row => row.includes(',alice,'))?.endsWith(`,${EDITED_TOTP}`)).toBe(true);
   expect(rows.find(row => row.includes(',bob,'))?.endsWith(',')).toBe(true);
+});
+
+test('asks before discarding an unsaved TOTP edit and keeps the saved one', async ({ page }) => {
+  await importSafari(page);
+  let editor = await openEditor(page, 'alice');
+  await totpField(editor).fill(EDITED_TOTP);
+  await editor.getByRole('button', { name: 'Cancelar' }).click();
+  await confirmWith(page, 'Descartar cambios');
+  await expect(editor).toBeHidden();
+  editor = await openEditor(page, 'alice');
+  await expect(totpField(editor)).toHaveValue(IMPORTED_TOTP);
 });
 
 welcomeTest('lists Safari among the supported exports on the welcome screen', async ({ page }) => {
