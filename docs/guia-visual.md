@@ -52,9 +52,9 @@ No utilizar verde para indicar que una contraseña es «segura» si únicamente 
 
 | Tipo | Forma | Qué significa |
 |---|---|---|
-| Duplicado exacto | Indicador neutro «Copia exacta» | URL canónica, usuario exacto y contraseña iguales; pueden diferir notas y procedencia |
+| Duplicado exacto | Indicador neutro «Copia exacta» | URL canónica, usuario exacto y contraseña iguales, sin dos códigos 2FA distintos; pueden diferir notas y procedencia |
 | Conflicto | Icono alerta y texto «Contraseñas diferentes» | Misma cuenta aparente, variantes que requieren comprobación |
-| Cuenta distinta | Indicador «Varias cuentas» | Mismo sitio, distinta identidad; normalmente conservar |
+| Cuenta distinta | Indicador «Varias cuentas» | Mismo sitio, distinta identidad, o copias iguales con códigos 2FA distintos; normalmente conservar |
 | Reutilización | Icono advertencia + «Usada en N cuentas» | Misma contraseña en cuentas distintas; **no** equivale a duplicado |
 | Pendiente | Punto + texto «Pendiente» | No revisado |
 | Revisado | Check de revisión + texto «Revisada» | Inspeccionado sin confirmar acceso |
@@ -62,7 +62,7 @@ No utilizar verde para indicar que una contraseña es «segura» si únicamente 
 | Incorrecto | Icono X + texto «No funciona» | Requiere corrección manual |
 | En la papelera | Icono de basura y sección «Papelera» | No saldrá en el CSV; se restaura desde la papelera |
 
-El estado de **revisión** y el estado de **seguridad** son independientes. Las ediciones de URL/usuario/contraseña invalidan la verificación previa; una edición de notas no.
+El estado de **revisión** y el estado de **seguridad** son independientes. Las ediciones de URL/usuario/contraseña/código 2FA invalidan la verificación previa; una edición de notas no.
 
 ## 3. Arquitectura de información
 
@@ -90,7 +90,7 @@ Las pantallas actuales se describen en el [flujo de usuario](flujo-usuario.md). 
 
 **Anchos de referencia:** 360, 390 y 430 px; diseño compacto < 720 px. Optimizar para una mano, zoom y teclados virtuales. **No comprimir la tabla de escritorio** ni imponer desplazamiento horizontal.
 
-**Navegación:** barra inferior fija, respetando `safe-area-inset-bottom`. Tarjetas compactas en lugar de filas, con 1 acción principal por tarjeta. El detalle muestra identidad, URL y botón para abrir la web, contraseña oculta con revelado individual, notas editables, procedencia y estado.
+**Navegación:** barra inferior fija, respetando `safe-area-inset-bottom`. Tarjetas compactas en lugar de filas, con 1 acción principal por tarjeta. El detalle muestra identidad, URL y botón para abrir la web, contraseña y código 2FA ocultos, cada uno con su propio revelado, notas editables, procedencia y estado.
 
 **Comparación móvil:** tarjetas apiladas, con indicadores de coincidencia siempre visibles. Confirmación y deshacer. Usar acordeones para metadatos secundarios, pero **no esconder la razón del conflicto**.
 
@@ -105,7 +105,7 @@ Las pantallas actuales se describen en el [flujo de usuario](flujo-usuario.md). 
 1. **Dropzone + selector de archivos:** admite varios CSV; identifica navegador por cabecera, no solo por nombre de fichero; muestra recuento y errores específicos; los originales quedan intactos.
 2. **Chip de coincidencia:** «URL ✓ / Usuario ✓ / Clave ≠» sin mostrar secretos. `≠` no implica contraseña incorrecta.
 3. **Comparador de registros:** original inmutable frente a candidato editable; procedencia visible.
-4. **Campo secreto:** oculto por defecto, control con etiqueta «Mostrar contraseña»; nunca revelar todas al cargar.
+4. **Campo secreto:** oculto por defecto, con su propio botón «Mostrar/Ocultar» (nombre accesible «Mostrar contraseña» o «Mostrar código 2FA»); revelar uno no revela el otro y nunca se revelan todos al cargar. El campo «Código 2FA (TOTP)» de la ficha, bajo la contraseña, sigue este patrón y pide a navegadores y gestores de contraseñas que no lo autocompleten, aunque no todos lo respetan.
 5. **Enlace de servicio:** clic explícito abre **pestaña nueva** solo para URL web `http(s)` validada, con `noopener noreferrer`; si hay credenciales en URL, exigir revisión y no abrirla tal cual. No usar favicons remotos.
 6. **Ficha de revisión:** muestra y cambia el estado de revisión; «Revisada» y «Verificada» son estados distintos.
 7. **Aviso de edición:** advertir antes de perder cambios sin guardar; no autoaplicar sobre originales.
@@ -118,7 +118,8 @@ Las pantallas actuales se describen en el [flujo de usuario](flujo-usuario.md). 
 
 - **No guardar credenciales en `localStorage`, `sessionStorage`, `IndexedDB` ni cachés del navegador**. La sesión activa reside en el proceso local.
 - Una sesión para reanudar debe persistirse **cifrada con criptografía estándar autenticada y derivación robusta de clave**, con frase de paso elegida por el usuario. No inventar cifrado; no guardar la frase en el proyecto.
-- No guardar contraseñas en trazas, logs, informes Markdown, telemetría ni URLs. Escapar todos los datos CSV antes de pintarlos en el DOM (el CSV es entrada no confiable). Proteger contra peticiones de otras páginas al servicio local.
+- El código 2FA (TOTP) es tan confidencial como la contraseña: solo viaja en la importación, la ficha de edición, la sesión cifrada y la exportación.
+- No guardar contraseñas ni códigos 2FA en trazas, logs, informes Markdown, telemetría ni URLs, ni repetirlos en mensajes de error. Escapar todos los datos CSV antes de pintarlos en el DOM (el CSV es entrada no confiable). Proteger contra peticiones de otras páginas al servicio local.
 - No hacer peticiones a Internet para iconos, fuentes, analítica, imágenes o JS; las pruebas de acceso web solo ocurren tras clic explícito en el enlace.
 - No añadir botón «Comprobar todas las cuentas automáticamente»: evita bloqueos, CAPTCHAs y exposición de credenciales.
 - Exposición temporal: solo una credencial revelada por decisión del usuario; botón «Ocultar» claro, limpieza en bloqueo de sesión y al salir de ficha. Un hombro mirando no debería leer credenciales sin esa acción.

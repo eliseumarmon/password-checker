@@ -21,9 +21,7 @@ Este documento reúne lo que la aplicación todavía no hace: limitaciones conoc
 
 ## Funcionalidades planificadas
 
-Tienen especificación y tareas en su plan, que es donde se sigue su avance:
-
-1. [Soporte de Safari](../odd/tasks/safari-support.md): importar la exportación de Safari o de la app Contraseñas conservando los códigos 2FA hasta la exportación a Bitwarden; la sesión `.pwc` pasa a v2. Se apoya en la separación formato/origen ya completada (plan [importación: formato y origen](../odd/tasks/import-format-origin.md), cerrado con T5).
+No hay ninguna en curso. La última, el [soporte de Safari](../odd/tasks/safari-support.md) (exportación de Safari o de la app Contraseñas con sus códigos 2FA hasta Bitwarden y sesión `.pwc` v2), se completó con T8.
 
 ## Ideas de diseño sin implementar
 
