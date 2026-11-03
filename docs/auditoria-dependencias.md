@@ -1,11 +1,12 @@
 # Auditoría de dependencias y cadena de suministro
 
-Diagnóstico de las dependencias del backend (Python/FastAPI) y del frontend (Vue/Vite), de la reproducibilidad de las instalaciones y de la CI. **No es una auditoría de seguridad de la aplicación**: solo valora cómo afectan las dependencias a Password Checker. El plan de actuación propuesto está en [dependency-hardening](../odd/tasks/dependency-hardening.md) y **no está aprobado**.
+Diagnóstico de las dependencias del backend (Python/FastAPI) y del frontend (Vue/Vite), de la reproducibilidad de las instalaciones y de la CI. **No es una auditoría de seguridad de la aplicación**: solo valora cómo afectan las dependencias a Password Checker. El plan de actuación está en [dependency-hardening](../odd/tasks/dependency-hardening.md); se aprobó después de la auditoría y su estado se sigue allí.
 
 - **Fecha y base:** 2026-11-03, rama `main` en `cfda098`. Ninguna dependencia, configuración ni código se modificó durante la auditoría.
 - **Entornos examinados:** `.venv` local (Python 3.14.7 de 64 bits, pip 26.2.2), `frontend/node_modules` local (Node 24.21.0, npm 11.3.0) y el registro del último run de CI en `main` (`41639170151`: Python 3.12.15, Node 22, `ubuntu-24.04`).
 - **Herramientas:** `npm audit`, `npm audit signatures`, `npm outdated`, `npm ls`, `pip list --outdated`, `pip check` y `pip show` (todas ya instaladas), la API pública de [OSV](https://osv.dev), la API JSON de PyPI y `gh api`. Los comandos están en [Evidencias reproducibles](#evidencias-reproducibles).
-- **`pip-audit` no se ejecutó:** no está instalado y la auditoría no instala herramientas. En su lugar se consultó OSV con las versiones exactas instaladas; OSV agrega los avisos GHSA y PYSEC que usa `pip-audit`, pero no es la misma herramienta (véase [No verificado](#cuestiones-no-verificadas)).
+- **`pip-audit`:** no se ejecutó durante la auditoría, porque no estaba instalado. En su lugar se consultó OSV con las versiones exactas instaladas. Tras aprobarse el plan se instaló `pip-audit` 2.10.1 en el `.venv` y confirmó los mismos resultados (L5 de [dependency-hardening](../odd/tasks/dependency-hardening.md)).
+- **Estado posterior:** H1 y H2 se corrigen en la rama `fix/cryptography-50`; H3 quedó fuera de alcance por decisión del usuario, porque no hay sesiones `.pwc` antiguas que conservar.
 
 ## Exposición real de Password Checker
 
@@ -100,6 +101,7 @@ Sin vulnerabilidades conocidas en el frontend: `npm audit` da 0 en producción y
 - **Problema estructural (confirmado):** el rango `cryptography>=44,<47` excluye todas las versiones corregidas, y la línea 46 no ha vuelto a publicar desde 46.0.7 (2026-04-08). Cualquier instalación nueva, incluida la CI, instala por diseño una versión con avisos. Si mañana apareciera un fallo que sí afectase a AES-GCM, la corrección también quedaría fuera del rango.
 - **Ámbito:** producción. **Impacto sobre credenciales, TOTP, cifrado, `.pwc` e importaciones:** ninguno conocido con los avisos actuales; el cifrado de sesiones depende por completo de esta biblioteca.
 - **Corrección recomendada:** `cryptography>=50.0.2,<51` tras [H2](#h2--pruebas-de-cifrado-y-api-que-se-saltan-en-silencio) y [H3](#h3--sin-prueba-de-compatibilidad-del-formato-pwc-entre-versiones).
+- **Corrección aplicada:** `cryptography>=50.0.2`, **sin techo**, para no volver a bloquear correcciones futuras. La reproducibilidad queda para H4 (`constraints.txt`) y la detección, para H5. H3 quedó fuera de alcance. Decisión en L8 de [dependency-hardening](../odd/tasks/dependency-hardening.md).
 - **Compatibilidad** ([CHANGELOG de 47.0.0 a 50.0.0](https://github.com/pyca/cryptography/blob/main/CHANGELOG.rst)): ninguna ruptura afecta a `AESGCM` ni a `InvalidTag`. Los wheels pasan a OpenSSL 4.0.x. La versión 49.0.0 retira los wheels de Windows de 32 bits y de macOS x86_64: el entorno local es de 64 bits y hay wheels `win_amd64` y `manylinux_2_34_x86_64` para 50.0.2, pero un Mac Intel tendría que compilar desde el código fuente (con Rust). AES-GCM es un estándar determinista, así que el formato `.pwc` no debería cambiar; [H3](#h3--sin-prueba-de-compatibilidad-del-formato-pwc-entre-versiones) lo demuestra en lugar de suponerlo.
 
 ### H2 — Pruebas de cifrado y API que se saltan en silencio
@@ -190,7 +192,7 @@ Las cuatro acciones son de GitHub y se fijan por etiqueta mayor (`@v7`), que pue
 
 ## Cuestiones no verificadas
 
-- **`pip-audit` real:** no se ejecutó. Los resultados de Python proceden de OSV (`/v1/querybatch` con las versiones exactas). Su procedencia sí se comprobó para el plan: `pip-audit` 2.10.1 (2026-06-10), del repositorio `pypa/pip-audit`, con atestaciones PEP 740 en PyPI y 10 dependencias directas. Para ejecutarlo hay que instalarlo en un entorno temporal aislado; queda para la aprobación del plan.
+- **`pip-audit` real:** durante la auditoría no se ejecutó; los resultados de Python proceden de OSV (`/v1/querybatch` con las versiones exactas). Su procedencia se comprobó: `pip-audit` 2.10.1 (2026-06-10), del repositorio `pypa/pip-audit`, con atestaciones PEP 740 en PyPI y 10 dependencias directas. **Resuelto después:** ejecutado en el `.venv` sobre 54 paquetes, coincide con OSV (L5 del plan).
 - **Explotabilidad de GHSA-wqp7-x3pw-xc5r con Starlette < 1.1.0:** deducida del aviso y del código, sin prueba de concepto.
 - **Retirada de `httpx` en `TestClient`:** Starlette lo marca como obsoleto, pero no se ha encontrado una fecha ni una versión de retirada.
 - **Verificación de integridad de Playwright** al descargar navegadores.

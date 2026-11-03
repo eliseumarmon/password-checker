@@ -1,7 +1,7 @@
 # Dependencias y cadena de suministro: auditoría y plan de endurecimiento
 
 Objetivo: diagnosticar riesgos de dependencias, reproducibilidad y CI, y proponer un plan proporcionado. Diagnóstico completo en [auditoria-dependencias](../../docs/auditoria-dependencias.md).
-Rama de la auditoría: `docs/dependency-audit` desde `main` (solo documentación). **Estado del plan: propuesta pendiente de aprobación**; ninguna tarea P se implementa sin ella. Pruebas de cada tarea: `python -m unittest discover -s tests`, `ruff check .`, `npm run build`, `npm run e2e`.
+Rama de la auditoría: `docs/dependency-audit` desde `main` (solo documentación). **Estado del plan: aprobado (L4)**, empezando por `fix/cryptography-50`, encadenada sobre `docs/dependency-audit` (que debe integrarse antes). H4 y H5 siguen pendientes; nada se integra en `main` sin aprobación del usuario. Pruebas de cada tarea: `python -m unittest discover -s tests`, `ruff check .`, `npm run build`, `npm run e2e`.
 
 ## Specs
 
@@ -14,6 +14,14 @@ Fase de auditoría (autorizada):
 - **S5 — Límites.** «No actualices paquetes.» «No modifiques el código ni la configuración de CI.» «No introduzcas nuevas herramientas permanentes.» «No alteres el cifrado, el formato `.pwc` ni las reglas de consolidación.» «No recuperes la CLI eliminada.» «No utilices credenciales reales.»
 - **S6 — Entrega.** «Presenta primero un resumen ejecutivo de los hallazgos y sus prioridades.» «No dupliques información en `docs/pendiente.md`; utiliza referencias a los documentos específicos.» «Solicita una **revisión independiente del diagnóstico y del plan**, centrada en seguridad, exactitud de los hallazgos, proporcionalidad de las soluciones y posibles omisiones.» «No implementes ninguna corrección, no integres cambios en `main` y no modifiques dependencias hasta que apruebe el plan.»
 
+Fase `fix/cryptography-50` (aprobada en L4):
+
+- **S7 — Sin compatibilidad histórica.** «Actualmente no existen sesiones `.pwc` que debamos conservar generadas con esa versión.» «Elimina H3 del alcance de esta tarea como requisito de compatibilidad histórica.» «No crees fixtures históricas ni pruebas de migración entre versiones de `cryptography`.» «Mantén las pruebas normales de cifrado, descifrado, integridad, contraseñas incorrectas y manipulación de archivos.» «No cambies innecesariamente el formato `.pwc` ni los parámetros criptográficos.»
+- **S8 — H2 antes de actualizar.** «Las pruebas obligatorias de cifrado y API no deben saltarse silenciosamente cuando faltan dependencias o se producen errores de importación.» «Deben fallar explícitamente para evitar falsos positivos en CI.» «Añade las pruebas necesarias para verificar este comportamiento, sin introducir complejidad innecesaria.»
+- **S9 — Actualizar `cryptography`.** «Actualiza a `cryptography` 50.0.2, previa comprobación de que sigue siendo una versión adecuada y corregida.» «Ajusta el rango permitido para excluir versiones vulnerables.» Rango final (L8): «Quita el techo `<51` y deja `cryptography>=50.0.2`.» «Comprueba compatibilidad con Python 3.12 y 3.14.» «Ejecuta las pruebas completas del backend y las E2E relevantes.»
+- **S10 — `pip-audit` en el `.venv`.** «Puedes instalar `pip-audit` directamente en el `.venv` existente.» «Ejecútalo sobre las dependencias efectivamente instaladas.» «Registra las versiones auditadas, los resultados y los posibles hallazgos pendientes.» «Distingue los problemas reales de los falsos positivos o vulnerabilidades que no afectan al uso actual.» «Valora si conviene incorporarlo a `requirements-dev.txt` en la tarea posterior de automatización, pero no amplíes ahora el alcance.»
+- **S11 — Revisión y CI.** «Solicita una revisión independiente centrada en seguridad, compatibilidad con las versiones de Python utilizadas, cobertura de pruebas y posibles regresiones.» «Comprueba que Ruff no introduce avisos nuevos y que la CI termina correctamente.» Límites: «No implementes todavía H4 ni H5.» «Puedes subir y actualizar la rama remota para ejecutar CI, pero **no la integres en `main` sin mi aprobación**.»
+
 ## Tasks
 
 Auditoría:
@@ -22,32 +30,24 @@ Auditoría:
 - [x] A2 — S4: esta propuesta de tareas. Ruta: inline. Mismo commit.
 - [x] A3 — S6: revisión independiente del diagnóstico y del plan. Ruta: un revisor independiente de solo lectura (L3). La revisión nativa de gentle-ai también aprobó el commit, pero solo con comprobaciones estructurales. Correcciones en el commit «apply independent review».
 
-Propuesta de endurecimiento (**pendiente de aprobación**). Cada bloque es una funcionalidad con su propia rama desde `main`, para respetar «una funcionalidad por rama». H/R remiten a los hallazgos de la auditoría.
+Plan de endurecimiento (**aprobado en L4**; cada rama se integra solo con la aprobación del usuario). Cada bloque es una funcionalidad con su propia rama desde `main`, para respetar «una funcionalidad por rama». H/R remiten a los hallazgos de la auditoría.
 
-**Correcciones urgentes: rama `fix/cryptography-50`** (P1 y P2 son la red de seguridad de P3; los tres en la misma rama, un commit cada uno).
+**Correcciones urgentes: rama `fix/cryptography-50`** (P2 es la red de seguridad de P3; en la misma rama, un commit cada uno).
 
-- [ ] P1 — Prueba de compatibilidad del formato `.pwc` (H3). Prioridad: urgente, previa a P3. Depende de: nada.
-  - Archivos: `tests/test_sessions.py` (o un `tests/test_session_format.py` nuevo).
-  - Aceptación:
-    - Una sesión ficticia cifrada con `cryptography` 46.0.7 y `argon2-cffi` 25.1.0 se descifra a un contenido esperado. Se guarda como constante en un archivo `.py`, porque `.gitignore` excluye `*.pwc` y `*.json`.
-    - `encrypt_session` usa `secrets.token_bytes`, así que el vector se genera una sola vez con sal y nonce fijos, llamando directamente a `hash_secret_raw` y `AESGCM` (o con un script desechable). **No se modifica `encrypt_session` para inyectarle aleatoriedad.**
-    - Una clave Argon2id derivada de sal y contraseña fijas coincide con su valor conocido.
-    - Al cambiar en `sessions.py` un parámetro de `_key`, el `AAD` o un campo del envoltorio, la prueba falla. Es una comprobación manual temporal, que se deshace sin llegar a ningún commit.
-  - Pruebas: la propia prueba más la suite completa. El commit no cambia `sessions.py`.
-  - Regresión: ninguna en producción; solo añade pruebas.
-  - Revisión independiente: no (sin código de producción).
-- [ ] P2 — Que las pruebas de cifrado y API no se salten en silencio (H2). Prioridad: urgente, previa a P3. Depende de: nada.
-  - Archivos: `tests/test_sessions.py`, `tests/test_session_limits.py`, `tests/test_api.py`.
-  - Aceptación: sin `try/except ImportError` ni `skipUnless` por dependencias obligatorias. Con `cryptography` bloqueada en un proceso aislado (`sys.modules['cryptography'] = None` antes de descubrir las pruebas), `unittest` termina en error, no en `OK (skipped=N)`. Suite: 138 pruebas, 0 saltadas.
-  - Pruebas: suite completa; la comprobación del bloqueo se ejecuta a mano y no se versiona.
-  - Regresión: quien ejecute las pruebas sin instalar `requirements-dev.txt` verá errores en lugar de saltos. Es el comportamiento buscado; documentarlo en el README si hace falta.
-  - Revisión independiente: no.
-- [ ] P3 — `cryptography>=50.0.2,<51` (H1). Prioridad: urgente. Depende de: P1 y P2.
-  - Archivos: `backend/requirements.txt`; si P4 ya existiera, también `backend/constraints.txt`.
-  - Aceptación: OSV (o `pip-audit`) sin avisos para `cryptography`. P1 en verde con 50.0.2: los `.pwc` de 46.0.7 se abren. Suite, `ruff check .` y E2E en verde en local (Python 3.14) y en CI (3.12). Sin cambios en `sessions.py`.
+- [x] ~~P1 — Prueba de compatibilidad del formato `.pwc` (H3).~~ **Retirada** por S7 (L4): no hay sesiones `.pwc` de 46.0.7 que conservar ni requisito de compatibilidad histórica. Se mantienen las pruebas de ida y vuelta, contraseña incorrecta, manipulación y límites existentes.
+- [x] P2 — Que las pruebas de cifrado y API no se salten en silencio (H2). Commit `9fcb31f` (L5). Prioridad: urgente, previa a P3. Depende de: nada. Ruta: inline.
+  - Archivos: `tests/test_sessions.py`, `tests/test_session_limits.py`, `tests/test_api.py` y una prueba nueva, `tests/test_required_dependencies.py`.
+  - Aceptación: sin `try/except ImportError` ni `skipUnless` por dependencias obligatorias. La prueba nueva carga cada módulo afectado en un subproceso con una dependencia obligatoria bloqueada (`sys.modules[...] = None`) y exige errores y cero saltos. RED antes del cambio, GREEN después. Suite sin pruebas saltadas.
+  - Pruebas: la prueba nueva y la suite completa.
+  - Regresión: quien ejecute las pruebas sin instalar `requirements-dev.txt` verá errores en lugar de saltos. Es el comportamiento buscado.
+  - Revisión independiente: con P3 (S11).
+- [x] P3 — `cryptography>=50.0.2`, sin techo (H1). Commits `1e3775d` (L5) y el de «drop the cryptography upper bound» (L8); CI con Python 3.12 en L6 y L8. Prioridad: urgente. Depende de: P2. Ruta: inline.
+  - Archivos: `backend/requirements.txt`.
+  - Aceptación: 50.0.2 sigue siendo la última versión y OSV no tiene avisos para ella. `pip-audit` sin avisos para `cryptography`. Suite, `ruff check .` y E2E en verde en local (Python 3.14) y en CI (3.12). Sin cambios en `sessions.py` ni en el formato `.pwc`.
   - Pruebas: suite completa, E2E y CI.
   - Regresión: wheels con OpenSSL 4.0.x. Desde 49.0.0 no hay wheels de Windows de 32 bits ni de macOS x86_64: un Mac Intel tendría que compilar con Rust. Documentarlo si afecta a alguien.
   - Revisión independiente: **sí** (seguridad y dependencias: elementos 2 y 5 de alto riesgo).
+- [x] P3b — `pip-audit` sobre el `.venv`, antes y después de P3 (S10). Resultados en L5. Ruta: inline. Sin cambios en `requirements*.txt`; los resultados se registran en el Log y en la auditoría.
 
 **Mantenimiento: rama `chore/reproducible-installs`.**
 
@@ -109,7 +109,7 @@ Propuesta de endurecimiento (**pendiente de aprobación**). Cada bloque es una f
 - [ ] P12 — Actualizaciones mayores del frontend (H10): `primevue` 5 con `@primeuix/themes` 3 primero (llevan más tiempo sin publicar y van en el bundle), después `pinia` 4, `vue-router` 5, `vite` 8 y `typescript` 7. **Fuera de este plan:** cada una es una funcionalidad con su propio documento ODD y sus pruebas E2E.
 - [ ] P13 — Bloqueo con hashes (uv con `--universal --generate-hashes`) si el modelo de amenazas crece con la bóveda persistente. Fuera de alcance por ahora.
 
-Orden recomendado: P7 (inmediata, sin código) → P1, P2 → P3 → P4, P5 → P8 → resto según la política de actualización. Previsión: P1-P3 unas 150 líneas, P4-P6 unas 80 más el archivo generado y P8 unas 60; cada rama por debajo de las ~400 líneas, con un PR por rama.
+Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 → resto según la política de actualización. Previsión: P2-P3 unas 100 líneas, P4-P6 unas 80 más el archivo generado y P8 unas 60; cada rama por debajo de las ~400 líneas, con un PR por rama.
 
 ## Log
 
@@ -222,3 +222,121 @@ Orden recomendado: P7 (inmediata, sin código) → P1, P2 → P3 → P4, P5 → 
     - P1: el vector se genera con sal y nonce fijos sin tocar `encrypt_session`; la comprobación manual incluye el `AAD`.
   - **Sin verificar:** el grafo de dependencias y los archivos de restricciones, las sumas de Playwright, `cryptography` 50.0.2 en 3.14 y 3.12, y el exploit UNC.
   - **Siguiente paso:** aprobación del plan por el usuario.
+- **L4 (2026-11-03):** aprobación y ajustes, literal:
+
+  > Apruebo el plan de auditoría de dependencias. Puedes comenzar por la rama `fix/cryptography-50`, siguiendo el flujo ODD y las revisiones independientes habituales.
+  >
+  > ### Aclaraciones y ajustes
+  >
+  > **1. No necesitamos compatibilidad histórica con cryptography 46.0.7**
+  >
+  > Actualmente no existen sesiones `.pwc` que debamos conservar generadas con esa versión. Ya habíamos decidido que, en esta fase del proyecto, no era necesario garantizar compatibilidad hacia atrás.
+  >
+  > Por tanto:
+  > - Elimina H3 del alcance de esta tarea como requisito de compatibilidad histórica.
+  > - No crees fixtures históricas ni pruebas de migración entre versiones de `cryptography`.
+  > - Mantén las pruebas normales de cifrado, descifrado, integridad, contraseñas incorrectas y manipulación de archivos.
+  > - No cambies innecesariamente el formato `.pwc` ni los parámetros criptográficos.
+  >
+  > **2. Corrige H2 antes de actualizar**
+  >
+  > Las pruebas obligatorias de cifrado y API no deben saltarse silenciosamente cuando faltan dependencias o se producen errores de importación.
+  >
+  > Deben fallar explícitamente para evitar falsos positivos en CI.
+  >
+  > Añade las pruebas necesarias para verificar este comportamiento, sin introducir complejidad innecesaria.
+  >
+  > **3. Actualiza cryptography**
+  >
+  > - Actualiza a `cryptography` 50.0.2, previa comprobación de que sigue siendo una versión adecuada y corregida.
+  > - Ajusta el rango permitido para excluir versiones vulnerables.
+  > - Comprueba compatibilidad con Python 3.12 y 3.14.
+  > - Ejecuta las pruebas completas del backend y las E2E relevantes.
+  >
+  > **4. Instala pip-audit en el entorno virtual del proyecto**
+  >
+  > Puedes instalar `pip-audit` directamente en el `.venv` existente. No es necesario crear un entorno temporal aislado.
+  >
+  > - Ejecútalo sobre las dependencias efectivamente instaladas.
+  > - Registra las versiones auditadas, los resultados y los posibles hallazgos pendientes.
+  > - Distingue los problemas reales de los falsos positivos o vulnerabilidades que no afectan al uso actual.
+  > - Valora si conviene incorporarlo a `requirements-dev.txt` en la tarea posterior de automatización, pero no amplíes ahora el alcance.
+  >
+  > **5. Revisión independiente**
+  >
+  > Solicita una revisión independiente centrada en seguridad, compatibilidad con las versiones de Python utilizadas, cobertura de pruebas y posibles regresiones.
+  >
+  > Comprueba que Ruff no introduce avisos nuevos y que la CI termina correctamente.
+  >
+  > ### Límites
+  >
+  > - Respeta el alcance de la tarea aprobada.
+  > - No implementes todavía H4 ni H5.
+  > - No introduzcas cambios en la arquitectura de la futura bóveda.
+  > - No recuperes la CLI eliminada.
+  > - Utiliza únicamente credenciales ficticias en las pruebas.
+  > - Registra los resultados y decisiones en la documentación ODD existente.
+  >
+  > Puedes subir y actualizar la rama remota para ejecutar CI, pero **no la integres en `main` sin mi aprobación**.
+  >
+  > Una vez completada y revisada, presenta los resultados y cualquier hallazgo relevante antes de integrar.
+
+  Cambios derivados: S7-S11 añadidos; P1 retirada; P2 incluye una prueba versionada; P3 depende solo de P2; P3b nueva. Rama `fix/cryptography-50` encadenada sobre `docs/dependency-audit`, porque el documento ODD solo existe ahí.
+- **L5 (2026-11-03):** P2, P3 y P3b en local (Python 3.14.7, Windows).
+  - **P2 (S8):** `tests/test_required_dependencies.py` descubre cada módulo, como la CI, en un subproceso con una dependencia obligatoria bloqueada (`sys.modules[...] = None`), y exige errores y cero saltos.
+    - **RED:** 4 fallos. Sin `cryptography` o sin `argon2`, `test_sessions` daba 5 saltos; sin `cryptography`, `test_session_limits` daba 2; sin `fastapi`, `test_api` daba 29.
+    - **`httpx`:** ya fallaba de forma visible, porque Starlette lanza `RuntimeError` y no `ImportError`. Se mantiene como caso de regresión.
+    - El primer probe usaba `loadTestsFromName`, que solo convierte `ImportError` en un error de prueba; se cambió a `discover` para reproducir la CI.
+    - **GREEN:** se retiran las guardas `try/except ImportError` y `skipUnless` de `test_sessions.py`, `test_session_limits.py` y `test_api.py`. Suite 139 OK sin saltos; Ruff sin avisos.
+    - Las pruebas de ida y vuelta, contraseña incorrecta, manipulación y límites no cambian (S7).
+  - **P3b, antes (S10):** `pip-audit` 2.10.1 instalado en `.venv` junto con 22 dependencias propias (requests, rich, cyclonedx-python-lib, CacheControl, etc.). `pip-audit` sobre el entorno instalado: 54 paquetes, ninguno omitido. Solo `cryptography` 46.0.7 tiene avisos: 7 entradas que son los 4 avisos de H1 con sus alias PYSEC y GHSA, idénticos a lo obtenido con OSV. Ningún falso positivo; ninguno era alcanzable (H1).
+  - **P3 (S9):**
+    - 50.0.2 es la última versión publicada, no está retirada y OSV no tiene avisos para 50.0.0 ni para 50.0.2. Sus wheels llevan OpenSSL 4.0.3.
+    - Rango `cryptography>=50.0.2,<51`. `pip install -r backend/requirements-dev.txt` la actualizó y `pip check` no encuentra problemas.
+    - pip dejó en `site-packages/~ryptography` el `_rust.pyd` antiguo, probablemente bloqueado por un proceso Python abierto; se inspeccionó y se borró.
+    - Python 3.14.7 con OpenSSL 4.0.3: suite 139 OK, Ruff sin avisos y E2E 88/88. Las E2E incluyen guardar y abrir un `.pwc` y usar una contraseña incorrecta.
+    - `sessions.py`, el formato `.pwc` y los parámetros criptográficos no cambian.
+  - **P3b, después:** 54 paquetes, «No known vulnerabilities found».
+  - **¿`pip-audit` en `requirements-dev.txt`? Recomendación: no.**
+    - Añadiría 22 paquetes a cada instalación de desarrollo y de CI.
+    - Al auditar el entorno donde está instalado, se audita también a sí mismo y añade ruido.
+    - Para P8 basta con instalar `pip-audit==2.10.1` solo en el job de auditoría y auditar `constraints.txt` con `--no-deps --disable-pip`.
+    - Sigue instalado en el `.venv` local, sin declararse en ningún requisito.
+  - **Riesgo detectado sobre la aprobación:** el techo `<51` reproduce el problema estructural de H1. `cryptography` no publica correcciones para versiones mayores anteriores y en 2026 ha sacado una mayor al mes (47.0.0 el 2026-04-24 y 50.0.0 el 2026-07-31). Se mantiene el rango aprobado; la detección (P7 y P8) debe avisar cuando una corrección solo exista en la 51 o posterior. Decisión para el usuario: quitar el techo o mantenerlo.
+- **L6 (2026-11-03):** CI y revisión.
+  - **CI:** run `41646649195` sobre `155dcce`. Los jobs `python`, `frontend` y `e2e` terminan en verde con Python 3.12.15 y `cryptography` 50.0.2 instalada en `python` y en `e2e`. Unitarias: 139 OK, sin saltos. El paso «Lint with Ruff» pasa. E2E: 88 superadas.
+  - **Compatibilidad:** Python 3.12 verificado en CI y 3.14 en local (L5).
+  - **Evaluación de riesgo:** la nativa daba `medium` (`under_budget`) y se escaló a `high` con el elemento 5 (actualización mayor de la dependencia que cifra los `.pwc`).
+  - **Revisión nativa:** lentes de riesgo y fiabilidad sobre `67a4fbf..155dcce`, con consentimiento del usuario («Review this change»). Aprobada y reconocida (`review-cbba2b329493fdea`, `authority: burned`).
+    - **Riesgo:** sin hallazgos. Confirma que el techo `<51` es un riesgo de mantenimiento ya registrado y no una vulnerabilidad alcanzable, que el probe no tiene superficie de inyección y que las credenciales son ficticias.
+    - **Fiabilidad:** una sugerencia no bloqueante (`R3-error-attribution`): la prueba no comprueba que el error se deba al paquete bloqueado.
+  - **Aplicada:** el probe devuelve el texto de cada error y la prueba exige que todos mencionen el paquete bloqueado. Comprobado a mano que discrimina: con `argon2` bloqueado, el error menciona `argon2` y no `cryptography`. Suite 139 OK y Ruff sin avisos.
+  - **Pendiente:** integrar en `main` (cuando el usuario lo apruebe, después de `docs/dependency-audit`), decidir sobre el techo `<51`, y reiniciar cualquier proceso de la aplicación abierto durante la actualización.
+- **L7 (2026-11-03):** revisión de la rama completa y ajustes finales.
+  - **CI:** run `41647236624` sobre `89f7c1d`, en verde en `python`, `frontend` y `e2e`.
+  - **Revisión de la rama:** el hook de gentle-ai pidió revisar toda la rama respecto a `main` (`review-83395f75c6ba9063`, lente de fiabilidad). El usuario aceptó («Review this change»), y se aprobó y reconoció (`authority: burned`). Dos sugerencias no bloqueantes, aplicadas:
+    - **`R3-error-attribution-substring`:** buscar el nombre del paquete en todo el traceback era una comprobación débil. Ahora la excepción final de cada error debe ser del tipo esperado y nombrar el paquete como palabra completa: `ModuleNotFoundError` con `cryptography`, `argon2` o `fastapi`; `RuntimeError` con `httpx2` en el caso de `httpx`. Al aplicarlo se vio que el mensaje real depende del `import` (`No module named 'cryptography.exceptions'; 'cryptography' is not a package`) y que el de Starlette ocupa varias líneas, así que se toma la última línea con forma `<Tipo>Error: `. Con `argon2` bloqueado, la excepción final no nombra `cryptography`.
+    - **`R3-plan-status-inconsistent`:** `docs/pendiente.md`, el inicio de la auditoría y el bloque de tareas decían «pendiente de aprobación» o «no está aprobado»; ahora reflejan la aprobación de L4.
+  - **Verificación:** suite 139 OK y Ruff sin avisos.
+- **L8 (2026-11-03):** decisión sobre el techo e integración, literal:
+
+  > Quita el techo `<51` y deja `cryptography>=50.0.2`.
+  >
+  > La política de versiones de `cryptography` incrementa el número mayor frecuentemente sin implicar necesariamente incompatibilidades. No queremos volver a bloquear futuras correcciones de seguridad por un límite arbitrario.
+  >
+  > La reproducibilidad se abordará en H4 mediante `constraints.txt`, y la detección de vulnerabilidades en H5.
+  >
+  > Tras el cambio:
+  > - Ejecuta las pruebas correspondientes.
+  > - Comprueba que Ruff y CI siguen en verde.
+  > - Registra la decisión en el plan existente.
+  > - Solicita revisión independiente si corresponde.
+  >
+  > Después, integra primero `docs/dependency-audit` en `main` y verifica la integración. A continuación, integra `fix/cryptography-50`, comprobando que contiene únicamente los cambios aprobados y que la CI de `main` queda en verde.
+  >
+  > No empieces H4 todavía.
+
+  - **Evidencia de la premisa:** 47.0.0, 48.0.0, 49.0.0 y 50.0.0 se publicaron entre el 2026-04-24 y el 2026-07-31. Sus rupturas (OpenSSL 1.1, Python 3.8, wheels de 32 bits y de macOS x86_64, curvas binarias, X.509 y DH) no afectan a `AESGCM`, `InvalidTag` ni Argon2id.
+  - **Cambio:** `backend/requirements.txt` pasa a `cryptography>=50.0.2`. La auditoría (H1) registra la corrección aplicada.
+  - **Riesgo aceptado:** una versión 51 o posterior podría romper la API usada. Hasta H4, cada instalación nueva tomará la última versión publicada. La CI (unitarias de `.pwc` y E2E) es la red frente a esa rotura, y P2 garantiza que un fallo de importación no se convierta en un salto.
+  - **Local:** `pip check` sin problemas, suite 139 OK y Ruff sin avisos.

@@ -10,11 +10,7 @@ from backend.password_checker.application import limits
 from backend.password_checker.application.session_snapshot import encode_payload
 from backend.password_checker.application.workspace import ImportedFile, Workspace
 from backend.password_checker.domain.credential import Credential
-
-try:
-    from backend.password_checker.infrastructure.sessions import encrypt_session
-except ImportError:
-    encrypt_session = None
+from backend.password_checker.infrastructure.sessions import encrypt_session
 
 PASSPHRASE = 'fictional-passphrase-123'
 
@@ -198,7 +194,6 @@ class WorkspaceSessionLimitTests(unittest.TestCase):
             self.workspace.serialize()
 
 
-@unittest.skipUnless(encrypt_session is not None, 'Optional cryptography dependencies not installed')
 class SessionFileSizeTests(unittest.TestCase):
     def test_computed_size_matches_the_real_file(self):
         for pad in range(6):
