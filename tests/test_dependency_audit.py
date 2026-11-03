@@ -61,7 +61,8 @@ class PythonAuditTests(unittest.TestCase):
         report = python_report(dep('cryptography', '46.0.7', CRYPTO_VULN, OPENSSL_VULN, CRYPTO_VULN),
                                dep('fastapi', '0.162.0'))
         findings = audit.python_findings(report, CONSTRAINTS.replace('50.0.2', '46.0.7'), REQUIREMENTS, 1)
-        self.assertEqual([(f.package, f.version, f.scope) for f in findings], [('cryptography', '46.0.7', 'production')])
+        # pip-audit does not know which packages ship with the application, so the scope is not guessed.
+        self.assertEqual([(f.package, f.version, f.scope) for f in findings], [('cryptography', '46.0.7', 'n/a')])
         self.assertEqual(findings[0].advisories, ['GHSA-537c-gmf6-5ccf', 'PYSEC-2026-3552 (CVE-2026-69247, GHSA-g6cj-pr64-35w5)'])
         self.assertEqual(findings[0].fix, '48.0.1, 50.0.0')
 
@@ -79,6 +80,11 @@ class PythonAuditTests(unittest.TestCase):
         with self.assertRaisesRegex(audit.UntrustedReport, 'fastapi'):
             audit.python_findings(python_report(dep('cryptography', '50.0.2')), '# header\ncryptography==50.0.2\n',
                                   REQUIREMENTS, 0)
+
+    def test_an_unsupported_requirements_line_is_blamed_on_the_requirements(self):
+        for line in ('./vendor/package.whl', 'git+https://example.invalid/package.git'):
+            with self.subTest(line=line), self.assertRaisesRegex(audit.UntrustedReport, 'unsupported requirements line'):
+                audit.python_findings(CLEAN_PYTHON, CONSTRAINTS, REQUIREMENTS + line + '\n', 0)
 
     def test_a_pinned_package_missing_from_the_report_is_not_a_pass(self):
         with self.assertRaisesRegex(audit.UntrustedReport, 'fastapi'):

@@ -49,8 +49,17 @@ def pinned_packages(constraints_text):
 
 def direct_requirements(requirements_text):
     """Names declared in requirements files; options such as -r and comments are not packages."""
-    lines = (line.split('#')[0].strip() for line in requirements_text.splitlines())
-    return {canonical(re.match(r'[A-Za-z0-9._-]+', line)[0]) for line in lines if line and not line.startswith('-')}
+    names = set()
+    for line in requirements_text.splitlines():
+        line = line.split('#')[0].strip()
+        if not line or line.startswith('-'):
+            continue
+        # name, optional extras, then a version specifier or marker: paths, URLs and VCS links are not supported.
+        requirement = re.fullmatch(r'([A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:\[[^\]]*\])?\s*(?:[<>=!~;].*)?', line)
+        if not requirement:
+            raise UntrustedReport(f'unsupported requirements line, expected a package name: {line}')
+        names.add(canonical(requirement[1]))
+    return names
 
 
 def python_findings(report, constraints_text, requirements_text, exit_code):
@@ -80,7 +89,7 @@ def python_findings(report, constraints_text, requirements_text, exit_code):
             advisories[vuln['id']] = f"{vuln['id']} ({aliases})" if aliases else vuln['id']
             fixes.update(vuln.get('fix_versions') or [])
         if advisories:
-            findings.append(Finding(dep['name'], dep['version'], 'production', 'n/a',
+            findings.append(Finding(dep['name'], dep['version'], 'n/a', 'n/a',
                                     [advisories[key] for key in sorted(advisories)],
                                     ', '.join(sorted(fixes)) or 'none published'))
     if exit_code != 0 and not findings:
