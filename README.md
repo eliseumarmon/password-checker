@@ -106,7 +106,7 @@ python3.12 -m venv /tmp/pwc-deps
 2. Revisa el diff paquete a paquete.
 3. Instala con `-c` en tu entorno y ejecuta `pip check`, las pruebas, Ruff y las E2E.
 
-Hoy se instalan los mismos paquetes en Linux y Windows y con Python 3.12 y 3.14. Si al renovar aparece uno que solo se instala en una plataforma o versión de Python, añádelo con su marcador (por ejemplo, `paquete==1.0 ; sys_platform == "win32"`). La CI solo detecta los que faltan en Linux con Python 3.12.
+Hoy se instalan los mismos paquetes en Linux y Windows y con Python 3.12 y 3.14. Si al renovar aparece uno que solo se instala en una plataforma o versión de Python, añádelo con su marcador (por ejemplo, `paquete==1.0 ; sys_platform == "win32"`). La CI solo detecta los que faltan en Linux con Python 3.12. Cada paquete va en una sola línea con `==`: el paso de la CI rechaza duplicados y otros operadores, así que un paquete no puede tener versiones distintas según el entorno.
 
 **Un solo paquete de Python**, por ejemplo por un aviso de seguridad: cambia su línea, y las de las dependencias que exija la versión nueva, y reinstala con `-c`. Para cambiar un rango o añadir una dependencia, edita `requirements*.txt` y renueva las versiones.
 

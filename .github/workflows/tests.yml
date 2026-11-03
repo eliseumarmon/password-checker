@@ -14,9 +14,17 @@ jobs:
           python-version: '3.12'
       - name: Install backend test dependencies
         run: python -m pip install -r backend/requirements-dev.txt -c backend/constraints.txt
+      - name: Unit tests with fictional credentials
+        run: python -m unittest discover -s tests -v
+      # Same ruff.toml and pinned version as local development; runs even if the tests failed.
+      - name: Lint with Ruff
+        if: ${{ !cancelled() }}
+        run: ruff check . --output-format=github
       # A package missing from the constraints (e.g. one only this Python version needs) would install unpinned.
       # This job installs the superset of the e2e job's packages, so checking it here covers both.
+      # Runs even if the tests or Ruff failed, so each problem is reported on its own.
       - name: Check installed packages against the constraints
+        if: ${{ !cancelled() }}
         run: |
           python - <<'EOF'
           import importlib.metadata
@@ -29,21 +37,23 @@ jobs:
               return re.sub(r'[-_.]+', '-', name).lower()
 
 
-          lines = (line.split(';')[0].strip() for line in Path('backend/constraints.txt').read_text().splitlines())
-          pins = dict(line.split('==') for line in lines if line and not line.startswith('#'))
-          pins = {canonical(name): version for name, version in pins.items()}
+          pins = {}
+          for line in Path('backend/constraints.txt').read_text().splitlines():
+              requirement = line.split('#')[0].split(';')[0].strip()
+              if not requirement:
+                  continue
+              pin = re.fullmatch(r'([A-Za-z0-9._-]+)==([^\s=]+)', requirement)
+              if not pin:
+                  sys.exit(f'Unsupported line in backend/constraints.txt, expected name==version: {line}')
+              if canonical(pin[1]) in pins:
+                  sys.exit(f'{pin[1]} appears twice in backend/constraints.txt; keep one line per package')
+              pins[canonical(pin[1])] = pin[2]
           unpinned = sorted(f'{dist.name}=={dist.version}' for dist in importlib.metadata.distributions()
                             if canonical(dist.name) != 'pip' and pins.get(canonical(dist.name)) != dist.version)
           if unpinned:
               sys.exit('Missing from backend/constraints.txt or installed at another version: ' + ', '.join(unpinned))
           print(f'All installed packages match backend/constraints.txt ({len(pins)} pins)')
           EOF
-      - name: Unit tests with fictional credentials
-        run: python -m unittest discover -s tests -v
-      # Same ruff.toml and pinned version as local development; runs even if the tests failed.
-      - name: Lint with Ruff
-        if: ${{ !cancelled() }}
-        run: ruff check . --output-format=github
   frontend:
     runs-on: ubuntu-latest
     steps:
