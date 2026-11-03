@@ -35,19 +35,19 @@ Propuesta de endurecimiento (**pendiente de aprobación**). Cada bloque es una f
 **Correcciones urgentes: rama `fix/cryptography-50`** (P2 es la red de seguridad de P3; en la misma rama, un commit cada uno).
 
 - [x] ~~P1 — Prueba de compatibilidad del formato `.pwc` (H3).~~ **Retirada** por S7 (L4): no hay sesiones `.pwc` de 46.0.7 que conservar ni requisito de compatibilidad histórica. Se mantienen las pruebas de ida y vuelta, contraseña incorrecta, manipulación y límites existentes.
-- [ ] P2 — Que las pruebas de cifrado y API no se salten en silencio (H2). Prioridad: urgente, previa a P3. Depende de: nada. Ruta: inline.
+- [x] P2 — Que las pruebas de cifrado y API no se salten en silencio (H2). Commit `9fcb31f` (L5). Prioridad: urgente, previa a P3. Depende de: nada. Ruta: inline.
   - Archivos: `tests/test_sessions.py`, `tests/test_session_limits.py`, `tests/test_api.py` y una prueba nueva, `tests/test_required_dependencies.py`.
   - Aceptación: sin `try/except ImportError` ni `skipUnless` por dependencias obligatorias. La prueba nueva carga cada módulo afectado en un subproceso con una dependencia obligatoria bloqueada (`sys.modules[...] = None`) y exige errores y cero saltos. RED antes del cambio, GREEN después. Suite sin pruebas saltadas.
   - Pruebas: la prueba nueva y la suite completa.
   - Regresión: quien ejecute las pruebas sin instalar `requirements-dev.txt` verá errores en lugar de saltos. Es el comportamiento buscado.
   - Revisión independiente: con P3 (S11).
-- [ ] P3 — `cryptography>=50.0.2,<51` (H1). Prioridad: urgente. Depende de: P2. Ruta: inline.
+- [x] P3 — `cryptography>=50.0.2,<51` (H1). Commit `1e3775d` (L5); CI con Python 3.12 en L6. Prioridad: urgente. Depende de: P2. Ruta: inline.
   - Archivos: `backend/requirements.txt`.
   - Aceptación: 50.0.2 sigue siendo la última versión y OSV no tiene avisos para ella. `pip-audit` sin avisos para `cryptography`. Suite, `ruff check .` y E2E en verde en local (Python 3.14) y en CI (3.12). Sin cambios en `sessions.py` ni en el formato `.pwc`.
   - Pruebas: suite completa, E2E y CI.
   - Regresión: wheels con OpenSSL 4.0.x. Desde 49.0.0 no hay wheels de Windows de 32 bits ni de macOS x86_64: un Mac Intel tendría que compilar con Rust. Documentarlo si afecta a alguien.
   - Revisión independiente: **sí** (seguridad y dependencias: elementos 2 y 5 de alto riesgo).
-- [ ] P3b — `pip-audit` sobre el `.venv`, antes y después de P3 (S10). Ruta: inline. Sin cambios en `requirements*.txt`; los resultados se registran en el Log y en la auditoría.
+- [x] P3b — `pip-audit` sobre el `.venv`, antes y después de P3 (S10). Resultados en L5. Ruta: inline. Sin cambios en `requirements*.txt`; los resultados se registran en el Log y en la auditoría.
 
 **Mantenimiento: rama `chore/reproducible-installs`.**
 
@@ -282,3 +282,24 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
   > Una vez completada y revisada, presenta los resultados y cualquier hallazgo relevante antes de integrar.
 
   Cambios derivados: S7-S11 añadidos; P1 retirada; P2 incluye una prueba versionada; P3 depende solo de P2; P3b nueva. Rama `fix/cryptography-50` encadenada sobre `docs/dependency-audit`, porque el documento ODD solo existe ahí.
+- **L5 (2026-11-03):** P2, P3 y P3b en local (Python 3.14.7, Windows).
+  - **P2 (S8):** `tests/test_required_dependencies.py` descubre cada módulo, como la CI, en un subproceso con una dependencia obligatoria bloqueada (`sys.modules[...] = None`), y exige errores y cero saltos.
+    - **RED:** 4 fallos. Sin `cryptography` o sin `argon2`, `test_sessions` daba 5 saltos; sin `cryptography`, `test_session_limits` daba 2; sin `fastapi`, `test_api` daba 29.
+    - **`httpx`:** ya fallaba de forma visible, porque Starlette lanza `RuntimeError` y no `ImportError`. Se mantiene como caso de regresión.
+    - El primer probe usaba `loadTestsFromName`, que solo convierte `ImportError` en un error de prueba; se cambió a `discover` para reproducir la CI.
+    - **GREEN:** se retiran las guardas `try/except ImportError` y `skipUnless` de `test_sessions.py`, `test_session_limits.py` y `test_api.py`. Suite 139 OK sin saltos; Ruff sin avisos.
+    - Las pruebas de ida y vuelta, contraseña incorrecta, manipulación y límites no cambian (S7).
+  - **P3b, antes (S10):** `pip-audit` 2.10.1 instalado en `.venv` junto con 22 dependencias propias (requests, rich, cyclonedx-python-lib, CacheControl, etc.). `pip-audit` sobre el entorno instalado: 54 paquetes, ninguno omitido. Solo `cryptography` 46.0.7 tiene avisos: 7 entradas que son los 4 avisos de H1 con sus alias PYSEC y GHSA, idénticos a lo obtenido con OSV. Ningún falso positivo; ninguno era alcanzable (H1).
+  - **P3 (S9):**
+    - 50.0.2 es la última versión publicada, no está retirada y OSV no tiene avisos para 50.0.0 ni para 50.0.2. Sus wheels llevan OpenSSL 4.0.3.
+    - Rango `cryptography>=50.0.2,<51`. `pip install -r backend/requirements-dev.txt` la actualizó y `pip check` no encuentra problemas.
+    - pip dejó en `site-packages/~ryptography` el `_rust.pyd` antiguo, probablemente bloqueado por un proceso Python abierto; se inspeccionó y se borró.
+    - Python 3.14.7 con OpenSSL 4.0.3: suite 139 OK, Ruff sin avisos y E2E 88/88. Las E2E incluyen guardar y abrir un `.pwc` y usar una contraseña incorrecta.
+    - `sessions.py`, el formato `.pwc` y los parámetros criptográficos no cambian.
+  - **P3b, después:** 54 paquetes, «No known vulnerabilities found».
+  - **¿`pip-audit` en `requirements-dev.txt`? Recomendación: no.**
+    - Añadiría 22 paquetes a cada instalación de desarrollo y de CI.
+    - Al auditar el entorno donde está instalado, se audita también a sí mismo y añade ruido.
+    - Para P8 basta con instalar `pip-audit==2.10.1` solo en el job de auditoría y auditar `constraints.txt` con `--no-deps --disable-pip`.
+    - Sigue instalado en el `.venv` local, sin declararse en ningún requisito.
+  - **Riesgo detectado sobre la aprobación:** el techo `<51` reproduce el problema estructural de H1. `cryptography` no publica correcciones para versiones mayores anteriores y en 2026 ha sacado una mayor al mes (47.0.0 el 2026-04-24 y 50.0.0 el 2026-07-31). Se mantiene el rango aprobado; la detección (P7 y P8) debe avisar cuando una corrección solo exista en la 51 o posterior. Decisión para el usuario: quitar el techo o mantenerlo.
