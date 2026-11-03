@@ -487,3 +487,21 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
   - **CI:** run `41655317572` sobre `27c324e`, en verde en `python`, `frontend` y `e2e` (Python 3.12). Restricciones: 24, todas coinciden. Unitarias: 139. E2E: 88.
   - **H4 completa** en la rama, pendiente de la aprobación del usuario para integrarla.
   - **P7:** `vulnerability-alerts` sigue devolviendo 404 y `dependabot_security_updates`, `disabled`. El usuario indicó en L10 que activaría las alertas.
+- **L15 (2026-11-03):** revisión de la rama completa respecto a `main`, pedida por el contrato (STATUS sin selectores) porque los ajustes de L13 formaban un candidato nuevo.
+  - **Revisión** `review-af19b0263e862da5`: 4 lentes, consentimiento del usuario («Review this change»), aprobada y reconocida (`authority: burned`). Sin bloqueos.
+  - **Aplicado:**
+    - **`R2-ci-check-markers-collapse` (aviso) y `R4-marker-duplicate-pins-overwrite`:** un paquete repetido con distintos marcadores se colapsaba en silencio. Ahora el paso falla con «`<paquete>` appears twice…; keep one line per package», y el README indica que cada paquete va en una sola línea con `==`.
+    - **`R4-ci-constraints-parser-brittle`:** el análisis es estricto. Ignora los comentarios al final de línea y rechaza cualquier línea que no sea `name==version` (con marcador opcional) con un mensaje claro en lugar de un traceback.
+    - **`R3-constraint-check-skips-unit-tests`:** el paso se ejecuta después de las pruebas y de Ruff, con `if: ${{ !cancelled() }}` como Ruff, así que cada problema se informa por separado.
+  - **Sin cambios:** `R1-001` (hashes), por decisión del usuario (P13).
+  - **Comprobado en local con copias temporales de `constraints.txt`:**
+
+    | Caso | Resultado |
+    | --- | --- |
+    | Archivo real | Pasa (24 pins) |
+    | Comentario al final de línea | Pasa |
+    | Paquete duplicado con marcador | Falla con el mensaje de duplicado |
+    | `foo>=1.0` | Falla con «Unsupported line» |
+    | Marcador de un paquete no instalado (`tomli`, Python < 3.11) | Pasa (25 pins) |
+
+    Ruff no da avisos sobre el script extraído.
