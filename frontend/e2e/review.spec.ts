@@ -945,7 +945,7 @@ for (const { name, viewport } of [
       await exportBitwarden(page);
     }
     await expect(alert).toBeVisible();
-    await alert.getByRole('button', { name: 'Cerrar aviso' }).click();
+    await alert.getByRole('button', { name: 'Cerrar mensaje de error' }).click();
     await expect(alert).toHaveCount(0);
   });
 
@@ -997,7 +997,7 @@ test('keeps a long notice between the header and navigation in a short viewport'
   const nav = (await page.getByRole('navigation', { name: 'Navegación móvil' }).boundingBox())!;
   expect(box.y).toBeGreaterThanOrEqual(header.y + header.height);
   expect(box.y + box.height).toBeLessThanOrEqual(nav.y);
-  const close = alert.getByRole('button', { name: 'Cerrar aviso' });
+  const close = alert.getByRole('button', { name: 'Cerrar mensaje de error' });
   expect(await close.evaluate(element => {
     const box = element.getBoundingClientRect();
     return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2) === element;
@@ -1033,7 +1033,7 @@ test('moves the persistent notice into the active dialog', async ({ page }) => {
   await expect(compare.getByRole('alert')).toBeVisible();
   await compare.getByRole('button', { name: 'Cerrar panel' }).click();
   await expect(alert).toBeVisible();
-  await alert.getByRole('button', { name: 'Cerrar aviso' }).click();
+  await alert.getByRole('button', { name: 'Cerrar mensaje de error' }).click();
   await expect(alert).toHaveCount(0);
 });
 
@@ -1051,7 +1051,7 @@ for (const viewport of [{ width: 320, height: 320 }, { width: 390, height: 250 }
     const navBox = (await page.getByRole('navigation', { name: 'Navegación móvil' }).boundingBox())!;
     expect(noticeBox.y).toBeGreaterThanOrEqual(headerBox.y + headerBox.height);
     expect(noticeBox.y + noticeBox.height).toBeLessThanOrEqual(navBox.y);
-    const close = alert.getByRole('button', { name: 'Cerrar aviso' });
+    const close = alert.getByRole('button', { name: 'Cerrar mensaje de error' });
     const closeBox = (await close.boundingBox())!;
     expect(closeBox.y).toBeGreaterThanOrEqual(noticeBox.y);
     expect(closeBox.y + closeBox.height).toBeLessThanOrEqual(noticeBox.y + noticeBox.height);

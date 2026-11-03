@@ -97,7 +97,7 @@ test('shows the import warning with file, columns and row counts, never the disc
   // Manual close only: it does not disappear on its own.
   await page.waitForTimeout(1500);
   await expect(notice).toBeVisible();
-  await notice.getByRole('button', { name: 'Cerrar aviso' }).click();
+  await notice.getByRole('button', { name: 'Cerrar advertencia de importación' }).click();
   await expect(notice).toHaveCount(0);
 });
 
@@ -145,8 +145,11 @@ test('stacks a later error above the warning and both close independently', asyn
   const noticeBox = (await notice.boundingBox())!;
   // The error sits on top, without overlapping the warning.
   expect(alertBox.y + alertBox.height).toBeLessThanOrEqual(noticeBox.y + 1);
-  const closeError = alert.getByRole('button', { name: 'Cerrar aviso' });
-  const closeWarning = notice.getByRole('button', { name: 'Cerrar aviso' });
+  const closeError = alert.getByRole('button', { name: 'Cerrar mensaje de error' });
+  const closeWarning = notice.getByRole('button', { name: 'Cerrar advertencia de importación' });
+  // A screen reader tells the two close buttons apart without visual context.
+  await expect(page.getByRole('button', { name: 'Cerrar mensaje de error', exact: true })).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Cerrar advertencia de importación', exact: true })).toHaveCount(1);
   expect(await isDirectlyClickable(closeError)).toBe(true);
   expect(await isDirectlyClickable(closeWarning)).toBe(true);
   await closeError.click();
@@ -397,8 +400,8 @@ test('keeps the stacked warning and error usable in a short mobile viewport', as
   const stackBox = (await stack.boundingBox())!;
   expect(stackBox.y).toBeGreaterThanOrEqual(headerBox.y + headerBox.height);
   expect(stackBox.y + stackBox.height).toBeLessThanOrEqual(navBox.y);
-  const closeWarning = notice.getByRole('button', { name: 'Cerrar aviso' });
-  const closeError = alert.getByRole('button', { name: 'Cerrar aviso' });
+  const closeWarning = notice.getByRole('button', { name: 'Cerrar advertencia de importación' });
+  const closeError = alert.getByRole('button', { name: 'Cerrar mensaje de error' });
   // The error sits on top and is usable without scrolling.
   const alertBox = (await alert.boundingBox())!;
   expect(alertBox.y).toBeGreaterThanOrEqual(headerBox.y + headerBox.height);
