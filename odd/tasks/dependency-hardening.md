@@ -469,3 +469,17 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
     - Windows con Python 3.12 no se prueba en ningún sitio: la CI es Linux con 3.12 y en local solo hay 3.14.
     - El paso de CI solo detecta paquetes sin fijar en Linux con 3.12. Si en el futuro aparece un paquete solo para Windows o para otra versión de Python, se instalaría sin fijar hasta que alguien lo añada; el README indica cómo.
     - El `.venv` local del usuario no se ha recreado: sigue con `pytest` y `pip-audit`, sin efecto en el proyecto.
+- **L13 (2026-11-03):** CI y revisión de H4.
+  - **CI con Python 3.12:** run `41654245223` sobre `ef2ad24`, en verde en `python`, `frontend` y `e2e`, con Python 3.12.15.
+    - El paso nuevo imprime «All installed packages match backend/constraints.txt (24 pins)».
+    - Lo instalado por el job `python` coincide exactamente con `constraints.txt` (comparado con nombres canónicos), y los 20 paquetes de `e2e` son un subconjunto sin ninguno ajeno.
+    - Unitarias: 139. E2E: 88.
+  - **Revisión nativa** `review-4f64e338641dfb49` (riesgo escalado a alto por el elemento 5; lentes de riesgo, legibilidad y fiabilidad; consentimiento del usuario): aprobada y reconocida (`authority: burned`). Ningún hallazgo bloqueante.
+    - **Aplicado:**
+      - **`R2-constraints-dangling-readme-ref` y `R3-002`:** la cabecera de `constraints.txt` citaba una sección «Actualizar dependencias» que no existe; ahora cita «Dependencias».
+      - **`R2-ci-check-message-mismatch`:** el mensaje de error cubre los dos casos, falta en las restricciones o versión distinta.
+      - **`R2-readme-windows-paths-partial`:** el procedimiento de renovación incluye las rutas de Windows (`$env:TEMP\pwc-deps\Scripts\python.exe`).
+    - **Sin cambios, con motivo:**
+      - **`R3-001`** (el runner podría traer paquetes base además de `pip`): la CI real con 3.12 lo refuta, porque el paso pasó con 24 paquetes fijados y sin ningún paquete ajeno.
+      - **`R1-hashless-pins`:** el usuario excluyó los hashes sin una justificación clara (L10); siguen como P13 opcional, con la justificación de la auditoría (PyPI no permite reemplazar los archivos de una versión publicada).
+  - **Tras los ajustes:** el script del paso, extraído del YAML, pasa en el entorno limpio de 3.14 y falla en el `.venv` con el mensaje nuevo; Ruff no da avisos; la resolución con `-c` en seco no encuentra conflictos. CI en L14.
