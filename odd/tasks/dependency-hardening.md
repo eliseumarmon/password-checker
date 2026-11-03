@@ -1,7 +1,7 @@
 # Dependencias y cadena de suministro: auditoría y plan de endurecimiento
 
 Objetivo: diagnosticar riesgos de dependencias, reproducibilidad y CI, y proponer un plan proporcionado. Diagnóstico completo en [auditoria-dependencias](../../docs/auditoria-dependencias.md).
-Rama de la auditoría: `docs/dependency-audit` desde `main` (solo documentación). **Estado del plan: propuesta pendiente de aprobación**; ninguna tarea P se implementa sin ella. Pruebas de cada tarea: `python -m unittest discover -s tests`, `ruff check .`, `npm run build`, `npm run e2e`.
+Rama de la auditoría: `docs/dependency-audit` desde `main` (solo documentación). **Estado del plan: aprobado (L4)**, empezando por `fix/cryptography-50`, encadenada sobre `docs/dependency-audit` (que debe integrarse antes). H4 y H5 siguen pendientes; nada se integra en `main` sin aprobación del usuario. Pruebas de cada tarea: `python -m unittest discover -s tests`, `ruff check .`, `npm run build`, `npm run e2e`.
 
 ## Specs
 
@@ -14,6 +14,14 @@ Fase de auditoría (autorizada):
 - **S5 — Límites.** «No actualices paquetes.» «No modifiques el código ni la configuración de CI.» «No introduzcas nuevas herramientas permanentes.» «No alteres el cifrado, el formato `.pwc` ni las reglas de consolidación.» «No recuperes la CLI eliminada.» «No utilices credenciales reales.»
 - **S6 — Entrega.** «Presenta primero un resumen ejecutivo de los hallazgos y sus prioridades.» «No dupliques información en `docs/pendiente.md`; utiliza referencias a los documentos específicos.» «Solicita una **revisión independiente del diagnóstico y del plan**, centrada en seguridad, exactitud de los hallazgos, proporcionalidad de las soluciones y posibles omisiones.» «No implementes ninguna corrección, no integres cambios en `main` y no modifiques dependencias hasta que apruebe el plan.»
 
+Fase `fix/cryptography-50` (aprobada en L4):
+
+- **S7 — Sin compatibilidad histórica.** «Actualmente no existen sesiones `.pwc` que debamos conservar generadas con esa versión.» «Elimina H3 del alcance de esta tarea como requisito de compatibilidad histórica.» «No crees fixtures históricas ni pruebas de migración entre versiones de `cryptography`.» «Mantén las pruebas normales de cifrado, descifrado, integridad, contraseñas incorrectas y manipulación de archivos.» «No cambies innecesariamente el formato `.pwc` ni los parámetros criptográficos.»
+- **S8 — H2 antes de actualizar.** «Las pruebas obligatorias de cifrado y API no deben saltarse silenciosamente cuando faltan dependencias o se producen errores de importación.» «Deben fallar explícitamente para evitar falsos positivos en CI.» «Añade las pruebas necesarias para verificar este comportamiento, sin introducir complejidad innecesaria.»
+- **S9 — Actualizar `cryptography`.** «Actualiza a `cryptography` 50.0.2, previa comprobación de que sigue siendo una versión adecuada y corregida.» «Ajusta el rango permitido para excluir versiones vulnerables.» «Comprueba compatibilidad con Python 3.12 y 3.14.» «Ejecuta las pruebas completas del backend y las E2E relevantes.»
+- **S10 — `pip-audit` en el `.venv`.** «Puedes instalar `pip-audit` directamente en el `.venv` existente.» «Ejecútalo sobre las dependencias efectivamente instaladas.» «Registra las versiones auditadas, los resultados y los posibles hallazgos pendientes.» «Distingue los problemas reales de los falsos positivos o vulnerabilidades que no afectan al uso actual.» «Valora si conviene incorporarlo a `requirements-dev.txt` en la tarea posterior de automatización, pero no amplíes ahora el alcance.»
+- **S11 — Revisión y CI.** «Solicita una revisión independiente centrada en seguridad, compatibilidad con las versiones de Python utilizadas, cobertura de pruebas y posibles regresiones.» «Comprueba que Ruff no introduce avisos nuevos y que la CI termina correctamente.» Límites: «No implementes todavía H4 ni H5.» «Puedes subir y actualizar la rama remota para ejecutar CI, pero **no la integres en `main` sin mi aprobación**.»
+
 ## Tasks
 
 Auditoría:
@@ -24,30 +32,22 @@ Auditoría:
 
 Propuesta de endurecimiento (**pendiente de aprobación**). Cada bloque es una funcionalidad con su propia rama desde `main`, para respetar «una funcionalidad por rama». H/R remiten a los hallazgos de la auditoría.
 
-**Correcciones urgentes: rama `fix/cryptography-50`** (P1 y P2 son la red de seguridad de P3; los tres en la misma rama, un commit cada uno).
+**Correcciones urgentes: rama `fix/cryptography-50`** (P2 es la red de seguridad de P3; en la misma rama, un commit cada uno).
 
-- [ ] P1 — Prueba de compatibilidad del formato `.pwc` (H3). Prioridad: urgente, previa a P3. Depende de: nada.
-  - Archivos: `tests/test_sessions.py` (o un `tests/test_session_format.py` nuevo).
-  - Aceptación:
-    - Una sesión ficticia cifrada con `cryptography` 46.0.7 y `argon2-cffi` 25.1.0 se descifra a un contenido esperado. Se guarda como constante en un archivo `.py`, porque `.gitignore` excluye `*.pwc` y `*.json`.
-    - `encrypt_session` usa `secrets.token_bytes`, así que el vector se genera una sola vez con sal y nonce fijos, llamando directamente a `hash_secret_raw` y `AESGCM` (o con un script desechable). **No se modifica `encrypt_session` para inyectarle aleatoriedad.**
-    - Una clave Argon2id derivada de sal y contraseña fijas coincide con su valor conocido.
-    - Al cambiar en `sessions.py` un parámetro de `_key`, el `AAD` o un campo del envoltorio, la prueba falla. Es una comprobación manual temporal, que se deshace sin llegar a ningún commit.
-  - Pruebas: la propia prueba más la suite completa. El commit no cambia `sessions.py`.
-  - Regresión: ninguna en producción; solo añade pruebas.
-  - Revisión independiente: no (sin código de producción).
-- [ ] P2 — Que las pruebas de cifrado y API no se salten en silencio (H2). Prioridad: urgente, previa a P3. Depende de: nada.
-  - Archivos: `tests/test_sessions.py`, `tests/test_session_limits.py`, `tests/test_api.py`.
-  - Aceptación: sin `try/except ImportError` ni `skipUnless` por dependencias obligatorias. Con `cryptography` bloqueada en un proceso aislado (`sys.modules['cryptography'] = None` antes de descubrir las pruebas), `unittest` termina en error, no en `OK (skipped=N)`. Suite: 138 pruebas, 0 saltadas.
-  - Pruebas: suite completa; la comprobación del bloqueo se ejecuta a mano y no se versiona.
-  - Regresión: quien ejecute las pruebas sin instalar `requirements-dev.txt` verá errores en lugar de saltos. Es el comportamiento buscado; documentarlo en el README si hace falta.
-  - Revisión independiente: no.
-- [ ] P3 — `cryptography>=50.0.2,<51` (H1). Prioridad: urgente. Depende de: P1 y P2.
-  - Archivos: `backend/requirements.txt`; si P4 ya existiera, también `backend/constraints.txt`.
-  - Aceptación: OSV (o `pip-audit`) sin avisos para `cryptography`. P1 en verde con 50.0.2: los `.pwc` de 46.0.7 se abren. Suite, `ruff check .` y E2E en verde en local (Python 3.14) y en CI (3.12). Sin cambios en `sessions.py`.
+- [x] ~~P1 — Prueba de compatibilidad del formato `.pwc` (H3).~~ **Retirada** por S7 (L4): no hay sesiones `.pwc` de 46.0.7 que conservar ni requisito de compatibilidad histórica. Se mantienen las pruebas de ida y vuelta, contraseña incorrecta, manipulación y límites existentes.
+- [ ] P2 — Que las pruebas de cifrado y API no se salten en silencio (H2). Prioridad: urgente, previa a P3. Depende de: nada. Ruta: inline.
+  - Archivos: `tests/test_sessions.py`, `tests/test_session_limits.py`, `tests/test_api.py` y una prueba nueva, `tests/test_required_dependencies.py`.
+  - Aceptación: sin `try/except ImportError` ni `skipUnless` por dependencias obligatorias. La prueba nueva carga cada módulo afectado en un subproceso con una dependencia obligatoria bloqueada (`sys.modules[...] = None`) y exige errores y cero saltos. RED antes del cambio, GREEN después. Suite sin pruebas saltadas.
+  - Pruebas: la prueba nueva y la suite completa.
+  - Regresión: quien ejecute las pruebas sin instalar `requirements-dev.txt` verá errores en lugar de saltos. Es el comportamiento buscado.
+  - Revisión independiente: con P3 (S11).
+- [ ] P3 — `cryptography>=50.0.2,<51` (H1). Prioridad: urgente. Depende de: P2. Ruta: inline.
+  - Archivos: `backend/requirements.txt`.
+  - Aceptación: 50.0.2 sigue siendo la última versión y OSV no tiene avisos para ella. `pip-audit` sin avisos para `cryptography`. Suite, `ruff check .` y E2E en verde en local (Python 3.14) y en CI (3.12). Sin cambios en `sessions.py` ni en el formato `.pwc`.
   - Pruebas: suite completa, E2E y CI.
   - Regresión: wheels con OpenSSL 4.0.x. Desde 49.0.0 no hay wheels de Windows de 32 bits ni de macOS x86_64: un Mac Intel tendría que compilar con Rust. Documentarlo si afecta a alguien.
   - Revisión independiente: **sí** (seguridad y dependencias: elementos 2 y 5 de alto riesgo).
+- [ ] P3b — `pip-audit` sobre el `.venv`, antes y después de P3 (S10). Ruta: inline. Sin cambios en `requirements*.txt`; los resultados se registran en el Log y en la auditoría.
 
 **Mantenimiento: rama `chore/reproducible-installs`.**
 
@@ -109,7 +109,7 @@ Propuesta de endurecimiento (**pendiente de aprobación**). Cada bloque es una f
 - [ ] P12 — Actualizaciones mayores del frontend (H10): `primevue` 5 con `@primeuix/themes` 3 primero (llevan más tiempo sin publicar y van en el bundle), después `pinia` 4, `vue-router` 5, `vite` 8 y `typescript` 7. **Fuera de este plan:** cada una es una funcionalidad con su propio documento ODD y sus pruebas E2E.
 - [ ] P13 — Bloqueo con hashes (uv con `--universal --generate-hashes`) si el modelo de amenazas crece con la bóveda persistente. Fuera de alcance por ahora.
 
-Orden recomendado: P7 (inmediata, sin código) → P1, P2 → P3 → P4, P5 → P8 → resto según la política de actualización. Previsión: P1-P3 unas 150 líneas, P4-P6 unas 80 más el archivo generado y P8 unas 60; cada rama por debajo de las ~400 líneas, con un PR por rama.
+Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 → resto según la política de actualización. Previsión: P2-P3 unas 100 líneas, P4-P6 unas 80 más el archivo generado y P8 unas 60; cada rama por debajo de las ~400 líneas, con un PR por rama.
 
 ## Log
 
@@ -222,3 +222,63 @@ Orden recomendado: P7 (inmediata, sin código) → P1, P2 → P3 → P4, P5 → 
     - P1: el vector se genera con sal y nonce fijos sin tocar `encrypt_session`; la comprobación manual incluye el `AAD`.
   - **Sin verificar:** el grafo de dependencias y los archivos de restricciones, las sumas de Playwright, `cryptography` 50.0.2 en 3.14 y 3.12, y el exploit UNC.
   - **Siguiente paso:** aprobación del plan por el usuario.
+- **L4 (2026-11-03):** aprobación y ajustes, literal:
+
+  > Apruebo el plan de auditoría de dependencias. Puedes comenzar por la rama `fix/cryptography-50`, siguiendo el flujo ODD y las revisiones independientes habituales.
+  >
+  > ### Aclaraciones y ajustes
+  >
+  > **1. No necesitamos compatibilidad histórica con cryptography 46.0.7**
+  >
+  > Actualmente no existen sesiones `.pwc` que debamos conservar generadas con esa versión. Ya habíamos decidido que, en esta fase del proyecto, no era necesario garantizar compatibilidad hacia atrás.
+  >
+  > Por tanto:
+  > - Elimina H3 del alcance de esta tarea como requisito de compatibilidad histórica.
+  > - No crees fixtures históricas ni pruebas de migración entre versiones de `cryptography`.
+  > - Mantén las pruebas normales de cifrado, descifrado, integridad, contraseñas incorrectas y manipulación de archivos.
+  > - No cambies innecesariamente el formato `.pwc` ni los parámetros criptográficos.
+  >
+  > **2. Corrige H2 antes de actualizar**
+  >
+  > Las pruebas obligatorias de cifrado y API no deben saltarse silenciosamente cuando faltan dependencias o se producen errores de importación.
+  >
+  > Deben fallar explícitamente para evitar falsos positivos en CI.
+  >
+  > Añade las pruebas necesarias para verificar este comportamiento, sin introducir complejidad innecesaria.
+  >
+  > **3. Actualiza cryptography**
+  >
+  > - Actualiza a `cryptography` 50.0.2, previa comprobación de que sigue siendo una versión adecuada y corregida.
+  > - Ajusta el rango permitido para excluir versiones vulnerables.
+  > - Comprueba compatibilidad con Python 3.12 y 3.14.
+  > - Ejecuta las pruebas completas del backend y las E2E relevantes.
+  >
+  > **4. Instala pip-audit en el entorno virtual del proyecto**
+  >
+  > Puedes instalar `pip-audit` directamente en el `.venv` existente. No es necesario crear un entorno temporal aislado.
+  >
+  > - Ejecútalo sobre las dependencias efectivamente instaladas.
+  > - Registra las versiones auditadas, los resultados y los posibles hallazgos pendientes.
+  > - Distingue los problemas reales de los falsos positivos o vulnerabilidades que no afectan al uso actual.
+  > - Valora si conviene incorporarlo a `requirements-dev.txt` en la tarea posterior de automatización, pero no amplíes ahora el alcance.
+  >
+  > **5. Revisión independiente**
+  >
+  > Solicita una revisión independiente centrada en seguridad, compatibilidad con las versiones de Python utilizadas, cobertura de pruebas y posibles regresiones.
+  >
+  > Comprueba que Ruff no introduce avisos nuevos y que la CI termina correctamente.
+  >
+  > ### Límites
+  >
+  > - Respeta el alcance de la tarea aprobada.
+  > - No implementes todavía H4 ni H5.
+  > - No introduzcas cambios en la arquitectura de la futura bóveda.
+  > - No recuperes la CLI eliminada.
+  > - Utiliza únicamente credenciales ficticias en las pruebas.
+  > - Registra los resultados y decisiones en la documentación ODD existente.
+  >
+  > Puedes subir y actualizar la rama remota para ejecutar CI, pero **no la integres en `main` sin mi aprobación**.
+  >
+  > Una vez completada y revisada, presenta los resultados y cualquier hallazgo relevante antes de integrar.
+
+  Cambios derivados: S7-S11 añadidos; P1 retirada; P2 incluye una prueba versionada; P3 depende solo de P2; P3b nueva. Rama `fix/cryptography-50` encadenada sobre `docs/dependency-audit`, porque el documento ODD solo existe ahí.
