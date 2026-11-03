@@ -55,26 +55,32 @@ class SessionFit:
 
     @property
     def problem(self) -> str | None:
-        if self.records > limits.MAX_SESSION_RECORDS:
+        """The first limit exceeded, in a fixed order: records, files, characters, size."""
+        return self._first_problem(None)
+
+    def worsened(self, before: SessionFit) -> str | None:
+        """The first measure that grows past its limit and past where *before* already was."""
+        return self._first_problem(before)
+
+    def _first_problem(self, before: SessionFit | None) -> str | None:
+        def grows(new: int, old: int, limit: int) -> bool:
+            return new > (limit if before is None else max(old, limit))
+
+        base = before or self
+        if grows(self.records, base.records, limits.MAX_SESSION_RECORDS):
             return (f'Una sesión cifrada admite como máximo {limits.MAX_SESSION_RECORDS} credenciales '
                     f'y el resultado tendría {self.records}.')
-        if self.files > limits.MAX_WORKSPACE_FILES:
+        if grows(self.files, base.files, limits.MAX_WORKSPACE_FILES):
             return (f'Una sesión cifrada admite como máximo {limits.MAX_WORKSPACE_FILES} archivos '
                     f'y el resultado tendría {self.files}.')
-        if self.oversized_fields:
-            return self.oversized_fields[0]
-        if self.file_bytes > limits.MAX_SESSION_BYTES:
+        if grows(self.excess_chars, base.excess_chars, 0):
+            # Prefer a field that was not already oversized: that is the one the change touched.
+            new = [message for message in self.oversized_fields if message not in base.oversized_fields]
+            return (new if before is not None and new else self.oversized_fields)[0]
+        if grows(self.file_bytes, base.file_bytes, limits.MAX_SESSION_BYTES):
             return (f'El resultado no cabe en una sesión cifrada: ocuparía {describe_size(self.file_bytes)} '
                     f'y el máximo es {describe_size(limits.MAX_SESSION_BYTES)}.')
         return None
-
-    def no_worse_than(self, other: SessionFit) -> bool:
-        """Each measure stays within its limit, or does not grow past where *other* already was."""
-        measures = ((self.records, other.records, limits.MAX_SESSION_RECORDS),
-                    (self.files, other.files, limits.MAX_WORKSPACE_FILES),
-                    (self.excess_chars, other.excess_chars, 0),
-                    (self.file_bytes, other.file_bytes, limits.MAX_SESSION_BYTES))
-        return all(new <= max(old, limit) for new, old, limit in measures)
 
 
 def session_fit(records: list[Candidate], files: list[dict[str, Any]]) -> SessionFit:

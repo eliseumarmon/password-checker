@@ -123,6 +123,27 @@ class APITests(unittest.TestCase):
         self.assertEqual(response.status_code, 422)
         self.assertEqual(workspace.snapshot()['stats']['total'], 1)
 
+    def test_import_over_a_session_limit_is_a_422_that_changes_nothing(self):
+        before = self.import_exact_copies()
+        rows = b'name,url,username,password,note\nA,https://a.invalid/,alice,fictional-secret-321,\n'
+        rows += b'B,https://b.invalid/,bob,fictional-secret-654,\n'
+        with patch.object(limits, 'MAX_SESSION_RECORDS', 1):
+            response = self.client.post('/api/import', files=[('files', ('chrome.csv', rows, 'text/csv'))])
+        self.assertEqual(response.status_code, 422, response.text)
+        self.assertIn('como máximo 1 credenciales', response.json()['detail'])
+        self.assertNotIn('fictional-secret', response.text)
+        self.assertEqual(self.client.get('/api/workspace').json(), without_warnings(before))
+
+    def test_edit_over_a_session_limit_is_a_422_that_changes_nothing(self):
+        before = self.import_exact_copies()
+        secret = 'fictional-secret-note-' + 'x' * 30
+        with patch.object(limits, 'MAX_SNAPSHOT_TEXT_CHARS', 30):
+            response = self.client.patch(f"/api/records/{before['records'][0]['id']}", json={'note': secret})
+        self.assertEqual(response.status_code, 422, response.text)
+        self.assertIn('«notas»', response.json()['detail'])
+        self.assertNotIn(secret, response.text)
+        self.assertEqual(self.client.get('/api/workspace').json(), without_warnings(before))
+
     def test_csv_with_bad_quoting_is_a_422_that_changes_nothing(self):
         good = b'name,url,username,password,note\nA,https://a.invalid/,alice,fictional-123456,\n'
         imported = self.client.post('/api/import', files=[('files', ('chrome.csv', good, 'text/csv'))])
