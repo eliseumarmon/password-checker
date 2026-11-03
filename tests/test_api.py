@@ -253,6 +253,24 @@ class APITests(unittest.TestCase):
         self.assertEqual({row['login_username']: row['login_totp'] for row in rows},
                          {'alice': 'otpauth://totp/fictional-a', 'bob': 'otpauth://totp/fictional-b-edited', 'carol': ''})
 
+    def test_two_different_totps_survive_merging_and_reach_the_export(self):
+        payload = (b'Title,URL,Username,Password,Notes,OTPAuth\n'
+                   b'A,https://a.invalid/,alice,fictional-1,,otpauth://totp/fictional-a1\n'
+                   b'A,https://a.invalid/,alice,fictional-1,,otpauth://totp/fictional-a2\n'
+                   b'A,https://a.invalid/,alice,fictional-1,,\n'
+                   b'B,https://b.invalid/,bob,fictional-2,,\n'
+                   b'B,https://b.invalid/,bob,fictional-2,,otpauth://totp/fictional-b\n')
+        imported = self.client.post('/api/import', files=[('files', ('Passwords.csv', payload, 'text/csv'))])
+        self.assertEqual(imported.status_code, 200, imported.text)
+        merged = self.client.post('/api/merge-exact')
+        self.assertEqual(merged.status_code, 200, merged.text)
+        # Only bob's copies merge: alice's group holds two different TOTPs.
+        self.assertEqual(merged.json()['stats']['excluded'], 1)
+        rows = list(csv.DictReader(io.StringIO(self.client.get('/api/export').content.decode('utf-8-sig'))))
+        self.assertEqual(sorted((row['login_username'], row['login_totp']) for row in rows), [
+            ('alice', ''), ('alice', 'otpauth://totp/fictional-a1'), ('alice', 'otpauth://totp/fictional-a2'),
+            ('bob', 'otpauth://totp/fictional-b')])
+
     def test_unknown_origin_survives_encrypted_session_round_trip(self):
         payload = b'url,username,password\nhttps://example.invalid/,alice,fictional-secret-123\n'
         imported = self.client.post('/api/import', files=[('files', ('export.csv', payload, 'text/csv'))])

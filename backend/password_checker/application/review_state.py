@@ -8,7 +8,7 @@ from ..domain.accounts import duplicate_key
 from ..domain.reuse import reused_password_groups
 from ..domain.strength import is_weak
 from ..domain.urls import parse_url
-from .candidate import Candidate, identity
+from .candidate import Candidate, identity, merged_totp
 
 
 def kind_of(url: str) -> str:
@@ -60,7 +60,7 @@ def detect_groups(rows: list[Candidate]) -> list[dict[str, Any]]:
         conflict = any(len(passwords) > 1 for passwords in by_user.values())
         # Exact only when merge_exact would merge the whole group.
         keys = {duplicate_key(identity(r)) for r in members}
-        exact = len(keys) == 1 and None not in keys
+        exact = len(keys) == 1 and None not in keys and merged_totp(members) is not None
         category = 'conflict' if conflict else ('exact' if exact else 'multiple-accounts')
         result.append({
             'id': base.id, 'kind': category, 'name': base.name,
