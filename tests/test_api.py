@@ -1,4 +1,6 @@
 """HTTP contract tests with synthetic data; no production secrets."""
+import csv
+import io
 import sys
 import unittest
 from pathlib import Path
@@ -236,6 +238,20 @@ class APITests(unittest.TestCase):
         self.assertEqual(refused.status_code, 422)
         self.assertIn('versión anterior', refused.json()['detail'])
         self.assertEqual(workspace.snapshot(), before)
+
+    def test_export_writes_the_current_totp_of_each_record(self):
+        payload = (b'Title,URL,Username,Password,Notes,OTPAuth\n'
+                   b'A,https://a.invalid/,alice,fictional-1,,otpauth://totp/fictional-a\n'
+                   b'B,https://b.invalid/,bob,fictional-2,,otpauth://totp/fictional-b\n'
+                   b'C,https://c.invalid/,carol,fictional-3,,\n')
+        imported = self.client.post('/api/import', files=[('files', ('Passwords.csv', payload, 'text/csv'))]).json()
+        ids = {record['username']: record['id'] for record in imported['records']}
+        workspace.change(ids['bob'], {'totp': 'otpauth://totp/fictional-b-edited'})
+        exported = self.client.get('/api/export')
+        self.assertEqual(exported.status_code, 200, exported.text)
+        rows = csv.DictReader(io.StringIO(exported.content.decode('utf-8-sig')))
+        self.assertEqual({row['login_username']: row['login_totp'] for row in rows},
+                         {'alice': 'otpauth://totp/fictional-a', 'bob': 'otpauth://totp/fictional-b-edited', 'carol': ''})
 
     def test_unknown_origin_survives_encrypted_session_round_trip(self):
         payload = b'url,username,password\nhttps://example.invalid/,alice,fictional-secret-123\n'
