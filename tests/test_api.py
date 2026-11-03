@@ -271,6 +271,47 @@ class APITests(unittest.TestCase):
             ('alice', ''), ('alice', 'otpauth://totp/fictional-a1'), ('alice', 'otpauth://totp/fictional-a2'),
             ('bob', 'otpauth://totp/fictional-b')])
 
+    def test_totp_travels_only_in_the_record_detail(self):
+        secret = 'otpauth://totp/FICTIONAL-T6-SECRET'
+        payload = (b'Title,URL,Username,Password,Notes,OTPAuth\n'
+                   b'A,https://a.invalid/,alice,fictional-1,,' + secret.encode() + b'\n'
+                   b'A,https://a.invalid/,alice,fictional-1,,\n'
+                   b'B,https://b.invalid/,bob,fictional-1,,\n')
+        imported = self.client.post('/api/import', files=[('files', ('Passwords.csv', payload, 'text/csv'))])
+        state = imported.json()
+        self.assertEqual(state['groups'][0]['kind'], 'exact')
+        self.assertTrue(state['audit']['reused'])
+        ids = [record['id'] for record in state['records']]
+        responses = [imported, self.client.get('/api/workspace'),
+                     self.client.post('/api/merge-exact'), self.client.post('/api/undo'),
+                     self.client.post('/api/records/trash', json={'ids': ids[:1]}),
+                     self.client.patch('/api/records/' + ids[0], json={'included': True}),
+                     self.client.patch('/api/records/' + ids[1], json={'totp': secret + '-EDITED'})]
+        for response in responses:
+            with self.subTest(url=str(response.request.url)):
+                self.assertEqual(response.status_code, 200, response.text)
+                self.assertNotIn('FICTIONAL-T6-SECRET', response.text)
+                self.assertNotIn('totp', response.text)
+        details = {i: self.client.get('/api/records/' + i).json() for i in ids}
+        self.assertEqual([details[i]['totp'] for i in ids], [secret, secret + '-EDITED', ''])
+        # The editor gets the current secret only; the immutable original stays out, like the password.
+        self.assertNotIn('totp', details[ids[0]]['original'])
+
+    def test_validation_errors_never_echo_the_submitted_values(self):
+        payload = b'name,url,username,password,note\nA,https://a.invalid,u,fake-1,\n'
+        identifier = self.client.post('/api/import', files=[('files', ('chrome.csv', payload, 'text/csv'))]).json()['records'][0]['id']
+        before = self.client.get('/api/records/' + identifier).json()
+        for body in ({'totp': 'otpauth://totp/FICTIONAL-T6-' + 'x' * 5000},
+                     {'password': 'FICTIONAL-T6-' + 'x' * 9000},
+                     {'totp': ['FICTIONAL-T6-list']},
+                     {'note': 'FICTIONAL-T6-note', 'unknown': 'FICTIONAL-T6-extra'}):
+            with self.subTest(fields=sorted(body)):
+                response = self.client.patch('/api/records/' + identifier, json=body)
+                self.assertEqual(response.status_code, 422)
+                self.assertNotIn('FICTIONAL-T6', response.text)
+                self.assertTrue(all(set(error) == {'type', 'loc', 'msg'} for error in response.json()['detail']))
+        self.assertEqual(self.client.get('/api/records/' + identifier).json(), before)
+
     def test_unknown_origin_survives_encrypted_session_round_trip(self):
         payload = b'url,username,password\nhttps://example.invalid/,alice,fictional-secret-123\n'
         imported = self.client.post('/api/import', files=[('files', ('export.csv', payload, 'text/csv'))])
