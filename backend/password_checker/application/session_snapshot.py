@@ -30,9 +30,9 @@ def describe_size(size: int) -> str:
     return f'{size / scale:.1f} {unit}'.replace('.', ',')
 
 
-def _oversized_fields(records: Iterable[Candidate]) -> Iterator[tuple[str, int]]:
-    """Each field over the text limit: a message naming it and its source line, never its value,
-    and how many characters it has too many."""
+def _oversized_fields(records: Iterable[Candidate]) -> Iterator[tuple[tuple[str, str], str, int]]:
+    """Each field over the text limit: which one it is (record id and field), a message naming it
+    and its source line, never its value, and how many characters it has too many."""
     for row in records:
         for key, label in FIELD_LABELS.items():
             for value, suffix in ((getattr(row, key), ''), (getattr(row.original, key), ' original')):
@@ -40,7 +40,7 @@ def _oversized_fields(records: Iterable[Candidate]) -> Iterator[tuple[str, int]]
                     message = (f'El campo «{label}{suffix}» de la credencial de {row.original.source}, '
                                f'línea {row.original.line}, supera los {limits.MAX_SNAPSHOT_TEXT_CHARS} '
                                'caracteres que admite una sesión cifrada.')
-                    yield message, len(value) - limits.MAX_SNAPSHOT_TEXT_CHARS
+                    yield (row.id, key + suffix), message, len(value) - limits.MAX_SNAPSHOT_TEXT_CHARS
 
 
 @dataclass(frozen=True)
@@ -49,38 +49,45 @@ class SessionFit:
 
     records: int
     files: int
-    oversized_fields: tuple[str, ...]
+    oversized_fields: tuple[tuple[tuple[str, str], str, int], ...]
     excess_chars: int
     file_bytes: int
 
     @property
     def problem(self) -> str | None:
-        if self.records > limits.MAX_SESSION_RECORDS:
+        """The first limit exceeded, in a fixed order: records, files, characters, size."""
+        return self._first_problem(None)
+
+    def worsened(self, before: SessionFit) -> str | None:
+        """The first measure that grows past its limit and past where *before* already was."""
+        return self._first_problem(before)
+
+    def _first_problem(self, before: SessionFit | None) -> str | None:
+        def grows(new: int, old: int, limit: int) -> bool:
+            return new > (limit if before is None else max(old, limit))
+
+        base = before or self
+        if grows(self.records, base.records, limits.MAX_SESSION_RECORDS):
             return (f'Una sesión cifrada admite como máximo {limits.MAX_SESSION_RECORDS} credenciales '
                     f'y el resultado tendría {self.records}.')
-        if self.files > limits.MAX_WORKSPACE_FILES:
+        if grows(self.files, base.files, limits.MAX_WORKSPACE_FILES):
             return (f'Una sesión cifrada admite como máximo {limits.MAX_WORKSPACE_FILES} archivos '
                     f'y el resultado tendría {self.files}.')
-        if self.oversized_fields:
-            return self.oversized_fields[0]
-        if self.file_bytes > limits.MAX_SESSION_BYTES:
+        if grows(self.excess_chars, base.excess_chars, 0):
+            # The first field whose excess grew is one the change touched; the total grew, so one did.
+            excess_before = {field: excess for field, _, excess in before.oversized_fields} if before is not None else {}
+            return next(message for field, message, excess in self.oversized_fields
+                        if excess > excess_before.get(field, 0))
+        if grows(self.file_bytes, base.file_bytes, limits.MAX_SESSION_BYTES):
             return (f'El resultado no cabe en una sesión cifrada: ocuparía {describe_size(self.file_bytes)} '
                     f'y el máximo es {describe_size(limits.MAX_SESSION_BYTES)}.')
         return None
 
-    def no_worse_than(self, other: SessionFit) -> bool:
-        """Each measure stays within its limit, or does not grow past where *other* already was."""
-        measures = ((self.records, other.records, limits.MAX_SESSION_RECORDS),
-                    (self.files, other.files, limits.MAX_WORKSPACE_FILES),
-                    (self.excess_chars, other.excess_chars, 0),
-                    (self.file_bytes, other.file_bytes, limits.MAX_SESSION_BYTES))
-        return all(new <= max(old, limit) for new, old, limit in measures)
-
 
 def session_fit(records: list[Candidate], files: list[dict[str, Any]]) -> SessionFit:
     oversized = list(_oversized_fields(records))
-    return SessionFit(len(records), len(files), tuple(message for message, _ in oversized),
-                      sum(excess for _, excess in oversized),
+    return SessionFit(len(records), len(files), tuple(oversized),
+                      sum(excess for _, _, excess in oversized),
                       limits.session_file_size(len(encode_payload(to_payload(records, files)))))
 
 

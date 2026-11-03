@@ -58,14 +58,14 @@ class Workspace:
         """Refuse a new state that could not be saved to a session file and opened again.
 
         Once over a limit, a change that does not make the excess worse is still accepted,
-        so the user can fix it.
+        so the user can fix it; a rejected one names the measure it made worse.
         """
         fit = session_fit(list(records.values()), files)
-        if fit.problem is None:
-            return
-        if allow_reduction and fit.no_worse_than(session_fit(list(self._records.values()), self._files)):
-            return
-        raise ValueError(fit.problem)
+        problem = fit.problem
+        if problem is not None and allow_reduction:
+            problem = fit.worsened(session_fit(list(self._records.values()), self._files))
+        if problem is not None:
+            raise ValueError(problem)
 
     def import_files(self, files: list[ImportedFile]) -> dict[str, Any]:
         """Replace the workspace with already parsed files."""

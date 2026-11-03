@@ -145,6 +145,31 @@ class WorkspaceSessionLimitTests(unittest.TestCase):
             self.assert_rejected_without_trace(
                 lambda: self.workspace.change(record_id, {'note': 'n' * 30, 'name': 'm' * 45}), '«nombre»')
 
+    def test_rejection_names_the_limit_that_grew_not_one_already_exceeded(self):
+        record_id = self.over_text_limit()
+        other_id = self.before['records'][1]['id']
+        limit = limits.session_file_size(self.plaintext_size() + 10)
+        with patch.object(limits, 'MAX_SNAPSHOT_TEXT_CHARS', 30), patch.object(limits, 'MAX_SESSION_BYTES', limit):
+            self.assert_rejected_without_trace(
+                lambda: self.workspace.change(other_id, {'name': 'm' * 25}), 'no cabe en una sesión cifrada')
+        self.assertEqual(self.workspace.get(record_id)['note'], 'n' * 40)
+
+    def test_rejection_names_the_field_that_grew_not_one_already_oversized(self):
+        self.over_text_limit()
+        other_id = self.before['records'][1]['id']
+        with patch.object(limits, 'MAX_SNAPSHOT_TEXT_CHARS', 30):
+            self.assert_rejected_without_trace(
+                lambda: self.workspace.change(other_id, {'note': 'u' * 40}), '«notas».*línea 3,')
+
+    def test_rejection_names_the_already_oversized_field_that_grew(self):
+        self.over_text_limit()
+        other_id = self.before['records'][1]['id']
+        self.workspace.change(other_id, {'note': 'u' * 40})
+        with patch.object(limits, 'MAX_SNAPSHOT_TEXT_CHARS', 30):
+            # Both notes are 10 characters over; only the second one grows.
+            self.assert_rejected_without_trace(
+                lambda: self.workspace.change(other_id, {'note': 'u' * 45}), '«notas».*línea 3,')
+
     def test_changes_that_reduce_the_character_excess_are_accepted(self):
         record_id = self.over_text_limit()
         with patch.object(limits, 'MAX_SNAPSHOT_TEXT_CHARS', 30):
