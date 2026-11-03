@@ -18,7 +18,7 @@ Fase `fix/cryptography-50` (aprobada en L4):
 
 - **S7 — Sin compatibilidad histórica.** «Actualmente no existen sesiones `.pwc` que debamos conservar generadas con esa versión.» «Elimina H3 del alcance de esta tarea como requisito de compatibilidad histórica.» «No crees fixtures históricas ni pruebas de migración entre versiones de `cryptography`.» «Mantén las pruebas normales de cifrado, descifrado, integridad, contraseñas incorrectas y manipulación de archivos.» «No cambies innecesariamente el formato `.pwc` ni los parámetros criptográficos.»
 - **S8 — H2 antes de actualizar.** «Las pruebas obligatorias de cifrado y API no deben saltarse silenciosamente cuando faltan dependencias o se producen errores de importación.» «Deben fallar explícitamente para evitar falsos positivos en CI.» «Añade las pruebas necesarias para verificar este comportamiento, sin introducir complejidad innecesaria.»
-- **S9 — Actualizar `cryptography`.** «Actualiza a `cryptography` 50.0.2, previa comprobación de que sigue siendo una versión adecuada y corregida.» «Ajusta el rango permitido para excluir versiones vulnerables.» «Comprueba compatibilidad con Python 3.12 y 3.14.» «Ejecuta las pruebas completas del backend y las E2E relevantes.»
+- **S9 — Actualizar `cryptography`.** «Actualiza a `cryptography` 50.0.2, previa comprobación de que sigue siendo una versión adecuada y corregida.» «Ajusta el rango permitido para excluir versiones vulnerables.» Rango final (L8): «Quita el techo `<51` y deja `cryptography>=50.0.2`.» «Comprueba compatibilidad con Python 3.12 y 3.14.» «Ejecuta las pruebas completas del backend y las E2E relevantes.»
 - **S10 — `pip-audit` en el `.venv`.** «Puedes instalar `pip-audit` directamente en el `.venv` existente.» «Ejecútalo sobre las dependencias efectivamente instaladas.» «Registra las versiones auditadas, los resultados y los posibles hallazgos pendientes.» «Distingue los problemas reales de los falsos positivos o vulnerabilidades que no afectan al uso actual.» «Valora si conviene incorporarlo a `requirements-dev.txt` en la tarea posterior de automatización, pero no amplíes ahora el alcance.»
 - **S11 — Revisión y CI.** «Solicita una revisión independiente centrada en seguridad, compatibilidad con las versiones de Python utilizadas, cobertura de pruebas y posibles regresiones.» «Comprueba que Ruff no introduce avisos nuevos y que la CI termina correctamente.» Límites: «No implementes todavía H4 ni H5.» «Puedes subir y actualizar la rama remota para ejecutar CI, pero **no la integres en `main` sin mi aprobación**.»
 
@@ -41,7 +41,7 @@ Plan de endurecimiento (**aprobado en L4**; cada rama se integra solo con la apr
   - Pruebas: la prueba nueva y la suite completa.
   - Regresión: quien ejecute las pruebas sin instalar `requirements-dev.txt` verá errores en lugar de saltos. Es el comportamiento buscado.
   - Revisión independiente: con P3 (S11).
-- [x] P3 — `cryptography>=50.0.2,<51` (H1). Commit `1e3775d` (L5); CI con Python 3.12 en L6. Prioridad: urgente. Depende de: P2. Ruta: inline.
+- [x] P3 — `cryptography>=50.0.2`, sin techo (H1). Commits `1e3775d` (L5) y el de «drop the cryptography upper bound» (L8); CI con Python 3.12 en L6 y L8. Prioridad: urgente. Depende de: P2. Ruta: inline.
   - Archivos: `backend/requirements.txt`.
   - Aceptación: 50.0.2 sigue siendo la última versión y OSV no tiene avisos para ella. `pip-audit` sin avisos para `cryptography`. Suite, `ruff check .` y E2E en verde en local (Python 3.14) y en CI (3.12). Sin cambios en `sessions.py` ni en el formato `.pwc`.
   - Pruebas: suite completa, E2E y CI.
@@ -318,3 +318,25 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
     - **`R3-error-attribution-substring`:** buscar el nombre del paquete en todo el traceback era una comprobación débil. Ahora la excepción final de cada error debe ser del tipo esperado y nombrar el paquete como palabra completa: `ModuleNotFoundError` con `cryptography`, `argon2` o `fastapi`; `RuntimeError` con `httpx2` en el caso de `httpx`. Al aplicarlo se vio que el mensaje real depende del `import` (`No module named 'cryptography.exceptions'; 'cryptography' is not a package`) y que el de Starlette ocupa varias líneas, así que se toma la última línea con forma `<Tipo>Error: `. Con `argon2` bloqueado, la excepción final no nombra `cryptography`.
     - **`R3-plan-status-inconsistent`:** `docs/pendiente.md`, el inicio de la auditoría y el bloque de tareas decían «pendiente de aprobación» o «no está aprobado»; ahora reflejan la aprobación de L4.
   - **Verificación:** suite 139 OK y Ruff sin avisos.
+- **L8 (2026-11-03):** decisión sobre el techo e integración, literal:
+
+  > Quita el techo `<51` y deja `cryptography>=50.0.2`.
+  >
+  > La política de versiones de `cryptography` incrementa el número mayor frecuentemente sin implicar necesariamente incompatibilidades. No queremos volver a bloquear futuras correcciones de seguridad por un límite arbitrario.
+  >
+  > La reproducibilidad se abordará en H4 mediante `constraints.txt`, y la detección de vulnerabilidades en H5.
+  >
+  > Tras el cambio:
+  > - Ejecuta las pruebas correspondientes.
+  > - Comprueba que Ruff y CI siguen en verde.
+  > - Registra la decisión en el plan existente.
+  > - Solicita revisión independiente si corresponde.
+  >
+  > Después, integra primero `docs/dependency-audit` en `main` y verifica la integración. A continuación, integra `fix/cryptography-50`, comprobando que contiene únicamente los cambios aprobados y que la CI de `main` queda en verde.
+  >
+  > No empieces H4 todavía.
+
+  - **Evidencia de la premisa:** 47.0.0, 48.0.0, 49.0.0 y 50.0.0 se publicaron entre el 2026-04-24 y el 2026-07-31. Sus rupturas (OpenSSL 1.1, Python 3.8, wheels de 32 bits y de macOS x86_64, curvas binarias, X.509 y DH) no afectan a `AESGCM`, `InvalidTag` ni Argon2id.
+  - **Cambio:** `backend/requirements.txt` pasa a `cryptography>=50.0.2`. La auditoría (H1) registra la corrección aplicada.
+  - **Riesgo aceptado:** una versión 51 o posterior podría romper la API usada. Hasta H4, cada instalación nueva tomará la última versión publicada. La CI (unitarias de `.pwc` y E2E) es la red frente a esa rotura, y P2 garantiza que un fallo de importación no se convierta en un salto.
+  - **Local:** `pip check` sin problemas, suite 139 OK y Ruff sin avisos.
