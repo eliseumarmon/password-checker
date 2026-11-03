@@ -505,3 +505,7 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
     | Marcador de un paquete no instalado (`tomli`, Python < 3.11) | Pasa (25 pins) |
 
     Ruff no da avisos sobre el script extraído.
+- **L16 (2026-11-03):** CI tras L15.
+  - **CI:** run `41656482013` sobre `1fca6b0`, en verde en `python`, `frontend` y `e2e`.
+  - **Job `python`, en este orden:** unitarias (139), Ruff y comprobación de restricciones («24 pins»), los tres correctos. E2E: 88.
+  - **H4 terminada:** pendiente de la aprobación del usuario para integrarla en `main`.
