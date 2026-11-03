@@ -16,6 +16,10 @@ jobs:
         run: python -m pip install -r backend/requirements-dev.txt
       - name: Unit tests with fictional credentials
         run: python -m unittest discover -s tests -v
+      # Same ruff.toml and pinned version as local development; runs even if the tests failed.
+      - name: Lint with Ruff
+        if: ${{ !cancelled() }}
+        run: ruff check . --output-format=github
   frontend:
     runs-on: ubuntu-latest
     steps:
