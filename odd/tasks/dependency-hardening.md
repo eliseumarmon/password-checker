@@ -303,3 +303,12 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
     - Para P8 basta con instalar `pip-audit==2.10.1` solo en el job de auditoría y auditar `constraints.txt` con `--no-deps --disable-pip`.
     - Sigue instalado en el `.venv` local, sin declararse en ningún requisito.
   - **Riesgo detectado sobre la aprobación:** el techo `<51` reproduce el problema estructural de H1. `cryptography` no publica correcciones para versiones mayores anteriores y en 2026 ha sacado una mayor al mes (47.0.0 el 2026-04-24 y 50.0.0 el 2026-07-31). Se mantiene el rango aprobado; la detección (P7 y P8) debe avisar cuando una corrección solo exista en la 51 o posterior. Decisión para el usuario: quitar el techo o mantenerlo.
+- **L6 (2026-11-03):** CI y revisión.
+  - **CI:** run `41646649195` sobre `155dcce`. Los jobs `python`, `frontend` y `e2e` terminan en verde con Python 3.12.15 y `cryptography` 50.0.2 instalada en `python` y en `e2e`. Unitarias: 139 OK, sin saltos. El paso «Lint with Ruff» pasa. E2E: 88 superadas.
+  - **Compatibilidad:** Python 3.12 verificado en CI y 3.14 en local (L5).
+  - **Evaluación de riesgo:** la nativa daba `medium` (`under_budget`) y se escaló a `high` con el elemento 5 (actualización mayor de la dependencia que cifra los `.pwc`).
+  - **Revisión nativa:** lentes de riesgo y fiabilidad sobre `67a4fbf..155dcce`, con consentimiento del usuario («Review this change»). Aprobada y reconocida (`review-cbba2b329493fdea`, `authority: burned`).
+    - **Riesgo:** sin hallazgos. Confirma que el techo `<51` es un riesgo de mantenimiento ya registrado y no una vulnerabilidad alcanzable, que el probe no tiene superficie de inyección y que las credenciales son ficticias.
+    - **Fiabilidad:** una sugerencia no bloqueante (`R3-error-attribution`): la prueba no comprueba que el error se deba al paquete bloqueado.
+  - **Aplicada:** el probe devuelve el texto de cada error y la prueba exige que todos mencionen el paquete bloqueado. Comprobado a mano que discrimina: con `argon2` bloqueado, el error menciona `argon2` y no `cryptography`. Suite 139 OK y Ruff sin avisos.
+  - **Pendiente:** integrar en `main` (cuando el usuario lo apruebe, después de `docs/dependency-audit`), decidir sobre el techo `<51`, y reiniciar cualquier proceso de la aplicación abierto durante la actualización.
