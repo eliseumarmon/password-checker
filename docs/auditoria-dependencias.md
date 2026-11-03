@@ -6,7 +6,7 @@ Diagnóstico de las dependencias del backend (Python/FastAPI) y del frontend (Vu
 - **Entornos examinados:** `.venv` local (Python 3.14.7 de 64 bits, pip 26.2.2), `frontend/node_modules` local (Node 24.21.0, npm 11.3.0) y el registro del último run de CI en `main` (`41639170151`: Python 3.12.15, Node 22, `ubuntu-24.04`).
 - **Herramientas:** `npm audit`, `npm audit signatures`, `npm outdated`, `npm ls`, `pip list --outdated`, `pip check` y `pip show` (todas ya instaladas), la API pública de [OSV](https://osv.dev), la API JSON de PyPI y `gh api`. Los comandos están en [Evidencias reproducibles](#evidencias-reproducibles).
 - **`pip-audit`:** no se ejecutó durante la auditoría, porque no estaba instalado. En su lugar se consultó OSV con las versiones exactas instaladas. Tras aprobarse el plan se instaló `pip-audit` 2.10.1 en el `.venv` y confirmó los mismos resultados (L5 de [dependency-hardening](../odd/tasks/dependency-hardening.md)).
-- **Estado posterior:** H1 y H2 se corrigen en la rama `fix/cryptography-50`; H3 quedó fuera de alcance por decisión del usuario, porque no hay sesiones `.pwc` antiguas que conservar.
+- **Estado posterior:** H4 (solo la parte de Python; la alineación de versiones de Python y Node quedó como P11 opcional), R1, H7 y H8 se resuelven en la rama `chore/reproducible-installs`. H1 y H2 se corrigieron en la rama `fix/cryptography-50`; H3 quedó fuera de alcance por decisión del usuario, porque no hay sesiones `.pwc` antiguas que conservar.
 
 ## Exposición real de Password Checker
 
@@ -53,7 +53,7 @@ Sin vulnerabilidades conocidas en el frontend: `npm audit` da 0 en producción y
 | | `httpx` | `>=0.27,<1` | 0.28.1 |
 | | `ruff` | `==0.17.3` | 0.17.3 |
 
-- **Transitivas de producción (15):** annotated-doc 0.0.5, annotated-types 0.8.0, anyio 4.16.0, argon2-cffi-bindings 26.1.0, cffi 2.1.1, click 8.5.0, h11 0.16.0, idna 3.20, opentelemetry-api 1.45.2, pycparser 3.12, pydantic 2.14.2, pydantic-core 2.50.2, starlette 1.10.0, typing-extensions 4.16.0, typing-inspection 0.4.4. En Windows se añade colorama 0.4.6 (por click).
+- **Transitivas de producción (15):** annotated-doc 0.0.5, annotated-types 0.8.0, anyio 4.16.0, argon2-cffi-bindings 26.1.0, cffi 2.1.1, click 8.5.0, h11 0.16.0, idna 3.20, opentelemetry-api 1.45.2, pycparser 3.12, pydantic 2.14.2, pydantic-core 2.50.2, starlette 1.10.0, typing-extensions 4.16.0, typing-inspection 0.4.4. En Windows, el entorno de desarrollo añadía colorama 0.4.6, que pedía `pytest` (no `click`, como se dijo inicialmente; corregido en L12 del plan).
 - **Transitivas de desarrollo (6):** certifi, httpcore, iniconfig, packaging, pluggy y Pygments (por pytest y httpx), además de las de producción. En total, 29 paquetes en la CI (20 de producción).
 - **No hay archivo de bloqueo.** El registro de la CI muestra exactamente las mismas versiones que el entorno local, pero solo porque ambos se instalaron hace poco: nada lo garantiza ([H4](#h4--instalaciones-python-no-reproducibles)).
 - `pip check`: sin requisitos rotos.

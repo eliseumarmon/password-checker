@@ -51,11 +51,11 @@ Plan de endurecimiento (**aprobado en L4**; cada rama se integra solo con la apr
 
 **Mantenimiento: rama `chore/reproducible-installs`.**
 
-- [ ] P4 — Restricciones de Python con todas las versiones fijadas y límites inferiores seguros (H4, R1). Prioridad: alta. Depende de: P3 (para no fijar una `cryptography` vulnerable).
+- [x] P4 — Restricciones de Python con todas las versiones fijadas y límites inferiores seguros (H4, R1). Commits `40a1c7c` y `ebb11e4` (CI), L12. Prioridad: alta. Depende de: P3 (para no fijar una `cryptography` vulnerable).
   - Archivos: `backend/constraints.txt` (nuevo), `backend/requirements.txt`, `backend/requirements-dev.txt`, `.github/workflows/tests.yml` (jobs `python` y `e2e`: `-c backend/constraints.txt`) y `README.md` (instalación, pruebas y cómo regenerar).
   - Aceptación:
     - `constraints.txt` fija con `==` todas las dependencias de `requirements-dev.txt` y sus transitivas. **Corregido en L11:** la versión inicial son exactamente las que instaló la CI de `main` (run `41650001412`, Linux con Python 3.12), sin `pytest` y sus dependencias, para no actualizar nada en esta rama. Para regenerarlo se usa `pip freeze` en un entorno limpio.
-    - colorama solo se instala en Windows (la pide `click`, con `platform_system == "Windows"`). Va en `constraints.txt` con ese marcador explícito, y el README explica que `pip freeze` en Linux la omite.
+    - **Corregido en L12:** colorama solo la pedía `pytest` en Windows; `click` 8.5.0 no tiene dependencias. Al retirar `pytest`, el conjunto es idéntico en Linux y Windows y en Python 3.12 y 3.14, así que no hace falta ningún marcador de plataforma.
     - En la CI, un paso del job `python` falla si algún paquete instalado no está fijado en `constraints.txt` o tiene otra versión (L11). Las líneas `Successfully installed` del job `e2e` son un subconjunto.
     - Límite inferior `python-multipart>=0.0.31`. Ninguna versión conocida de FastAPI ni de uvicorn exige `starlette>=1.3.1` ni `h11>=0.16` (FastAPI 0.162.0 pide `starlette>=0.46.0`; uvicorn, `h11>=0.8`), así que esos mínimos se fijan en `constraints.txt`.
   - Pruebas: suite, Ruff, build y E2E en CI. Instalación en limpio en local con `-c` y Python 3.14.
@@ -63,13 +63,13 @@ Plan de endurecimiento (**aprobado en L4**; cada rama se integra solo con la apr
     - Un `pip install` sin `-c` sigue funcionando con los rangos. Si los rangos y las restricciones discrepan, pip falla con un error explícito.
     - Las restricciones generadas con 3.12 se usan también con 3.14 en local. Hoy funciona, pero una regeneración futura podría fijar un paquete sin wheel para cp314.
   - Revisión independiente: **sí** (CI y dependencias: elemento 5).
-- [ ] P5 — README con `npm ci` (H7). Prioridad: media. Depende de: nada.
+- [x] P5 — README con `npm ci` (H7). Commit `40a1c7c`, L12. Prioridad: media. Depende de: nada.
   - Archivos: `README.md`.
   - Aceptación: la instalación usa `npm ci` y el README explica cuándo regenerar el lockfile (`npm install` deliberado).
   - Pruebas: ninguna ejecutable; revisar el texto.
   - Regresión: ninguna.
   - Revisión independiente: no.
-- [ ] P6 — Retirar `pytest` (H8). **Decidido en L11:** se retira y `unittest` queda como único ejecutor oficial, en local y en CI. Prioridad: baja.
+- [x] P6 — Retirar `pytest` (H8). Commit `522dc94`, L12. **Decidido en L11:** se retira y `unittest` queda como único ejecutor oficial, en local y en CI. Prioridad: baja.
   - Archivos: `backend/requirements-dev.txt`, `backend/constraints.txt` y `README.md` (si hace falta).
   - Aceptación: ninguna prueba, configuración ni herramienta depende de `pytest`; se retira de `requirements-dev.txt` y no entra en las restricciones; la CI sigue en verde con `unittest`. Las pruebas existentes no cambian.
   - Pruebas: suite.
@@ -438,3 +438,34 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
     - Python 3.14 se verifica con una instalación limpia en Windows; Python 3.12, en la CI (Linux), porque no está instalado en local.
     - Un paso de CI comprueba que todo lo instalado está fijado: evita que un paquete nuevo en una versión de Python o en una plataforma se instale sin fijar (falsa reproducibilidad).
     - `python-multipart>=0.0.31` en `requirements.txt` (R1).
+- **L12 (2026-11-03):** P4, P5 y P6 en local.
+  - **P6 (`522dc94`):** se retira `pytest>=8,<10` de `requirements-dev.txt`. Las pruebas no cambian.
+  - **Corrección (error propio en L10 y L11):** colorama no la pedía `click`. `importlib.metadata.requires('click')` devuelve `None` en `click` 8.5.0, y en el entorno limpio ningún paquete la declara. Solo la pedía `pytest` (`sys_platform == "win32"`). Sin `pytest`, el conjunto de paquetes es el mismo en Windows y Linux, y con Python 3.12 y 3.14. Ya no hace falta ningún marcador. La auditoría (inventario) queda corregida.
+  - **P4 (`40a1c7c`, `ebb11e4`):**
+    - `backend/constraints.txt`: 24 versiones exactas, las mismas que instaló la CI de `main` (run `41650001412`) menos `pytest`, iniconfig, packaging, pluggy y Pygments. Nombres en el formato de `pip freeze` (`pydantic_core`, `typing_extensions`). Ninguna dependencia se actualiza.
+    - `requirements.txt` conserva los rangos (`cryptography>=50.0.2`) y sube `python-multipart` a `>=0.0.31` (R1); la versión instalada sigue siendo 0.0.33.
+    - CI:
+      - Los jobs `python` y `e2e` instalan con `-c backend/constraints.txt`.
+      - El job `python` tiene un paso nuevo, en Python estándar y sin dependencias: falla si algún paquete instalado, salvo `pip`, no está en `constraints.txt` o tiene otra versión, comparando nombres canónicos.
+      - Solo está en `python` porque ese job instala el superconjunto de `e2e` con las mismas restricciones.
+      - Probado en local:
+        - Pasa en el entorno limpio («All installed packages match backend/constraints.txt (24 pins)»).
+        - Falla en el `.venv` del proyecto, que tiene `pytest` y `pip-audit` sin fijar.
+        - Ruff no da avisos sobre el script extraído (corregido un SIM115 inicial).
+    - README:
+      - Instalación con `-c` y `npm ci`.
+      - `unittest` como único ejecutor.
+      - «Actualizar Ruff» también cambia `constraints.txt`.
+      - Sección nueva «Dependencias»: renovación mensual o ante un aviso de seguridad, procedimiento con un entorno limpio y `pip freeze`, actualización de un solo paquete, marcadores si aparecen diferencias de plataforma y actualización deliberada del lockfile.
+  - **P5:** el README usa `npm ci` en la instalación (antes `npm install`); las E2E ya lo usaban.
+  - **Verificación local (Windows, Python 3.14.7, entorno temporal limpio fuera del repositorio):**
+    - La instalación con `-r requirements-dev.txt -c constraints.txt` deja exactamente 24 paquetes, idénticos a las restricciones; `pip check` sin conflictos.
+    - Suite: 139 OK, igual que antes; P6 no cambia ninguna prueba.
+    - Ruff 0.17.3 sin avisos.
+    - `npm ci` reinstala 119 paquetes sin modificar `package-lock.json`. Typecheck limpio y build correcto (el aviso del chunk de más de 500 kB ya estaba en `docs/pendiente.md`).
+    - E2E 88/88 con `E2E_PYTHON` apuntando al entorno limpio.
+  - **Python 3.12:** se verifica en la CI (L13).
+  - **Riesgo residual:**
+    - Windows con Python 3.12 no se prueba en ningún sitio: la CI es Linux con 3.12 y en local solo hay 3.14.
+    - El paso de CI solo detecta paquetes sin fijar en Linux con 3.12. Si en el futuro aparece un paquete solo para Windows o para otra versión de Python, se instalaría sin fijar hasta que alguien lo añada; el README indica cómo.
+    - El `.venv` local del usuario no se ha recreado: sigue con `pytest` y `pip-audit`, sin efecto en el proyecto.
