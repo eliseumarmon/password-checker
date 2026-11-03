@@ -17,6 +17,7 @@ sys.modules['dependency_audit'] = audit
 spec.loader.exec_module(audit)
 
 CONSTRAINTS = '# header\ncryptography==50.0.2\nfastapi==0.162.0\ntomli==2.5.0 ; python_version < "3.11"\n'
+REQUIREMENTS = '-r requirements.txt\ncryptography>=50.0.2\nfastapi[standard]>=0.115,<1  # web\n'
 
 
 def python_report(*dependencies):
@@ -54,12 +55,12 @@ MINIMIST = {'name': 'minimist', 'severity': 'critical', 'isDirect': True, 'range
 
 class PythonAuditTests(unittest.TestCase):
     def test_a_clean_report_covering_every_pin_passes(self):
-        self.assertEqual(audit.python_findings(CLEAN_PYTHON, CONSTRAINTS, 0), [])
+        self.assertEqual(audit.python_findings(CLEAN_PYTHON, CONSTRAINTS, REQUIREMENTS, 0), [])
 
     def test_vulnerabilities_are_reported_once_per_advisory_with_their_fix(self):
         report = python_report(dep('cryptography', '46.0.7', CRYPTO_VULN, OPENSSL_VULN, CRYPTO_VULN),
                                dep('fastapi', '0.162.0'))
-        findings = audit.python_findings(report, CONSTRAINTS.replace('50.0.2', '46.0.7'), 1)
+        findings = audit.python_findings(report, CONSTRAINTS.replace('50.0.2', '46.0.7'), REQUIREMENTS, 1)
         self.assertEqual([(f.package, f.version, f.scope) for f in findings], [('cryptography', '46.0.7', 'production')])
         self.assertEqual(findings[0].advisories, ['GHSA-537c-gmf6-5ccf', 'PYSEC-2026-3552 (CVE-2026-69247, GHSA-g6cj-pr64-35w5)'])
         self.assertEqual(findings[0].fix, '48.0.1, 50.0.0')
@@ -67,30 +68,40 @@ class PythonAuditTests(unittest.TestCase):
     def test_an_audit_of_no_dependencies_is_not_a_pass(self):
         # pip-audit exits 0 with "No known vulnerabilities found" when the input lists nothing.
         with self.assertRaisesRegex(audit.UntrustedReport, 'cryptography'):
-            audit.python_findings(python_report(), CONSTRAINTS, 0)
+            audit.python_findings(python_report(), CONSTRAINTS, REQUIREMENTS, 0)
+
+    def test_constraints_without_packages_are_not_a_pass(self):
+        # An emptied constraints file made pip-audit analyse nothing, and CI passed (test branch, L20).
+        with self.assertRaisesRegex(audit.UntrustedReport, 'no packages'):
+            audit.python_findings(python_report(), '# header only\n', '', 0)
+
+    def test_a_direct_requirement_missing_from_the_constraints_is_not_a_pass(self):
+        with self.assertRaisesRegex(audit.UntrustedReport, 'fastapi'):
+            audit.python_findings(python_report(dep('cryptography', '50.0.2')), '# header\ncryptography==50.0.2\n',
+                                  REQUIREMENTS, 0)
 
     def test_a_pinned_package_missing_from_the_report_is_not_a_pass(self):
         with self.assertRaisesRegex(audit.UntrustedReport, 'fastapi'):
-            audit.python_findings(python_report(dep('cryptography', '50.0.2')), CONSTRAINTS, 0)
+            audit.python_findings(python_report(dep('cryptography', '50.0.2')), CONSTRAINTS, REQUIREMENTS, 0)
 
     def test_a_package_audited_at_another_version_is_not_a_pass(self):
         report = python_report(dep('cryptography', '49.0.0'), dep('fastapi', '0.162.0'))
         with self.assertRaisesRegex(audit.UntrustedReport, 'cryptography'):
-            audit.python_findings(report, CONSTRAINTS, 0)
+            audit.python_findings(report, CONSTRAINTS, REQUIREMENTS, 0)
 
     def test_a_skipped_package_is_not_a_pass(self):
         skipped = {'name': 'fastapi', 'skip_reason': 'Dependency not found on PyPI'}
         with self.assertRaisesRegex(audit.UntrustedReport, 'fastapi'):
-            audit.python_findings(python_report(dep('cryptography', '50.0.2'), skipped), CONSTRAINTS, 0)
+            audit.python_findings(python_report(dep('cryptography', '50.0.2'), skipped), CONSTRAINTS, REQUIREMENTS, 0)
 
     def test_a_failing_tool_with_a_clean_report_is_not_a_pass(self):
         with self.assertRaisesRegex(audit.UntrustedReport, 'exit code 1'):
-            audit.python_findings(CLEAN_PYTHON, CONSTRAINTS, 1)
+            audit.python_findings(CLEAN_PYTHON, CONSTRAINTS, REQUIREMENTS, 1)
 
     def test_a_missing_or_malformed_report_is_not_a_pass(self):
         for report in (None, {'fixes': []}, {'dependencies': 'none'}):
             with self.subTest(report=report), self.assertRaises(audit.UntrustedReport):
-                audit.python_findings(report, CONSTRAINTS, 0)
+                audit.python_findings(report, CONSTRAINTS, REQUIREMENTS, 0)
 
 
 class NpmAuditTests(unittest.TestCase):
@@ -148,14 +159,16 @@ class CommandLineTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             constraints = Path(folder, 'constraints.txt')
             constraints.write_text(CONSTRAINTS)
+            requirements = Path(folder, 'requirements.txt')
+            requirements.write_text(REQUIREMENTS)
             report = Path(folder, 'report.out')
             status, output = self.run_main('python', '--report', str(report), '--constraints', str(constraints),
-                                           '--exit-code', '1')
+                                           '--requirements', str(requirements), '--exit-code', '1')
             self.assertEqual(status, 1)
             self.assertIn('cannot be trusted', output)
             report.write_text(json.dumps(CLEAN_PYTHON))
             status, output = self.run_main('python', '--report', str(report), '--constraints', str(constraints),
-                                           '--exit-code', '0')
+                                           '--requirements', str(requirements), '--exit-code', '0')
             self.assertEqual(status, 0)
             self.assertIn('No known vulnerabilities in 2 packages', output)
 

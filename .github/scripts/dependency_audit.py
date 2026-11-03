@@ -47,14 +47,26 @@ def pinned_packages(constraints_text):
     return required, optional
 
 
-def python_findings(report, constraints_text, exit_code):
+def direct_requirements(requirements_text):
+    """Names declared in requirements files; options such as -r and comments are not packages."""
+    lines = (line.split('#')[0].strip() for line in requirements_text.splitlines())
+    return {canonical(re.match(r'[A-Za-z0-9._-]+', line)[0]) for line in lines if line and not line.startswith('-')}
+
+
+def python_findings(report, constraints_text, requirements_text, exit_code):
+    required, optional = pinned_packages(constraints_text)
+    if not required:
+        raise UntrustedReport('the constraints pin no packages, so nothing would be analysed')
+    # A truncated constraints file would silently shrink the audit; every declared package must be pinned.
+    unpinned = sorted(direct_requirements(requirements_text) - required.keys() - optional.keys())
+    if unpinned:
+        raise UntrustedReport('declared requirements missing from the constraints: ' + ', '.join(unpinned))
     if not isinstance(report, dict) or not isinstance(report.get('dependencies'), list):
         raise UntrustedReport('pip-audit produced no JSON report with a dependency list')
     skipped = [dep.get('name', '?') for dep in report['dependencies'] if dep.get('skip_reason')]
     if skipped:
         raise UntrustedReport('pip-audit skipped ' + ', '.join(skipped))
     audited = {canonical(dep['name']): dep['version'] for dep in report['dependencies']}
-    required, optional = pinned_packages(constraints_text)
     unaudited = sorted(f'{name}=={version}' for name, version in required.items() if audited.get(name) != version)
     unaudited += sorted(f'{name}=={version}' for name, version in optional.items()
                         if name in audited and audited[name] != version)
@@ -147,6 +159,7 @@ def main(argv=None):
     python = commands.add_parser('python')
     python.add_argument('--report', required=True)
     python.add_argument('--constraints', required=True)
+    python.add_argument('--requirements', nargs='+', required=True)
     python.add_argument('--exit-code', type=int, required=True)
     npm = commands.add_parser('npm')
     npm.add_argument('--full', required=True)
@@ -159,7 +172,9 @@ def main(argv=None):
     try:
         if args.command == 'python':
             report = read_json(args.report)
-            findings = python_findings(report, Path(args.constraints).read_text(encoding='utf-8'), args.exit_code)
+            requirements = '\n'.join(Path(path).read_text(encoding='utf-8') for path in args.requirements)
+            findings = python_findings(report, Path(args.constraints).read_text(encoding='utf-8'), requirements,
+                                       args.exit_code)
             analysed = len(report['dependencies'])
         else:
             lockfile = read_json(args.lockfile)

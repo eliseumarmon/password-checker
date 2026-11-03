@@ -50,7 +50,8 @@ jobs:
           status=$?
           set -e
           python .github/scripts/dependency_audit.py python --report pip-audit.json \
-            --constraints backend/constraints.txt --exit-code "$status"
+            --constraints backend/constraints.txt \
+            --requirements backend/requirements.txt backend/requirements-dev.txt --exit-code "$status"
   npm:
     runs-on: ubuntu-latest
     steps:
