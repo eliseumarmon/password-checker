@@ -30,7 +30,7 @@ Importa las exportaciones CSV, revisa duplicados y conflictos, edita o excluye l
 
 La revisión permanece en memoria y el guardado es manual. Para continuar otro día, pulsa **Guardar sesión cifrada** e introduce una contraseña nueva de al menos 12 caracteres; descarga y conserva `password-checker-session.pwc`. Para reanudar, pulsa **Abrir sesión cifrada anterior**, selecciona el archivo y escribe la misma contraseña. El archivo utiliza Argon2id y AES-256-GCM y contiene las credenciales y notas originales: protégelo como un respaldo sensible. No hay recuperación si olvidas la contraseña. Las modificaciones sin guardar se pierden al cerrar el backend y el historial de deshacer no se conserva al reabrir.
 
-Las sesiones usan el formato `.pwc` versión 2, que guarda también los códigos 2FA. Un `.pwc` guardado con una versión anterior de la aplicación (versión 1) ya no se puede abrir: la aplicación lo rechaza con un aviso y hay que volver a importar los CSV originales.
+Las sesiones guardan también los códigos 2FA, con una versión nueva de su contenido cifrado (versión 2). Un `.pwc` guardado con una versión anterior de la aplicación ya no se puede abrir: tras descifrarlo con su contraseña, la aplicación lo rechaza con un aviso y hay que volver a importar los CSV originales.
 
 ## Seguridad y limitaciones
 
