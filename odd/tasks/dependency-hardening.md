@@ -619,3 +619,15 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
     - `npm audit` falla con cualquier gravedad, igual que `pip-audit`; el triaje sigue la política de actualización.
     - npm es el que trae Node 22. El script exige `auditReportVersion` 2, así que un cambio de formato falla en vez de pasar.
   - **Pendiente:** el run manual (`workflow_dispatch`) después de integrar, y comprobar que un commit sin cambios de dependencias no lanza la auditoría (L21). P7 sigue sin activar.
+- **L21 (2026-11-03):** filtro de rutas y revisión de P8.
+  - **Filtro de rutas:** el push de solo documentación `f47d708` lanzó `Tests` pero no `Dependency audit`. `pull_request` usa la misma lista de `paths`.
+  - **Revisión** `review-1274eda902ee9eaf`: rama respecto a `main`, riesgo escalado a alto por el elemento 5, lentes de riesgo, fiabilidad y resiliencia, consentimiento del usuario. Aprobada y reconocida (`authority: burned`).
+    - **Riesgo:** sin hallazgos.
+    - **Tres sugerencias aplicadas en `2686219`**, con prueba primero (RED en dos):
+      - **`R4-001`:** una forma inesperada del JSON (por ejemplo, una dependencia sin `version`) acababa en un traceback sin línea en el resumen. Ahora se publica «The audit cannot be trusted: unexpected report content (…)» con código 1. Ya fallaba antes, así que no había falso éxito.
+      - **`R3-optional-pin-version-untested`:** prueba nueva. Un paquete con marcador auditado a otra versión falla; ese comportamiento ya existía y ahora queda cubierto.
+      - **`R3-table-cell-escaping`:** las celdas escapan `|` y unen los saltos de línea, así que un título de aviso no descoloca la tabla.
+  - **Verificación:**
+    - En local: suite 162 OK; Ruff sin avisos; las salidas reales (Python limpio y vulnerable, npm limpio y vulnerable) dan el mismo resultado que antes.
+    - En GitHub sobre `2686219`: `Dependency audit` (run `41666695451`) y `Tests` (run `41666695456`) en verde.
+  - **Pendiente:** aprobación del usuario para integrar; run manual después de integrar; P7.
