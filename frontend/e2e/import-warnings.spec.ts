@@ -126,6 +126,8 @@ test('keeps the warning across screens, dialogs, edits and undo', async ({ page 
   await page.getByRole('button', { name: /Deshacer/ }).click();
   // Undo is async: wait until the edit is really reverted before checking the warning.
   await expect(page.locator('.desktop-table')).not.toContainText('Alice editada');
+  // Both original alpha rows are back, named after the site again (the fixture has no name column).
+  await expect(page.locator('.desktop-table').getByRole('row', { name: /^alpha\.invalid/ })).toHaveCount(2);
   await expect(notice).toBeVisible();
 });
 
