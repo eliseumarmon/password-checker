@@ -13,7 +13,7 @@ import io, json, sys, unittest
 sys.modules[sys.argv[1]] = None
 suite = unittest.defaultTestLoader.discover(sys.argv[3], pattern=sys.argv[2] + '.py')
 result = unittest.TextTestRunner(stream=io.StringIO()).run(suite)
-print(json.dumps({'errors': len(result.errors), 'skipped': len(result.skipped)}))
+print(json.dumps({'errors': [text for _, text in result.errors], 'skipped': len(result.skipped)}))
 '''
 
 
@@ -30,7 +30,10 @@ class RequiredDependencyTests(unittest.TestCase):
             with self.subTest(package=package, module=module):
                 outcome = self.outcome_without(package, module)
                 self.assertEqual(outcome['skipped'], 0)
-                self.assertGreater(outcome['errors'], 0)
+                self.assertTrue(outcome['errors'])
+                # Each error is caused by the blocked package, not by an unrelated collection problem.
+                for error in outcome['errors']:
+                    self.assertIn(package, error)
 
 
 if __name__ == '__main__':
