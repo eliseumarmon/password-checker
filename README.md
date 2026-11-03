@@ -1,6 +1,6 @@
 # Password Checker
 
-Herramienta local para revisar exportaciones CSV de Chrome, Brave y Firefox y preparar su importación en Bitwarden. La interfaz usa FastAPI y Vue, funciona en Windows y Linux y no requiere acceso a Internet durante la revisión.
+Herramienta local para revisar exportaciones CSV de Chrome, Brave y Firefox (o CSV genéricos con columna de URL y contraseña) y preparar su importación en Bitwarden. La interfaz usa FastAPI y Vue, funciona en Windows y Linux y no requiere acceso a Internet durante la revisión.
 
 ## Instalación y ejecución
 
@@ -40,11 +40,13 @@ Consulta el [flujo de usuario](docs/flujo-usuario.md) para el funcionamiento det
 
 ## Formatos y criterios
 
-Chrome y Brave suelen exportar `name,url,username,password,note`; Firefox puede exportar `url,username,password,httpRealm,formActionOrigin,guid,timeCreated,timeLastUsed,timePasswordChanged`. El lector identifica las columnas por nombre, admite BOM UTF-8 y campos entrecomillados con comas o saltos de línea. Conserva el `httpRealm` de Firefox en las notas y descarta sus metadatos sin correspondencia directa en Bitwarden.
+El lector separa el **formato** (cómo se lee el CSV) del **origen** (de dónde procede). El formato se decide solo por las cabeceras normalizadas, nunca por el nombre del archivo, con prioridad Firefox (cabeceras distintivas como `httpRealm`) > Chromium (columna de nombre o de nota) > genérico. Solo se exigen una columna `password` y una columna de URL reconocida; el usuario puede faltar. El origen es solo una etiqueta de procedencia que no condiciona la lectura: formato Firefox → `firefox`; formato Chromium → `brave` o `chrome` únicamente cuando «brave» o «chrome» aparecen como palabras independientes en el nombre del archivo (separadas por espacios, guiones, guiones bajos o puntos, sin distinguir mayúsculas; si aparecen ambas, gana `brave`), y `unknown` en cualquier otro caso; formato genérico → `unknown`, que en la interfaz se muestra como «Desconocido». Renombrar un archivo no cambia las credenciales importadas, solo el origen inferido.
+
+Chrome y Brave suelen exportar `name,url,username,password,note`; Firefox puede exportar `url,username,password,httpRealm,formActionOrigin,guid,timeCreated,timeLastUsed,timePasswordChanged`. El lector identifica las columnas por nombre, admite BOM UTF-8 y campos entrecomillados con comas o saltos de línea. Conserva el `httpRealm` de Firefox en las notas y descarta sin aviso sus metadatos sin correspondencia directa en Bitwarden. Toda columna desconocida con datos se descarta y genera un aviso por archivo, columna y número de filas con datos, sin mostrar sus valores; si falta `password` o la columna de URL, o el CSV es inválido, la importación se rechaza entera (todo o nada). El comportamiento detallado de la importación y de los avisos está en el [flujo de usuario](docs/flujo-usuario.md).
 
 Las URI Android `android://FIRMA@paquete/` se convierten a `androidapp://paquete`: se conserva el paquete y se descarta la firma. El lector puede reconstruir de forma restringida un nombre con una coma sin entrecomillar cuando desplaza la URI; las filas ambiguas se rechazan. Si aparece un error de número de columnas, comprueba la exportación original y vuelve a exportarla.
 
-La revisión identifica duplicados, conflictos, reutilización, contraseñas débiles y campos incompletos. Para la reutilización, una cuenta se identifica por origen (esquema, host y puerto) o paquete Android y usuario. La fortaleza es orientativa y no constituye una estimación criptográfica.
+La revisión identifica duplicados, conflictos, reutilización, contraseñas débiles y campos incompletos. Para la reutilización, una cuenta se identifica por origen web (esquema, host y puerto) o paquete Android y usuario; el origen de importación del navegador no interviene. La fortaleza es orientativa y no constituye una estimación criptográfica.
 
 ## Arquitectura
 
