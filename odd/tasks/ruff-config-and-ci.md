@@ -1,0 +1,25 @@
+# Ruff: configuración explícita, limpieza y CI
+
+Objetivo: que `ruff` compruebe en local y en CI exactamente las mismas reglas, sin avisos, y que la CI impida que vuelvan a acumularse (DT3 de [reliability-hardening](reliability-hardening.md#deuda-técnica-registrada)).
+Rama: `chore/ruff-clean-and-ci` desde `main`. Entrega: una rama, un commit por tarea; T4 (CI) en su propio commit por tocar la entrega. Pruebas: `python -m unittest discover -s tests`, `ruff check .`.
+
+## Specs
+
+- **S1 — Reglas explícitas y versión fija.** «Fija Ruff 0.17.3 y Python 3.12. Antes de definir `select`, identifica las reglas realmente activas y procura conservar inicialmente el mismo alcance que produce los 80 avisos actuales.» «No actives familias adicionales indiscriminadamente.» Aceptación: el conjunto de reglas activas con la nueva configuración es idéntico, regla a regla, al que activaba Ruff 0.17.3 por defecto; `requirements-dev.txt` fija `ruff==0.17.3`; `target-version = "py312"`.
+- **S2 — Configuración compartida.** «La configuración debe compartirse entre el desarrollo local y CI.» Aceptación: un único archivo de configuración en el repositorio que usan tanto `ruff check .` en local como la CI.
+- **S3 — Corregir los avisos.** «Corrige los avisos existentes, revisa los cambios automáticos y ejecuta todas las pruebas antes de integrar.» «Revisa especialmente B023 y las excepciones justificadas de FastAPI, como B008.» Aceptación: `ruff check .` sin avisos; cada cambio automático revisado en el diff; B023 analizado a mano; B008 de FastAPI resuelto con una excepción justificada y acotada; backend y E2E en verde.
+- **S4 — CI.** Ruff se ejecuta en `.github/workflows/tests.yml` y falla el trabajo si hay avisos.
+- **S5 — Documentación.** «Documenta cómo ampliar las reglas y actualizar Ruff de forma deliberada.»
+
+## Tasks
+
+- [ ] T1 — S1, S2, S5: `ruff.toml` con `select` explícito y `py312`, versión fija y documentación. Ruta: inline.
+- [ ] T2 — S3: arreglos automáticos seguros, revisados. Ruta: inline.
+- [ ] T3 — S3: avisos manuales (B023, F841, TRY004, PERF102, UP030, UP035, B008). Ruta: inline.
+- [ ] T4 — S4: paso de Ruff en CI. Ruta: inline. Riesgo: apartado 5 (CI).
+
+Ruta: todo inline; ningún disparador de escritor (cambios pequeños y dependientes entre sí sobre el mismo árbol).
+
+## Log
+
+- **L1 (2026-11-03):** petición, literal: «Sí» a «¿Empiezo [Ruff + CI] en una rama nueva?». Comprobación previa: no hay configuración de Ruff en el repositorio; Ruff 0.17.3 aplica por defecto 407 reglas de 34 familias (la mayoría solo en parte) con destino Python 3.11: 80 avisos (66 con arreglo automático); con `--target-version py312`, 82. `requirements-dev.txt` admite `ruff>=0.9,<1`, así que la CI podría aplicar otras reglas. Respuesta del usuario, literal: «Selecciona «Reglas explícitas». Fija Ruff 0.17.3 y Python 3.12. Antes de definir `select`, identifica las reglas realmente activas y procura conservar inicialmente el mismo alcance que produce los 80 avisos actuales. No actives familias adicionales indiscriminadamente. Revisa especialmente B023 y las excepciones justificadas de FastAPI, como B008. La configuración debe compartirse entre el desarrollo local y CI. Corrige los avisos existentes, revisa los cambios automáticos y ejecuta todas las pruebas antes de integrar. Documenta cómo ampliar las reglas y actualizar Ruff de forma deliberada.»
