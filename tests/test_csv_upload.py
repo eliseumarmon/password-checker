@@ -173,6 +173,7 @@ CHROMIUM = ['name', 'url', 'username', 'password', 'note']
 FIREFOX = ['url', 'username', 'password', 'httpRealm', 'formActionOrigin', 'guid',
            'timeCreated', 'timeLastUsed', 'timePasswordChanged']
 GENERIC = ['url', 'username', 'password']
+SAFARI = ['Title', 'URL', 'Username', 'Password', 'Notes', 'OTPAuth']
 
 
 class FormatOriginTests(unittest.TestCase):
@@ -193,6 +194,35 @@ class FormatOriginTests(unittest.TestCase):
         for headers, name, expected in cases:
             with self.subTest(headers=headers, name=name):
                 self.assertEqual(detect_format_and_origin(headers, name), expected)
+
+    def test_safari_is_detected_by_its_otpauth_header_whatever_the_name(self):
+        cases = [
+            (SAFARI, 'Passwords.csv'),
+            (SAFARI, 'brave.csv'),
+            ([h.upper() for h in SAFARI], 'export.csv'),
+            (['title', ' url ', 'user_name', 'password', 'notes', ' OTP Auth '], 'export.csv'),
+            # Safari's distinctive header wins over Firefox's.
+            (SAFARI + ['httpRealm'], 'firefox.csv'),
+        ]
+        for headers, name in cases:
+            with self.subTest(headers=headers, name=name):
+                self.assertEqual(detect_format_and_origin(headers, name), ('safari', 'safari'))
+
+    def test_without_otpauth_an_apple_style_csv_keeps_todays_detection(self):
+        headers = SAFARI[:-1]
+        self.assertEqual(detect_format_and_origin(headers, 'Passwords.csv'), ('chromium', 'unknown'))
+        self.assertEqual(detect_format_and_origin(headers, 'brave.csv'), ('chromium', 'brave'))
+        self.assertEqual(detect_format_and_origin(CHROMIUM, 'Brave Passwords.csv'), ('chromium', 'brave'))
+        self.assertEqual(detect_format_and_origin(FIREFOX, 'export.csv'), ('firefox', 'firefox'))
+
+    def test_safari_export_imports_with_the_safari_origin(self):
+        data = (b'Title,URL,Username,Password,Notes,OTPAuth\n'
+                b'Example,https://example.invalid/,alice,fictional-pw-1,a note,\n')
+        origin, rows, warnings = read_upload('Passwords.csv', data)
+        self.assertEqual(origin, 'safari')
+        self.assertEqual([(r.source, r.name, r.url, r.username, r.password, r.note) for r in rows],
+                         [('safari', 'Example', 'https://example.invalid/', 'alice', 'fictional-pw-1', 'a note')])
+        self.assertEqual(warnings, [])
 
     def test_origin_needs_brave_or_chrome_as_a_separate_word(self):
         cases = {
