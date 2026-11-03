@@ -85,7 +85,7 @@ Plan de endurecimiento (**aprobado en L4**; cada rama se integra solo con la apr
   - No verificado: que GitHub detecte `cryptography` con requisitos que solo tienen rangos. Para Python, las alertas probablemente solo cubran dependencias directas, así que la red real es P8.
   - Pruebas y regresión: ninguna.
   - Revisión independiente: no.
-- [x] P8 — Workflow de auditoría separado (H5). Commits `26b1553`, `334b631`, `28c138e` y `48a3b85` (L20). El run manual, después de integrar. Prioridad: media. Depende de: P3 y P4. **Ajustado en L19 (S12):**
+- [x] P8 — Workflow de auditoría separado (H5). Commits `26b1553`, `334b631`, `28c138e`, `48a3b85` (L20), `2686219` (L21) y el de L22. Prioridad: media. Depende de: P3 y P4. **Ajustado en L19 (S12):**
   - Además de `schedule`, `workflow_dispatch` y `pull_request`, se dispara con `push` limitado a los mismos `paths`, para poder verificarlo antes de integrar.
   - `pip-audit` y sus dependencias van fijados en `.github/audit-requirements.txt`.
   - Un script versionado (`.github/scripts/dependency_audit.py`), con pruebas unitarias, interpreta los JSON. Falla ante vulnerabilidades, ante un error de la herramienta y cuando se analizan menos paquetes de los fijados.
@@ -631,3 +631,14 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
     - En local: suite 162 OK; Ruff sin avisos; las salidas reales (Python limpio y vulnerable, npm limpio y vulnerable) dan el mismo resultado que antes.
     - En GitHub sobre `2686219`: `Dependency audit` (run `41666695451`) y `Tests` (run `41666695456`) en verde.
   - **Pendiente:** aprobación del usuario para integrar; run manual después de integrar; P7.
+- **L22 (2026-11-03):** revisión final de P8.
+  - **Revisión** `review-11d512e095c01328`: rama completa respecto a `main`, 4 lentes, consentimiento del usuario. Aprobada y reconocida (`authority: burned`). Resiliencia: sin hallazgos.
+  - **Aplicado**, con prueba primero (RED → GREEN):
+    - **`R2-python-scope-hardcoded-production` (aviso):** todo hallazgo de Python salía como «production», incluidas herramientas de desarrollo. `pip-audit` no sabe qué paquetes van en la aplicación, así que el ámbito de Python es `n/a`, como la gravedad. La distinción producción/desarrollo es solo de npm (auditoría y README).
+    - **`R2-requirements-parse-error-mislabelled` (aviso) y `R3-direct-requirement-name-parsing`:** una línea con ruta, URL o enlace VCS se interpretaba como un paquete llamado `-` o `git`, con un mensaje engañoso. Ahora falla con «unsupported requirements line…». Ya fallaba antes, así que no había falso éxito.
+    - **`R2-plan-commit-list-incomplete`:** P8 lista todos sus commits.
+  - **Opcionales sin aplicar:**
+    - **`R2-npm-package-count-duplicated`** y **`R2-chained-ternary-fix`:** legibilidad.
+    - **`R3-npm-version-floats`:** npm es el de Node 22. Si cambia el formato o el recuento, el run falla, nunca pasa; ya se decidió en L20.
+    - **`R1-001`:** fijar las acciones por SHA; ya existe como P10 opcional.
+  - **Verificación local:** suite 163 OK; Ruff sin avisos; las salidas reales de Python (limpia y vulnerable) dan 0 y 1.
