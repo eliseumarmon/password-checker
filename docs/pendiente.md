@@ -19,12 +19,22 @@ Este documento reúne lo que la aplicación todavía no hace: limitaciones conoc
 - Optimización del bundle frontend: analizar el aviso de Vite por un chunk superior a 500 kB; valorar división de código y carga diferida sin ocultar el aviso aumentando únicamente el umbral.
 - Identidad de servicios y duplicados: definir si las credenciales se identifican por la URL/URI encontrada al importar o si se vinculan a un servicio lógico común (web, Android, iOS). Conservar las asociaciones originales y evaluar las consecuencias para la detección de duplicados; pertenecer al mismo servicio no implica fusionarlas automáticamente.
 
+## Observaciones P3 de revisión (opcionales, pendientes de decisión)
+
+De la revisión independiente de T4 del plan [importación: formato y origen](../odd/tasks/import-format-origin.md) (registro L10; integrado en `main` con el merge `36aea1e`, commit `abc7bdb`). Ninguna añade un requisito nuevo ni supuso corregir código: son decisiones opcionales que quedan pendientes.
+
+1. `WarningNotice.vue` mantiene `expanded` en `true` cuando llega una nueva importación con avisos mientras el componente sigue montado. Pendiente: decidir si se recuerda o se resetea el despliegue; una vez decidido, una prueba con dos importaciones de 4 o más columnas descartadas.
+2. `store.ts`: al abrir un `.pwc` en la misma página se conservan los avisos anteriores, porque la carga usa `execute`, que no toca los avisos; S6 no especifica este caso. Pendiente: decidir si conservarlos o limpiarlos solo cuando la carga termina con éxito, manteniendo los avisos si se cancela o falla, según se elija; prueba según la decisión. No implementar todavía.
+3. `NoticeBase.vue` usa la misma etiqueta accesible «Cerrar aviso» para el aviso de error y para el de advertencia. Pendiente: valorar una etiqueta accesible diferenciada por tipo; criterio: un lector de pantalla distingue ambos sin contexto visual.
+4. `style.css` usa `:has` en el apilado de avisos de la página, que requiere navegadores modernos. Pendiente: definir una compatibilidad mínima o un fallback si se admiten navegadores antiguos, con una prueba corta de accesibilidad según la política elegida. Sin añadir soporte de Safari (va en su propio plan) ni imponer versiones concretas.
+5. `store.ts` duplica el manejo de `busy`/`error` en `execute` e `importFiles`. Pendiente: evaluar una extracción mínima que no mezcle los avisos con el snapshot ni cambie que solo una importación confirmada con éxito los reemplaza o elimina y los fallos los preservan; es una mejora opcional de mantenibilidad, justificada con el estado actual. No refactorizar ahora.
+6. Matices de redacción de T5 en `docs/flujo-usuario.md`, señalados en la revisión del ciclo 1 (origen: revisión de T5, registro L12 del plan de importación; opcional, no bloqueante): (a) se promete un error «que indica la línea» también cuando faltan columnas imprescindibles, pero esos mensajes del lector (`csv_reader.py`) no llevan número de línea; (b) el aviso de importación dice «por cada archivo», pero solo lista los archivos con columnas descartadas; (c) se afirma que el `.pwc` contiene «solo registros», omitiendo los metadatos de archivo (nombre, origen y recuento) que la sesión sí guarda. Criterio pendiente: texto fiel al código —acotar «indicando la línea» a los errores de estructura que la llevan, escribir «por cada archivo con columnas descartadas» y «registros y metadatos de archivo, nunca avisos»— para una futura corrección documental, sin cambiar código ahora.
+
 ## Funcionalidades planificadas
 
 Tienen especificación y tareas en su plan, que es donde se sigue su avance:
 
-1. [Importación: formato y origen separados](../odd/tasks/import-format-origin.md): separar cómo se lee un CSV de dónde viene, dejar de inventar un origen y avisar de las columnas con datos que se descartan.
-2. [Soporte de Safari](../odd/tasks/safari-support.md): importar la exportación de Safari o de la app Contraseñas conservando los códigos 2FA hasta la exportación a Bitwarden; la sesión `.pwc` pasa a v2. Se apoya en la funcionalidad anterior.
+1. [Soporte de Safari](../odd/tasks/safari-support.md): importar la exportación de Safari o de la app Contraseñas conservando los códigos 2FA hasta la exportación a Bitwarden; la sesión `.pwc` pasa a v2. Se apoya en la separación formato/origen ya completada (plan [importación: formato y origen](../odd/tasks/import-format-origin.md), cerrado con T5).
 
 ## Ideas de diseño sin implementar
 
