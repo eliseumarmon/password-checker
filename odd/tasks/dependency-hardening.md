@@ -483,3 +483,7 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
       - **`R3-001`** (el runner podría traer paquetes base además de `pip`): la CI real con 3.12 lo refuta, porque el paso pasó con 24 paquetes fijados y sin ningún paquete ajeno.
       - **`R1-hashless-pins`:** el usuario excluyó los hashes sin una justificación clara (L10); siguen como P13 opcional, con la justificación de la auditoría (PyPI no permite reemplazar los archivos de una versión publicada).
   - **Tras los ajustes:** el script del paso, extraído del YAML, pasa en el entorno limpio de 3.14 y falla en el `.venv` con el mensaje nuevo; Ruff no da avisos; la resolución con `-c` en seco no encuentra conflictos. CI en L14.
+- **L14 (2026-11-03):** CI tras los ajustes de la revisión.
+  - **CI:** run `41655317572` sobre `27c324e`, en verde en `python`, `frontend` y `e2e` (Python 3.12). Restricciones: 24, todas coinciden. Unitarias: 139. E2E: 88.
+  - **H4 completa** en la rama, pendiente de la aprobación del usuario para integrarla.
+  - **P7:** `vulnerability-alerts` sigue devolviendo 404 y `dependabot_security_updates`, `disabled`. El usuario indicó en L10 que activaría las alertas.
