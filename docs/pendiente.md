@@ -14,7 +14,6 @@ Este documento reúne lo que la aplicación todavía no hace: limitaciones conoc
 - Una revisión más amplia de accesibilidad y teclado.
 - La revisión de dependencias.
 - Una evaluación local de fortaleza más completa.
-- Limpiar los avisos existentes de `ruff`, hoy fuera de CI (DT3).
 - Optimización del bundle frontend: analizar el aviso de Vite por un chunk superior a 500 kB; valorar división de código y carga diferida sin ocultar el aviso aumentando únicamente el umbral.
 - Identidad de servicios y duplicados: definir si las credenciales se identifican por la URL/URI encontrada al importar o si se vinculan a un servicio lógico común (web, Android, iOS). Conservar las asociaciones originales y evaluar las consecuencias para la detección de duplicados; pertenecer al mismo servicio no implica fusionarlas automáticamente.
 
