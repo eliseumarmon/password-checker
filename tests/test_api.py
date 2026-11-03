@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 try:
     from fastapi.testclient import TestClient
+
     from backend.password_checker.api import app, workspace
     from backend.password_checker.application import limits
 except ImportError:

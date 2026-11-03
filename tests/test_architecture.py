@@ -11,7 +11,7 @@ APPLICATION_MODULES = ('candidate', 'limits', 'review_state', 'session_snapshot'
 
 def loaded_modules(module):
     """Import *module* in a fresh interpreter and return every loaded module name."""
-    code = 'import sys, {0}; print("\\n".join(sorted(sys.modules)))'.format(module)
+    code = f'import sys, {module}; print("\\n".join(sorted(sys.modules)))'
     result = subprocess.run([sys.executable, '-c', code], cwd=ROOT, capture_output=True, text=True, check=True)
     return set(result.stdout.split())
 

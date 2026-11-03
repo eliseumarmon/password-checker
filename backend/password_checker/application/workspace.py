@@ -8,8 +8,9 @@ from __future__ import annotations
 import threading
 import unicodedata
 from collections import defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass, replace
-from typing import Any, Sequence
+from typing import Any
 
 from ..domain.accounts import duplicate_key
 from ..domain.credential import ORIGINS, Credential

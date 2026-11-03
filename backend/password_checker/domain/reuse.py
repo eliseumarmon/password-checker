@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any, Callable, Dict, Hashable, List, Optional, Protocol, Sequence, Set, TypeVar
+from collections.abc import Callable, Hashable, Sequence
+from typing import Any, Protocol
 
 from .accounts import origin_account
 
@@ -11,18 +12,15 @@ class HasPassword(Protocol):
     password: str
 
 
-T = TypeVar("T", bound=HasPassword)
-
-
-def shared_password_groups(items: Sequence[T],
-                           account_of: Callable[[T], Optional[Hashable]]) -> List[List[T]]:
+def shared_password_groups[T: HasPassword](items: Sequence[T],
+                                           account_of: Callable[[T], Hashable | None]) -> list[list[T]]:
     """Group items by password when more than one distinct account uses it.
 
     Items with an empty password, or whose account is None, are ignored.
     Groups and their members keep first-seen order.
     """
-    members: Dict[str, List[T]] = defaultdict(list)
-    accounts: Dict[str, Set[Any]] = defaultdict(set)
+    members: dict[str, list[T]] = defaultdict(list)
+    accounts: dict[str, set[Any]] = defaultdict(set)
     for item in items:
         account = account_of(item)
         if not item.password or account is None:
@@ -32,6 +30,6 @@ def shared_password_groups(items: Sequence[T],
     return [group for password, group in members.items() if len(accounts[password]) > 1]
 
 
-def reused_password_groups(items: Sequence[T]) -> List[List[T]]:
+def reused_password_groups[T: HasPassword](items: Sequence[T]) -> list[list[T]]:
     """The reuse rule used by the workspace audit."""
     return shared_password_groups(items, origin_account)

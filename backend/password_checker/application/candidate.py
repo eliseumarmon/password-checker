@@ -25,7 +25,7 @@ class Candidate:
     review: str = 'pending'
 
     @classmethod
-    def from_source(cls, row: Credential) -> 'Candidate':
+    def from_source(cls, row: Credential) -> Candidate:
         # The original android:// URI stays in `original`; the export follows Bitwarden.
         return cls(
             id=secrets.token_hex(12), original=row,

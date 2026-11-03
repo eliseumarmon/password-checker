@@ -7,10 +7,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 try:
-    from backend.password_checker.infrastructure.sessions import encrypt_session, decrypt_session
     from backend.password_checker.application.candidate import Candidate
     from backend.password_checker.application.workspace import Workspace
     from backend.password_checker.domain.credential import Credential
+    from backend.password_checker.infrastructure.sessions import decrypt_session, encrypt_session
 except ImportError:
     encrypt_session = None
 

@@ -7,8 +7,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from backend.password_checker.domain.credential import Credential  # noqa: E402
-from backend.password_checker.infrastructure.bitwarden import BITWARDEN_FIELDS, write_bitwarden_csv  # noqa: E402
+from backend.password_checker.domain.credential import Credential
+from backend.password_checker.infrastructure.bitwarden import BITWARDEN_FIELDS, write_bitwarden_csv
+
 
 class BitwardenTests(unittest.TestCase):
     def test_writes_header_and_login_rows(self):

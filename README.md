@@ -64,7 +64,13 @@ El dominio en `backend/password_checker/domain/` contiene las reglas puras. `app
 ```bash
 python -m pip install -r backend/requirements-dev.txt
 python -m unittest discover -s tests -v
+ruff check .
 ```
+
+`ruff check .` usa [`ruff.toml`](ruff.toml), la misma configuración en local y en CI; GitHub Actions lo ejecuta en el job `python` y falla si hay algún aviso. Sus reglas se enumeran una a una en `select` y Ruff está fijado a una versión exacta en `backend/requirements-dev.txt`, de modo que lo que se comprueba no cambia sin una decisión explícita:
+
+- **Ampliar las reglas:** añade los códigos a `select` (consulta `ruff rule <código>`), ejecuta `ruff check .` y corrige los avisos en el mismo cambio. Evita añadir familias enteras sin revisar qué reglas incluyen. Para un patrón legítimo de una biblioteca, usa la opción de configuración de la regla con un comentario que lo justifique; para un caso aislado, `# noqa: <código>` en la línea.
+- **Actualizar Ruff:** cambia la versión en `backend/requirements-dev.txt`, reinstala y ejecuta `ruff check .`. Una versión nueva no activa sus reglas nuevas por defecto aquí, porque `select` es explícito, pero puede cambiar cómo se comportan las reglas listadas; corrige o decide cada aviso nuevo en ese mismo cambio.
 
 Las pruebas utilizan credenciales ficticias. Para las pruebas E2E de la interfaz:
 

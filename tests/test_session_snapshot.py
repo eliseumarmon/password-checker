@@ -1,7 +1,7 @@
 """Untrusted session snapshots use only fabricated credentials."""
-from copy import deepcopy
 import sys
 import unittest
+from copy import deepcopy
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
