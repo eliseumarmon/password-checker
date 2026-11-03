@@ -10,13 +10,10 @@ sys.path.insert(0, str(ROOT))
 
 from unittest.mock import patch
 
-try:
-    from fastapi.testclient import TestClient
+from fastapi.testclient import TestClient
 
-    from backend.password_checker.api import app, workspace
-    from backend.password_checker.application import limits
-except ImportError:
-    TestClient = None
+from backend.password_checker.api import app, workspace
+from backend.password_checker.application import limits
 
 EXACT_COPIES_CSV = (b'name,url,username,password,note\n'
                     b'Site,https://site.invalid/,alice,fictional-secret-123,fictional note one\n'
@@ -28,7 +25,6 @@ def without_warnings(import_response):
     return {key: value for key, value in import_response.items() if key != 'warnings'}
 
 
-@unittest.skipUnless(TestClient is not None, 'Optional API dependencies not installed')
 class APITests(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app, base_url='http://127.0.0.1:8000')
