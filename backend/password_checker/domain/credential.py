@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from .urls import android_package, parse_url
 
 # Where an export came from: metadata only, it never decides how the CSV is read.
-ORIGINS = ("chrome", "brave", "firefox", "unknown")
+ORIGINS = ("chrome", "brave", "firefox", "safari", "unknown")
 
 
 @dataclass(frozen=True)

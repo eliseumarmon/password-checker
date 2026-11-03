@@ -32,7 +32,7 @@ class SessionSnapshotLimitTests(unittest.TestCase):
                 from_payload({**self.payload, 'records': records})
 
     def test_import_and_restore_accept_the_same_origins(self):
-        self.assertEqual(ORIGINS, ('chrome', 'brave', 'firefox', 'unknown'))
+        self.assertEqual(ORIGINS, ('chrome', 'brave', 'firefox', 'safari', 'unknown'))
         for source in ORIGINS:
             with self.subTest(source=source):
                 self.assertEqual(ImportedFile(name='a.csv', source=source, credentials=[]).source, source)

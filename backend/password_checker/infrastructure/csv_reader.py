@@ -1,4 +1,4 @@
-"""Browser password-export reader (Chrome, Brave, Firefox).
+"""Browser password-export reader (Chrome, Brave, Firefox, Safari).
 
 Validates column widths without losing columns silently. Accepts a path
 or an already-open text stream, so callers never need a plaintext temp file.
@@ -19,7 +19,7 @@ NAME_COLUMNS = ("name", "title")
 USERNAME_COLUMNS = ("username", "user", "login", "loginusername")
 NOTE_COLUMNS = ("note", "notes")
 # How a CSV is read. The origin (domain ORIGINS) only says where it came from.
-FORMATS = ("chromium", "firefox", "generic")
+FORMATS = ("chromium", "firefox", "generic", "safari")
 # Columns each format recognizes but deliberately discards (normalized keys).
 # httpRealm is read only by firefox, so it is NOT ignored a priori elsewhere.
 IGNORED_COLUMNS = {
@@ -33,8 +33,10 @@ def column_key(value):
 
 def detect_format_and_origin(headers, file_name):
     """(format, origin): the format from the normalized headers only, with priority
-    Firefox > Chromium > generic; the origin afterwards, without ever changing the format."""
+    Safari > Firefox > Chromium > generic; the origin afterwards, without ever changing the format."""
     keys = {column_key(header) for header in headers}
+    if "otpauth" in keys:
+        return "safari", "safari"
     if "httprealm" in keys:
         return "firefox", "firefox"
     if keys & {*NAME_COLUMNS, *NOTE_COLUMNS}:
