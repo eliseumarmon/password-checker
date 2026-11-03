@@ -30,7 +30,7 @@ Auditoría:
 - [x] A2 — S4: esta propuesta de tareas. Ruta: inline. Mismo commit.
 - [x] A3 — S6: revisión independiente del diagnóstico y del plan. Ruta: un revisor independiente de solo lectura (L3). La revisión nativa de gentle-ai también aprobó el commit, pero solo con comprobaciones estructurales. Correcciones en el commit «apply independent review».
 
-Propuesta de endurecimiento (**pendiente de aprobación**). Cada bloque es una funcionalidad con su propia rama desde `main`, para respetar «una funcionalidad por rama». H/R remiten a los hallazgos de la auditoría.
+Plan de endurecimiento (**aprobado en L4**; cada rama se integra solo con la aprobación del usuario). Cada bloque es una funcionalidad con su propia rama desde `main`, para respetar «una funcionalidad por rama». H/R remiten a los hallazgos de la auditoría.
 
 **Correcciones urgentes: rama `fix/cryptography-50`** (P2 es la red de seguridad de P3; en la misma rama, un commit cada uno).
 
@@ -312,3 +312,9 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
     - **Fiabilidad:** una sugerencia no bloqueante (`R3-error-attribution`): la prueba no comprueba que el error se deba al paquete bloqueado.
   - **Aplicada:** el probe devuelve el texto de cada error y la prueba exige que todos mencionen el paquete bloqueado. Comprobado a mano que discrimina: con `argon2` bloqueado, el error menciona `argon2` y no `cryptography`. Suite 139 OK y Ruff sin avisos.
   - **Pendiente:** integrar en `main` (cuando el usuario lo apruebe, después de `docs/dependency-audit`), decidir sobre el techo `<51`, y reiniciar cualquier proceso de la aplicación abierto durante la actualización.
+- **L7 (2026-11-03):** revisión de la rama completa y ajustes finales.
+  - **CI:** run `41647236624` sobre `89f7c1d`, en verde en `python`, `frontend` y `e2e`.
+  - **Revisión de la rama:** el hook de gentle-ai pidió revisar toda la rama respecto a `main` (`review-83395f75c6ba9063`, lente de fiabilidad). El usuario aceptó («Review this change»), y se aprobó y reconoció (`authority: burned`). Dos sugerencias no bloqueantes, aplicadas:
+    - **`R3-error-attribution-substring`:** buscar el nombre del paquete en todo el traceback era una comprobación débil. Ahora la excepción final de cada error debe ser del tipo esperado y nombrar el paquete como palabra completa: `ModuleNotFoundError` con `cryptography`, `argon2` o `fastapi`; `RuntimeError` con `httpx2` en el caso de `httpx`. Al aplicarlo se vio que el mensaje real depende del `import` (`No module named 'cryptography.exceptions'; 'cryptography' is not a package`) y que el de Starlette ocupa varias líneas, así que se toma la última línea con forma `<Tipo>Error: `. Con `argon2` bloqueado, la excepción final no nombra `cryptography`.
+    - **`R3-plan-status-inconsistent`:** `docs/pendiente.md`, el inicio de la auditoría y el bloque de tareas decían «pendiente de aprobación» o «no está aprobado»; ahora reflejan la aprobación de L4.
+  - **Verificación:** suite 139 OK y Ruff sin avisos.

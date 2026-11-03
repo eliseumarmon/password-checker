@@ -1,6 +1,6 @@
 # Auditoría de dependencias y cadena de suministro
 
-Diagnóstico de las dependencias del backend (Python/FastAPI) y del frontend (Vue/Vite), de la reproducibilidad de las instalaciones y de la CI. **No es una auditoría de seguridad de la aplicación**: solo valora cómo afectan las dependencias a Password Checker. El plan de actuación propuesto está en [dependency-hardening](../odd/tasks/dependency-hardening.md) y **no está aprobado**.
+Diagnóstico de las dependencias del backend (Python/FastAPI) y del frontend (Vue/Vite), de la reproducibilidad de las instalaciones y de la CI. **No es una auditoría de seguridad de la aplicación**: solo valora cómo afectan las dependencias a Password Checker. El plan de actuación está en [dependency-hardening](../odd/tasks/dependency-hardening.md); se aprobó después de la auditoría y su estado se sigue allí.
 
 - **Fecha y base:** 2026-11-03, rama `main` en `cfda098`. Ninguna dependencia, configuración ni código se modificó durante la auditoría.
 - **Entornos examinados:** `.venv` local (Python 3.14.7 de 64 bits, pip 26.2.2), `frontend/node_modules` local (Node 24.21.0, npm 11.3.0) y el registro del último run de CI en `main` (`41639170151`: Python 3.12.15, Node 22, `ubuntu-24.04`).
