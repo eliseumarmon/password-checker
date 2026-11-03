@@ -16,9 +16,10 @@ export const useWorkspace = defineStore('workspace', () => {
     catch (e) { error.value = e instanceof Error ? e.message : 'Error inesperado'; }
     finally { busy.value = false; }
   }
-  // Warnings change only when an import is confirmed and succeeds: with warnings
-  // they are replaced, without them they are cleared; a pending, cancelled or
-  // failed import keeps the previous ones.
+  // A confirmed, successful import replaces the warnings (or clears them when it
+  // has none); a pending, cancelled or failed import keeps the previous ones.
+  // Kept apart from execute() on purpose: ordinary operations never touch the
+  // warnings. Only a session that opens successfully also clears them (App.vue).
   async function importFiles(files: File[]): Promise<void> {
     busy.value = true; error.value = '';
     try {

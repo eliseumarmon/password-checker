@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 // Fictional credentials only, built in memory: real exports never touch the repo.
@@ -96,7 +97,7 @@ test('shows the import warning with file, columns and row counts, never the disc
   // Manual close only: it does not disappear on its own.
   await page.waitForTimeout(1500);
   await expect(notice).toBeVisible();
-  await notice.getByRole('button', { name: 'Cerrar aviso' }).click();
+  await notice.getByRole('button', { name: 'Cerrar advertencia de importación' }).click();
   await expect(notice).toHaveCount(0);
 });
 
@@ -144,8 +145,11 @@ test('stacks a later error above the warning and both close independently', asyn
   const noticeBox = (await notice.boundingBox())!;
   // The error sits on top, without overlapping the warning.
   expect(alertBox.y + alertBox.height).toBeLessThanOrEqual(noticeBox.y + 1);
-  const closeError = alert.getByRole('button', { name: 'Cerrar aviso' });
-  const closeWarning = notice.getByRole('button', { name: 'Cerrar aviso' });
+  const closeError = alert.getByRole('button', { name: 'Cerrar mensaje de error' });
+  const closeWarning = notice.getByRole('button', { name: 'Cerrar advertencia de importación' });
+  // A screen reader tells the two close buttons apart without visual context.
+  await expect(page.getByRole('button', { name: 'Cerrar mensaje de error', exact: true })).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Cerrar advertencia de importación', exact: true })).toHaveCount(1);
   expect(await isDirectlyClickable(closeError)).toBe(true);
   expect(await isDirectlyClickable(closeWarning)).toBe(true);
   await closeError.click();
@@ -244,6 +248,19 @@ test('lists up to three discarded columns directly and summarizes from four, acr
   await expect(notice).toContainText('e2: 1 fila con datos');
 });
 
+test('collapses the details again for each new import with a summary', async ({ page }) => {
+  await importViaUi(page, [csvFile('four.csv', FOUR_COLUMN_CSV)]);
+  const notice = warning(page);
+  const toggle = notice.getByRole('button', { name: 'Ver detalles' });
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  // The warning stays mounted while the next import replaces it.
+  await importViaUi(page, [csvFile('four-again.csv', FOUR_COLUMN_CSV)]);
+  await expect(notice.locator('ul.warning-files')).toContainText('four-again.csv');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(notice.locator('ul.warning-files')).toBeHidden();
+});
+
 test('stays behind comparison, editor, session and confirmation, and returns when they close', async ({ page }) => {
   await importViaUi(page, [csvFile('adv.csv', TWO_COLUMN_CSV)]);
   const notice = warning(page);
@@ -304,6 +321,54 @@ test('shows zero imported counts and repeated basenames as separate entries', as
   await expect(notice).toContainText('pin: 1 fila con datos');
 });
 
+test('clears the warning only when a session opens successfully', async ({ page }) => {
+  const passphrase = 'fictional-session-passphrase';
+  await importViaUi(page, [csvFile('adv.csv', TWO_COLUMN_CSV)]);
+  const notice = warning(page);
+  await expect(notice).toBeVisible();
+
+  await page.getByRole('button', { name: 'Guardar sesión cifrada' }).click();
+  const saveDialog = page.getByRole('dialog', { name: 'Sesión cifrada' });
+  await saveDialog.getByLabel(/Contraseña de sesión/).fill(passphrase);
+  await saveDialog.getByLabel('Confirmar contraseña').fill(passphrase);
+  const download = page.waitForEvent('download');
+  await saveDialog.getByRole('button', { name: 'Descargar archivo cifrado' }).click();
+  const saved = await download;
+  const file = { name: saved.suggestedFilename(), mimeType: 'application/octet-stream', buffer: await readFile(await saved.path()) };
+  await expect(saveDialog).toBeHidden();
+
+  const loadDialog = page.getByRole('dialog', { name: 'Sesión cifrada' });
+  async function openSession(secret: string): Promise<void> {
+    await page.getByRole('complementary', { name: 'Navegación principal' }).getByRole('button', { name: /Ajustes/ }).click();
+    await page.getByRole('button', { name: 'Abrir', exact: true }).click();
+    await loadDialog.getByLabel('Archivo cifrado').setInputFiles(file);
+    await loadDialog.getByLabel(/Contraseña de sesión/).fill(secret);
+    await loadDialog.getByRole('button', { name: 'Abrir sesión' }).click();
+  }
+
+  // Failed: wrong passphrase, after confirming the replacement.
+  await openSession('fictional-wrong-passphrase');
+  await confirmWith(page, 'Abrir sesión');
+  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(notice).toHaveCount(1);
+  await loadDialog.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(notice).toBeVisible();
+
+  // Cancelled at the replace confirmation.
+  await openSession(passphrase);
+  await confirmWith(page, 'Cancelar');
+  await loadDialog.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(notice).toBeVisible();
+  await expect(notice).toContainText('adv.csv');
+
+  // Opened: the warning no longer describes the workspace.
+  await openSession(passphrase);
+  await confirmWith(page, 'Abrir sesión');
+  await expect(loadDialog).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Todas (3)' })).toBeVisible();
+  await expect(notice).toHaveCount(0);
+});
+
 test('does not survive a reload and is not stored in the browser', async ({ page }) => {
   await importViaUi(page, [csvFile('adv.csv', TWO_COLUMN_CSV)]);
   const notice = warning(page);
@@ -335,8 +400,8 @@ test('keeps the stacked warning and error usable in a short mobile viewport', as
   const stackBox = (await stack.boundingBox())!;
   expect(stackBox.y).toBeGreaterThanOrEqual(headerBox.y + headerBox.height);
   expect(stackBox.y + stackBox.height).toBeLessThanOrEqual(navBox.y);
-  const closeWarning = notice.getByRole('button', { name: 'Cerrar aviso' });
-  const closeError = alert.getByRole('button', { name: 'Cerrar aviso' });
+  const closeWarning = notice.getByRole('button', { name: 'Cerrar advertencia de importación' });
+  const closeError = alert.getByRole('button', { name: 'Cerrar mensaje de error' });
   // The error sits on top and is usable without scrolling.
   const alertBox = (await alert.boundingBox())!;
   expect(alertBox.y).toBeGreaterThanOrEqual(headerBox.y + headerBox.height);
