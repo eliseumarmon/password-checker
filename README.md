@@ -111,3 +111,12 @@ Hoy se instalan los mismos paquetes en Linux y Windows y con Python 3.12 y 3.14.
 **Un solo paquete de Python**, por ejemplo por un aviso de seguridad: cambia su línea, y las de las dependencias que exija la versión nueva, y reinstala con `-c`. Para cambiar un rango o añadir una dependencia, edita `requirements*.txt` y renueva las versiones.
 
 **Frontend:** `npm update` (dentro de los rangos de `package.json`) o `npm install <paquete>@<versión>`, siempre de forma deliberada, porque reescriben `package-lock.json`. Revisa el diff del lockfile y ejecuta la compilación y las E2E.
+
+**Auditoría de vulnerabilidades.** El workflow `Dependency audit` es independiente de las pruebas y nunca bloquea un cambio ajeno a las dependencias.
+
+- Cuándo se ejecuta: cada lunes, a mano desde la pestaña Actions y cuando cambian los archivos de dependencias o la propia auditoría.
+- Qué analiza: `pip-audit` sobre `backend/constraints.txt` y `npm audit` sobre `package-lock.json`, separando producción y desarrollo. También verifica las firmas del registro npm.
+- Cuándo falla: si hay vulnerabilidades y también si no puede garantizar el resultado.
+- Herramientas fijadas: `pip-audit` y sus dependencias están en `.github/audit-requirements.txt`, que se renueva como `constraints.txt` (con el `pip install pip-audit==<versión>` correspondiente).
+
+Las excepciones y las limitaciones están en la [auditoría de dependencias](docs/auditoria-dependencias.md#auditoría-automática-y-excepciones).
