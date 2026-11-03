@@ -20,7 +20,7 @@ Auditoría:
 
 - [x] A1 — S1, S2, S3, S5: diagnóstico en `docs/auditoria-dependencias.md` y referencia en `docs/pendiente.md`. Ruta: inline. Commit: el de «add dependency and supply-chain audit».
 - [x] A2 — S4: esta propuesta de tareas. Ruta: inline. Mismo commit.
-- [ ] A3 — S6: revisión independiente del diagnóstico y del plan. Ruta: revisión nativa de gentle-ai sobre el commit de A1-A2.
+- [x] A3 — S6: revisión independiente del diagnóstico y del plan. Ruta: un revisor independiente de solo lectura (L3). La revisión nativa de gentle-ai también aprobó el commit, pero solo con comprobaciones estructurales. Correcciones en el commit «apply independent review».
 
 Propuesta de endurecimiento (**pendiente de aprobación**). Cada bloque es una funcionalidad con su propia rama desde `main`, para respetar «una funcionalidad por rama». H/R remiten a los hallazgos de la auditoría.
 
@@ -28,8 +28,12 @@ Propuesta de endurecimiento (**pendiente de aprobación**). Cada bloque es una f
 
 - [ ] P1 — Prueba de compatibilidad del formato `.pwc` (H3). Prioridad: urgente, previa a P3. Depende de: nada.
   - Archivos: `tests/test_sessions.py` (o un `tests/test_session_format.py` nuevo).
-  - Aceptación: una sesión ficticia cifrada con `cryptography` 46.0.7 y `argon2-cffi` 25.1.0, guardada como constante en la prueba (`.gitignore` excluye `*.pwc` y `*.json`), se descifra a un contenido esperado. Una clave Argon2id derivada de sal y contraseña fijas coincide con su valor conocido. Al cambiar un parámetro de `_key` o un campo del envoltorio, la prueba falla (comprobarlo a mano y deshacer el cambio).
-  - Pruebas: la propia prueba más la suite completa. Sin cambios en `sessions.py`.
+  - Aceptación:
+    - Una sesión ficticia cifrada con `cryptography` 46.0.7 y `argon2-cffi` 25.1.0 se descifra a un contenido esperado. Se guarda como constante en un archivo `.py`, porque `.gitignore` excluye `*.pwc` y `*.json`.
+    - `encrypt_session` usa `secrets.token_bytes`, así que el vector se genera una sola vez con sal y nonce fijos, llamando directamente a `hash_secret_raw` y `AESGCM` (o con un script desechable). **No se modifica `encrypt_session` para inyectarle aleatoriedad.**
+    - Una clave Argon2id derivada de sal y contraseña fijas coincide con su valor conocido.
+    - Al cambiar en `sessions.py` un parámetro de `_key`, el `AAD` o un campo del envoltorio, la prueba falla. Es una comprobación manual temporal, que se deshace sin llegar a ningún commit.
+  - Pruebas: la propia prueba más la suite completa. El commit no cambia `sessions.py`.
   - Regresión: ninguna en producción; solo añade pruebas.
   - Revisión independiente: no (sin código de producción).
 - [ ] P2 — Que las pruebas de cifrado y API no se salten en silencio (H2). Prioridad: urgente, previa a P3. Depende de: nada.
@@ -49,9 +53,15 @@ Propuesta de endurecimiento (**pendiente de aprobación**). Cada bloque es una f
 
 - [ ] P4 — Restricciones de Python con todas las versiones fijadas y límites inferiores seguros (H4, R1). Prioridad: alta. Depende de: P3 (para no fijar una `cryptography` vulnerable).
   - Archivos: `backend/constraints.txt` (nuevo), `backend/requirements.txt`, `backend/requirements-dev.txt`, `.github/workflows/tests.yml` (jobs `python` y `e2e`: `-c backend/constraints.txt`) y `README.md` (instalación, pruebas y cómo regenerar).
-  - Aceptación: `constraints.txt` fija con `==` todas las dependencias de `requirements-dev.txt` y sus transitivas, generado con `pip freeze` en un entorno limpio con Python 3.12, con colorama incluido para Windows. En la CI, las líneas `Successfully installed` coinciden exactamente con `constraints.txt` (salvo colorama). Límites inferiores: `python-multipart>=0.0.31`, y FastAPI y uvicorn en versiones que exijan `starlette>=1.3.1` y `h11>=0.16`; si no existen, añadir esas restricciones solo en `constraints.txt`.
-  - Pruebas: suite, Ruff, build y E2E en CI. Instalación en limpio en local con `-c`.
-  - Regresión: un `pip install` sin `-c` sigue funcionando con los rangos. Si los rangos y las restricciones discrepan, pip falla con un error explícito.
+  - Aceptación:
+    - `constraints.txt` fija con `==` todas las dependencias de `requirements-dev.txt` y sus transitivas. Se genera con `pip freeze` en un entorno limpio con Python 3.12.
+    - `pip freeze` en Linux omite colorama, así que **se añade a mano** (el valor de `click` en Windows) y el README documenta ese paso.
+    - En la CI, las líneas `Successfully installed` del job `python` coinciden exactamente con `constraints.txt` (salvo colorama), y las del job `e2e` son un subconjunto.
+    - Límite inferior `python-multipart>=0.0.31`. Ninguna versión conocida de FastAPI ni de uvicorn exige `starlette>=1.3.1` ni `h11>=0.16` (FastAPI 0.162.0 pide `starlette>=0.46.0`; uvicorn, `h11>=0.8`), así que esos mínimos se fijan en `constraints.txt`.
+  - Pruebas: suite, Ruff, build y E2E en CI. Instalación en limpio en local con `-c` y Python 3.14.
+  - Regresión:
+    - Un `pip install` sin `-c` sigue funcionando con los rangos. Si los rangos y las restricciones discrepan, pip falla con un error explícito.
+    - Las restricciones generadas con 3.12 se usan también con 3.14 en local. Hoy funciona, pero una regeneración futura podría fijar un paquete sin wheel para cp314.
   - Revisión independiente: **sí** (CI y dependencias: elemento 5).
 - [ ] P5 — README con `npm ci` (H7). Prioridad: media. Depende de: nada.
   - Archivos: `README.md`.
@@ -70,12 +80,17 @@ Propuesta de endurecimiento (**pendiente de aprobación**). Cada bloque es una f
 
 - [ ] P7 — Activar las alertas de Dependabot (H5). Prioridad: alta e inmediata. Depende de: nada.
   - Archivos: ninguno. Es un ajuste del repositorio que **solo puede activar el propietario** (Settings → Advanced Security → Dependabot alerts).
-  - Aceptación: `gh api repos/eliseumarmon/password-checker/vulnerability-alerts -i` devuelve 204, y la pestaña Security muestra los avisos de `cryptography` hasta que se complete P3.
+  - Aceptación: `gh api repos/eliseumarmon/password-checker/vulnerability-alerts -i` devuelve 204.
+  - No verificado: que GitHub detecte `cryptography` con requisitos que solo tienen rangos. Para Python, las alertas probablemente solo cubran dependencias directas, así que la red real es P8.
   - Pruebas y regresión: ninguna.
   - Revisión independiente: no.
 - [ ] P8 — Workflow de auditoría separado (H5). Prioridad: media. Depende de: P3 y P4.
   - Archivos: `.github/workflows/dependency-audit.yml` (nuevo) y la sección de excepciones de `docs/auditoria-dependencias.md`.
-  - Diseño: `schedule` semanal, `workflow_dispatch` y `pull_request` con `paths` de los archivos de dependencias. `pip-audit==2.10.1` (instalado solo en ese job) con `-r backend/constraints.txt --no-deps --disable-pip`, más `npm audit` y `npm audit signatures`. `permissions: contents: read`.
+  - Diseño: `schedule` semanal, `workflow_dispatch` y `pull_request` con `paths` de los archivos de dependencias. `pip-audit==2.10.1` (instalado solo en ese job) con `-r backend/constraints.txt --no-deps --disable-pip`. `npm audit` (basta con el lockfile), y `npm ci --ignore-scripts --no-fund` seguido de `npm audit signatures`, que necesita los paquetes instalados. `permissions: contents: read`.
+  - Limitaciones (documentarlas en la auditoría):
+    - GitHub desactiva el cron tras 60 días sin actividad.
+    - El aviso de un fallo programado solo lo recibe quien modificó el cron por última vez.
+    - Sin protección de `main`, el job informa pero no bloquea. Exigirlo sería una medida aparte, que decide el propietario.
   - Aceptación: un run manual en verde. Con una versión vulnerable en una rama de prueba (sin integrar), el job falla. Un PR que no toca dependencias no lo ejecuta. Cada `--ignore-vuln` tiene su justificación y su fecha en la auditoría.
   - Pruebas: los runs de CI descritos.
   - Regresión: falsos positivos en los runs programados (gestionados con excepciones justificadas). `tests.yml` no cambia.
@@ -89,7 +104,7 @@ Propuesta de endurecimiento (**pendiente de aprobación**). Cada bloque es una f
 
 **Medidas opcionales** (cada una en su propia rama si se aprueba):
 
-- [ ] P10 — Acciones de GitHub fijadas por SHA con comentario de versión, y `dependabot.yml` solo para `github-actions` (H9). Prioridad: baja. Archivos: `.github/workflows/*.yml`, `.github/dependabot.yml`. Aceptación: cada `uses:` apunta a un SHA de 40 caracteres que coincide con su etiqueta (`gh api repos/<acción>/git/ref/tags/<v>`), y la CI está en verde. Regresión: ninguna funcional. Revisión: sí (CI).
+- [ ] P10 — Acciones de GitHub fijadas por SHA con comentario de versión, y `dependabot.yml` solo para `github-actions` (H9). Prioridad: baja. Archivos: `.github/workflows/*.yml`, `.github/dependabot.yml`. Aceptación: cada `uses:` apunta a un SHA de 40 caracteres que coincide con su etiqueta (`gh api repos/<acción>/git/ref/tags/<v>`), y la CI está en verde. Si se aprueba, se puede imponer activando `sha_pinning_required` en los permisos de Actions del repositorio (hoy `false`). Regresión: ninguna funcional. Revisión: sí (CI).
 - [ ] P11 — Alinear los entornos: Python 3.12 disponible en local, o añadir 3.14 a una matriz de CI, y `engines` o `.nvmrc` para Node (H4). Prioridad: baja. Archivos: `.github/workflows/tests.yml`, `frontend/package.json`, `README.md`. Aceptación: la versión de referencia está documentada y la CI la prueba. Revisión: sí si toca la CI.
 - [ ] P12 — Actualizaciones mayores del frontend (H10): `primevue` 5 con `@primeuix/themes` 3 primero (llevan más tiempo sin publicar y van en el bundle), después `pinia` 4, `vue-router` 5, `vite` 8 y `typescript` 7. **Fuera de este plan:** cada una es una funcionalidad con su propio documento ODD y sus pruebas E2E.
 - [ ] P13 — Bloqueo con hashes (uv con `--universal --generate-hashes`) si el modelo de amenazas crece con la bóveda persistente. Fuera de alcance por ahora.
@@ -194,3 +209,16 @@ Orden recomendado: P7 (inmediata, sin código) → P1, P2 → P3 → P4, P5 → 
   - **Sin cambios:** dependencias, código y CI. Suite local: 138 OK.
   - **Ruta:** inline; solo documentación, sin escritores delegados.
   - **Siguiente paso:** A3.
+- **L3 (2026-11-03):** A3, revisión independiente.
+  - **Revisión nativa de gentle-ai:** con lentes la rechazó («an agent lens selection needs a medium or high risk review»), porque el commit es pasivo (`non_executable_only`). El START indicado por el hook la cerró como `approved` sin lentes y quedó reconocida (`authority: burned`). Solo hizo comprobaciones estructurales.
+  - **Revisor independiente:** de solo lectura y sin mis conclusiones como premisa. Volvió a comprobar versiones, avisos OSV, el aviso de OpenSSL, el registro de CI, el uso de la API criptográfica, el alcance de `origin_guard` y el estado de Dependabot: todo confirmado. Ningún hallazgo bloqueante.
+  - **Correcciones aplicadas:**
+    - P8: `npm audit signatures` necesita `npm ci` antes; reproducido: `found no dependencies to audit` solo con el lockfile.
+    - P7: la aceptación queda solo en el 204; que GitHub detecte `cryptography` con rangos no está verificado.
+    - P4: la línea de `e2e` es un subconjunto; colorama se añade a mano; ninguna versión de FastAPI ni de uvicorn exige `starlette>=1.3.1` ni `h11>=0.16`, así que van en `constraints.txt`; riesgo de wheels cp314.
+    - R1: se añade el límite inferior de `cryptography`.
+    - H1: «urgente por el rango, no por los avisos».
+    - `main` sin protección y `sha_pinning_required: false` se incorporan a la auditoría y a P8 y P10.
+    - P1: el vector se genera con sal y nonce fijos sin tocar `encrypt_session`; la comprobación manual incluye el `AAD`.
+  - **Sin verificar:** el grafo de dependencias y los archivos de restricciones, las sumas de Playwright, `cryptography` 50.0.2 en 3.14 y 3.12, y el exploit UNC.
+  - **Siguiente paso:** aprobación del plan por el usuario.

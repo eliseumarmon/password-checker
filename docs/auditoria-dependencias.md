@@ -23,7 +23,7 @@ La gravedad publicada de un aviso no equivale al riesgo aquí. Lo que condiciona
 
 | ID | Hallazgo | Tipo | Riesgo real | Ámbito | Prioridad |
 | --- | --- | --- | --- | --- | --- |
-| [H1](#h1--cryptography-4607-con-avisos-abiertos-y-un-rango-que-impide-corregirlos) | `cryptography` 46.0.7 con avisos abiertos; el rango `<47` impide corregirlos | Confirmado | Bajo hoy (código afectado inalcanzable) | Producción | **Urgente** |
+| [H1](#h1--cryptography-4607-con-avisos-abiertos-y-un-rango-que-impide-corregirlos) | `cryptography` 46.0.7 con avisos abiertos; el rango `<47` impide corregirlos | Confirmado | Bajo hoy (código afectado inalcanzable) | Producción | **Urgente** por el rango, no por los avisos |
 | [H2](#h2--pruebas-de-cifrado-y-api-que-se-saltan-en-silencio) | Pruebas de cifrado y API que se saltan en silencio si falla una importación | Confirmado | Medio durante actualizaciones | Pruebas, CI | **Urgente** (previa a H1) |
 | [H3](#h3--sin-prueba-de-compatibilidad-del-formato-pwc-entre-versiones) | Sin prueba de compatibilidad del formato `.pwc` entre versiones | Confirmado | Medio durante actualizaciones | Pruebas | **Urgente** (previa a H1) |
 | [H4](#h4--instalaciones-python-no-reproducibles) | Instalaciones Python no reproducibles (sin bloqueo; Python y Node distintos en local y CI) | Confirmado | Medio | Producción, desarrollo, CI | Mantenimiento (alta) |
@@ -83,6 +83,8 @@ Sin vulnerabilidades conocidas en el frontend: `npm audit` da 0 en producción y
 - **Acciones:** `actions/checkout`, `actions/setup-python`, `actions/setup-node` y `actions/upload-artifact`, todas de GitHub y por etiqueta `@v7` (últimas publicadas: v7.0.1, v7.1.0, v7.1.0 y v7.0.2).
 - **Navegador de pruebas:** `npx playwright install --with-deps chromium` descarga Chrome for Testing 156.0.8078.4 desde `cdn.playwright.dev` y paquetes del sistema con `apt`. La versión la determina `@playwright/test` del lockfile.
 - **Ajustes de seguridad del repositorio** (`gh api`): escaneo de secretos y protección de push activados; **alertas y actualizaciones de seguridad de Dependabot desactivadas**.
+- **Rama `main` sin protección** (`gh api repos/eliseumarmon/password-checker/branches/main/protection` devuelve 404): ninguna comprobación de CI es obligatoria para integrar.
+- **Permisos de Actions:** `GITHUB_TOKEN` en solo lectura por defecto, sin poder aprobar PR, y `sha_pinning_required: false`.
 
 ## Hallazgos confirmados
 
@@ -128,6 +130,7 @@ Las pruebas de sesión solo cifran y descifran dentro de la misma ejecución ([t
 
 - `gh api repos/eliseumarmon/password-checker/vulnerability-alerts` devuelve 404: **alertas de Dependabot desactivadas** en un repositorio público. Las actualizaciones de seguridad también están desactivadas.
 - La CI no audita nada (`npm ci --no-audit`) y no hay `dependabot.yml`.
+- `main` no está protegida, así que aunque una auditoría fallase, nada impediría integrar.
 - **Evidencia del efecto:** los avisos de [H1](#h1--cryptography-4607-con-avisos-abiertos-y-un-rango-que-impide-corregirlos) se publicaron entre junio y agosto de 2026 y no han aparecido en ninguna parte hasta esta auditoría.
 - **Ámbito:** CI y repositorio.
 
@@ -174,6 +177,7 @@ Las cuatro acciones son de GitHub y se fijan por etiqueta mayor (`@v7`), que pue
 | --- | --- | --- | --- |
 | `python-multipart>=0.0.9` | 0.0.9 | 8 avisos, incluidos DoS en el parser multipart: [GHSA-59g5-xgcq-4qw3](https://github.com/advisories/GHSA-59g5-xgcq-4qw3) (0.0.18), [GHSA-pp6c-gr5w-3c5g](https://github.com/advisories/GHSA-pp6c-gr5w-3c5g) (0.0.27), [GHSA-5rvq-cxj2-64vf](https://github.com/advisories/GHSA-5rvq-cxj2-64vf) (0.0.30); el último corregido en 0.0.31 | Solo con peticiones del mismo origen o locales: `origin_guard` rechaza las de otros sitios antes de leer el cuerpo. DoS local. |
 | `fastapi>=0.115` → `starlette>=0.37.2,<0.39` | 0.38.6 | [GHSA-wqp7-x3pw-xc5r](https://github.com/advisories/GHSA-wqp7-x3pw-xc5r): SSRF y robo de credenciales NTLM mediante rutas UNC en `StaticFiles` en Windows (1.1.0); [GHSA-86qp-5c8j-p5mr](https://github.com/advisories/GHSA-86qp-5c8j-p5mr): validación de `Host` (1.0.1); otros hasta 1.3.1 | **Plausible**, no reproducido: la app usa `StaticFiles` en `/assets/`, que `origin_guard` no protege, y se usa en Windows. Una página web visitada mientras la app está abierta podría provocar una autenticación NTLM saliente con una Starlette antigua. |
+| `cryptography>=44` | 44.0.0 | Los cuatro avisos de [H1](#h1--cryptography-4607-con-avisos-abiertos-y-un-rango-que-impide-corregirlos) y tres más corregidos en 46.x (GHSA-79v4-65xg-pq4g, GHSA-m959-cc7f-wv43, GHSA-r6ph-v2qm-q3c2) | No consta que ninguno afecte a AES-GCM; los corrige la tarea P3. |
 | `uvicorn>=0.30` → `h11>=0.8` | 0.14.0 | [GHSA-vqfr-h8mv-ghfj](https://github.com/advisories/GHSA-vqfr-h8mv-ghfj) (0.16.0) | Bajo: el contrabando de peticiones requiere un proxy intermedio, y no lo hay. |
 | `pytest>=8` | 8.0.0 | [GHSA-6w46-j5rx-g56g](https://github.com/advisories/GHSA-6w46-j5rx-g56g) (9.0.3) | Solo desarrollo. |
 
@@ -190,7 +194,7 @@ Las cuatro acciones son de GitHub y se fijan por etiqueta mayor (`@v7`), que pue
 - **Explotabilidad de GHSA-wqp7-x3pw-xc5r con Starlette < 1.1.0:** deducida del aviso y del código, sin prueba de concepto.
 - **Retirada de `httpx` en `TestClient`:** Starlette lo marca como obsoleto, pero no se ha encontrado una fecha ni una versión de retirada.
 - **Verificación de integridad de Playwright** al descargar navegadores.
-- **Si Dependabot y el grafo de dependencias de GitHub interpretan un archivo de restricciones** como el propuesto en [Reproducibilidad](#reproducibilidad-y-política-de-versiones).
+- **Si Dependabot y el grafo de dependencias de GitHub interpretan un archivo de restricciones** como el propuesto en [Reproducibilidad](#reproducibilidad-y-política-de-versiones), o los requisitos actuales, que solo tienen rangos. `gh api …/dependency-graph/sbom` devuelve 404: no se sabe si porque el grafo está desactivado o por permisos. Lo previsible es que las alertas de Python cubran como mucho las dependencias directas.
 - **Funcionamiento de `cryptography` 50.0.2** con Python 3.14 en Windows y con 3.12 en CI: hay wheels para ambos, pero no se han instalado.
 
 ## Reproducibilidad y política de versiones
@@ -224,7 +228,8 @@ Las cuatro acciones son de GitHub y se fijan por etiqueta mayor (`@v7`), que pue
 ### Detección en CI sin fallos imprevistos
 
 - **Activar las alertas de Dependabot** en los ajustes del repositorio. No cambia el código ni la CI y avisa sin bloquear.
-- **Añadir un workflow aparte** (`dependency-audit.yml`), no un paso dentro de `tests.yml`. Se ejecutaría con `schedule` semanal, `workflow_dispatch` y `pull_request` filtrado a los archivos de dependencias. Usaría `pip-audit` fijado a una versión exacta sobre `constraints.txt` (`--no-deps --disable-pip`, sin resolver ni instalar el proyecto), además de `npm audit` y `npm audit signatures`.
+- **Añadir un workflow aparte** (`dependency-audit.yml`), no un paso dentro de `tests.yml`. Se ejecutaría con `schedule` semanal, `workflow_dispatch` y `pull_request` filtrado a los archivos de dependencias. Usaría `pip-audit` fijado a una versión exacta sobre `constraints.txt` (`--no-deps --disable-pip`, sin resolver ni instalar el proyecto) y `npm audit`, que funciona solo con el lockfile. `npm audit signatures` necesita los paquetes instalados (sin ellos devuelve `found no dependencies to audit`), así que el job ejecutaría antes `npm ci --ignore-scripts --no-fund` para no correr scripts de instalación.
+- **Limitaciones operativas:** GitHub desactiva los workflows programados tras 60 días sin actividad en el repositorio, y solo avisa del fallo programado a quien modificó por última vez el cron. Sin protección de `main`, el resultado informa pero no bloquea.
 - **Por qué así:**
   - Un aviso nuevo no rompe los PR ajenos a las dependencias: falla el run programado, que GitHub notifica.
   - En un PR que cambia dependencias, el autor ve el resultado de su propio cambio.
