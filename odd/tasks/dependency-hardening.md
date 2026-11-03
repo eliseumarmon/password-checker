@@ -20,6 +20,7 @@ Fase `fix/cryptography-50` (aprobada en L4):
 - **S8 — H2 antes de actualizar.** «Las pruebas obligatorias de cifrado y API no deben saltarse silenciosamente cuando faltan dependencias o se producen errores de importación.» «Deben fallar explícitamente para evitar falsos positivos en CI.» «Añade las pruebas necesarias para verificar este comportamiento, sin introducir complejidad innecesaria.»
 - **S9 — Actualizar `cryptography`.** «Actualiza a `cryptography` 50.0.2, previa comprobación de que sigue siendo una versión adecuada y corregida.» «Ajusta el rango permitido para excluir versiones vulnerables.» Rango final (L8): «Quita el techo `<51` y deja `cryptography>=50.0.2`.» «Comprueba compatibilidad con Python 3.12 y 3.14.» «Ejecuta las pruebas completas del backend y las E2E relevantes.»
 - **S10 — `pip-audit` en el `.venv`.** «Puedes instalar `pip-audit` directamente en el `.venv` existente.» «Ejecútalo sobre las dependencias efectivamente instaladas.» «Registra las versiones auditadas, los resultados y los posibles hallazgos pendientes.» «Distingue los problemas reales de los falsos positivos o vulnerabilidades que no afectan al uso actual.» «Valora si conviene incorporarlo a `requirements-dev.txt` en la tarea posterior de automatización, pero no amplíes ahora el alcance.»
+- **S12 — P8, auditoría automática (L19).** «Implementa un workflow independiente para:» «Ejecutar `pip-audit` sobre las dependencias Python fijadas en `backend/constraints.txt`.» «Ejecutar `npm audit` sobre las dependencias del frontend, distinguiendo producción y desarrollo.» «Utilizar versiones controladas de las herramientas de auditoría.» «Permitir ejecución manual y periódica.» «Presentar resultados comprensibles, con las vulnerabilidades y paquetes afectados.» «Evitar que los PR ajenos a dependencias queden bloqueados por nuevas vulnerabilidades detectadas externamente o problemas temporales de los servicios de auditoría.» «Comprueba que el workflow detecta realmente las vulnerabilidades y no devuelve falsos resultados satisfactorios cuando falla una herramienta o no se analizan dependencias.» «No añadas `pip-audit` a `requirements-dev.txt` ni modifiques las 24 restricciones de H4 para incluir sus dependencias.» «Mantén separada P7 (alertas de Dependabot)». «No amplíes el alcance a actualizaciones de dependencias, hashes ni otros pendientes.»
 - **S11 — Revisión y CI.** «Solicita una revisión independiente centrada en seguridad, compatibilidad con las versiones de Python utilizadas, cobertura de pruebas y posibles regresiones.» «Comprueba que Ruff no introduce avisos nuevos y que la CI termina correctamente.» Límites: «No implementes todavía H4 ni H5.» «Puedes subir y actualizar la rama remota para ejecutar CI, pero **no la integres en `main` sin mi aprobación**.»
 
 ## Tasks
@@ -84,7 +85,11 @@ Plan de endurecimiento (**aprobado en L4**; cada rama se integra solo con la apr
   - No verificado: que GitHub detecte `cryptography` con requisitos que solo tienen rangos. Para Python, las alertas probablemente solo cubran dependencias directas, así que la red real es P8.
   - Pruebas y regresión: ninguna.
   - Revisión independiente: no.
-- [ ] P8 — Workflow de auditoría separado (H5). Prioridad: media. Depende de: P3 y P4.
+- [ ] P8 — Workflow de auditoría separado (H5). Prioridad: media. Depende de: P3 y P4. **Ajustado en L19 (S12):**
+  - Además de `schedule`, `workflow_dispatch` y `pull_request`, se dispara con `push` limitado a los mismos `paths`, para poder verificarlo antes de integrar.
+  - `pip-audit` y sus dependencias van fijados en `.github/audit-requirements.txt`.
+  - Un script versionado (`.github/scripts/dependency_audit.py`), con pruebas unitarias, interpreta los JSON. Falla ante vulnerabilidades, ante un error de la herramienta y cuando se analizan menos paquetes de los fijados.
+  - El run manual en verde se comprueba después de integrar.
   - Archivos: `.github/workflows/dependency-audit.yml` (nuevo) y la sección de excepciones de `docs/auditoria-dependencias.md`.
   - Diseño: `schedule` semanal, `workflow_dispatch` y `pull_request` con `paths` de los archivos de dependencias. `pip-audit==2.10.1` (instalado solo en ese job) con `-r backend/constraints.txt --no-deps --disable-pip`. `npm audit` (basta con el lockfile), y `npm ci --ignore-scripts --no-fund` seguido de `npm audit signatures`, que necesita los paquetes instalados. `permissions: contents: read`.
   - Limitaciones (documentarlas en la auditoría):
@@ -509,3 +514,78 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
   - **CI:** run `41656482013` sobre `1fca6b0`, en verde en `python`, `frontend` y `e2e`.
   - **Job `python`, en este orden:** unitarias (139), Ruff y comprobación de restricciones («24 pins»), los tres correctos. E2E: 88.
   - **H4 terminada:** pendiente de la aprobación del usuario para integrarla en `main`.
+- **L17 (2026-11-03):** última revisión de H4.
+  - **Revisión** `review-47330554336fcc51`: toda la rama respecto a `main`, 4 lentes, consentimiento del usuario. Aprobada y reconocida (`authority: burned`) sobre `713d296`, con la CI de la rama en verde. Cinco sugerencias no bloqueantes, sin aplicar para no abrir otra revisión completa de la rama.
+  - **Decisión del usuario** (L18): conservar solo las que sigan siendo pertinentes, como mantenimiento opcional y sin prioridad.
+    - **Se conservan como opcionales:**
+      - marcar el inventario de la auditoría (`docs/auditoria-dependencias.md`, líneas 57-58: 29 paquetes, transitivas de `pytest`, sin bloqueo) como la foto anterior a H4;
+      - que el paso de restricciones avise también de versiones fijadas que ya no se instalan (sin contar las líneas con marcador).
+    - **Se descartan:**
+      - renombrar la variable `unpinned`, por ser cosmético;
+      - proteger el paso frente a distribuciones sin nombre en sus metadatos, porque solo ocurre con un entorno corrupto y la CI usa un runner limpio.
+    - **Hashes:** siguen como P13.
+- **L18 (2026-11-03):** integración de H4, petición literal:
+
+  > Apruebo integrar `chore/reproducible-installs` en `main`.
+  >
+  > Antes de integrar, comprueba que el diff sigue limitado a H4 y que `main` no ha avanzado inesperadamente.
+  >
+  > Integra la rama y verifica la CI de `main`. Si termina correctamente, elimina la rama local y remota, comprobando previamente que no quedan commits exclusivos.
+  >
+  > Da H4 por completada. Registra L17 y la integración en el plan, preferiblemente en la siguiente rama de trabajo para evitar commits directos de documentación en `main`.
+  >
+  > Las cinco observaciones menores no bloquean la integración. Conserva únicamente las mejoras que sigan siendo pertinentes como mantenimiento opcional, sin convertirlas automáticamente en nuevas tareas prioritarias.
+  >
+  > No comiences P8 hasta que confirmemos que la integración ha terminado correctamente.
+
+  - **Antes de integrar:**
+    - `main` local y remoto seguían en `2bd5a23`, que era la base de la rama, y la rama local coincidía con la remota (`713d296`).
+    - El diff con `origin/main` solo tocaba los 7 archivos de H4, sin código de producción, pruebas ni frontend. En dependencias, solo la retirada de `pytest` y `python-multipart>=0.0.31`.
+  - **`27734ba` — Merge `chore/reproducible-installs`** (`--no-ff`): suite y Ruff locales en verde.
+  - **CI de `main`:** run `41658726069`, en verde en `python`, `frontend` y `e2e`, con Python 3.12.15. Restricciones: 24, todas coinciden. Unitarias: 139. E2E: 88.
+  - **Rama borrada:** `chore/reproducible-installs`, en local y en remoto, sin commits exclusivos.
+  - **Estado:** H4 completada. P7 sigue sin activar (`vulnerability-alerts` devuelve 404).
+- **L19 (2026-11-03):** P8, petición literal:
+
+  > Continúa con **P8 — Automatización de la auditoría de dependencias**, siguiendo `odd/tasks/dependency-hardening.md` y el flujo ODD habitual.
+  >
+  > Parte de `main` actualizado y crea una rama independiente.
+  >
+  > Antes de implementar:
+  > - Registra L17 y L18, incluyendo la integración de H4 (`27734ba`) y su CI.
+  > - Revisa los criterios de aceptación de P8 y respeta las decisiones ya aprobadas.
+  >
+  > Implementa un workflow independiente para:
+  > - Ejecutar `pip-audit` sobre las dependencias Python fijadas en `backend/constraints.txt`.
+  > - Ejecutar `npm audit` sobre las dependencias del frontend, distinguiendo producción y desarrollo.
+  > - Utilizar versiones controladas de las herramientas de auditoría.
+  > - Permitir ejecución manual y periódica.
+  > - Presentar resultados comprensibles, con las vulnerabilidades y paquetes afectados.
+  > - Evitar que los PR ajenos a dependencias queden bloqueados por nuevas vulnerabilidades detectadas externamente o problemas temporales de los servicios de auditoría.
+  >
+  > Comprueba que el workflow detecta realmente las vulnerabilidades y no devuelve falsos resultados satisfactorios cuando falla una herramienta o no se analizan dependencias.
+  >
+  > No añadas `pip-audit` a `requirements-dev.txt` ni modifiques las 24 restricciones de H4 para incluir sus dependencias.
+  >
+  > Mantén separada P7 (alertas de Dependabot), que requiere configuración del repositorio.
+  >
+  > Solicita revisión independiente centrada en seguridad, fiabilidad del workflow y detección de falsos negativos.
+  >
+  > Registra las pruebas y decisiones en el plan. Puedes subir la rama para verificar GitHub Actions, pero no integrarla en `main` sin mi aprobación.
+  >
+  > No amplíes el alcance a actualizaciones de dependencias, hashes ni otros pendientes.
+
+  - **Rama:** `ci/dependency-audit`, desde `main` en `27734ba`.
+  - **Comportamiento real de las herramientas** (salidas capturadas en local, `pip-audit` 2.10.1 y npm 11.3.0):
+    - **`pip-audit` con una entrada sin dependencias:** termina con código 0, «No known vulnerabilities found» y `dependencies: []`. Es un **falso resultado satisfactorio** si solo se mira el código de salida.
+    - **`pip-audit` con un archivo inexistente:** código 1 y ningún JSON.
+    - **`pip-audit` con `cryptography==46.0.7`:** código 1 y 7 entradas, IDs repetidos con alias, para 4 avisos.
+    - **`npm audit` sin conexión al registro:** código 1 y un JSON con `error`, sin `auditReportVersion`.
+    - **`npm audit` en un proyecto vacío:** código 0 y `metadata.dependencies.total` 0.
+    - **`npm audit` en el frontend:** `total` es 119, igual que el número de paquetes de `package-lock.json`.
+    - **`npm audit --omit=dev`:** solo lista los avisos de producción. Con `lodash` 4.17.20 en producción y `minimist` 1.2.5 en desarrollo, el informe completo trae los dos y el de producción solo `lodash`.
+  - **Contradicción en P8:** el criterio «un run manual en verde» no se puede cumplir antes de integrar, porque GitHub solo permite lanzar a mano (`workflow_dispatch`) un workflow que exista en la rama por defecto. Ese run se hará después de integrar; antes se verifica con un disparador `push` limitado a los archivos de dependencias (S12).
+  - **Herramienta fijada:**
+    - `pip-audit==2.10.1` y sus 26 dependencias van fijadas en `.github/audit-requirements.txt`, se instalan con `--no-deps` y se comprueban con `pip check`. Sin esa lista, cada run tomaría las últimas versiones de requests, rich, cyclonedx y demás.
+    - Con Python 3.12, `cyclonedx-python-lib` también pide `typing_extensions` (`python_version < "3.13"`), que va con ese marcador explícito.
+    - Ni `requirements-dev.txt` ni las 24 restricciones de H4 cambian.
