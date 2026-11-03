@@ -97,7 +97,7 @@ def read_export(fmt, filename, origin):
     else:
         path = Path(filename)
         if not path.is_file():
-            raise ValueError("No existe el archivo CSV: {}".format(path))
+            raise ValueError(f"No existe el archivo CSV: {path}")
         file_context = path.open("r", encoding="utf-8-sig", newline="")
     rows = []
     with file_context as file:
@@ -114,11 +114,11 @@ def read_export(fmt, filename, origin):
                 raise ValueError("Cabecera vacía en el CSV")
             normalized = column_key(header)
             if normalized in keys:
-                raise ValueError("Columnas repetidas en el CSV: {}".format(header))
+                raise ValueError(f"Columnas repetidas en el CSV: {header}")
             keys[normalized] = index
         if "password" not in keys:
             separator = " ¿El CSV esta separado por punto y coma?" if len(headers) == 1 and ";" in headers[0] else ""
-            raise ValueError("Falta columna 'password' en el CSV.{}".format(separator))
+            raise ValueError(f"Falta columna 'password' en el CSV.{separator}")
         if not any(k in keys for k in URL_COLUMNS):
             raise ValueError("Falta columna de URL en el CSV")
         expected = len(headers)
@@ -152,24 +152,23 @@ def read_export(fmt, filename, origin):
                     if len(values) == expected - 1:
                         values.append("")
                 else:
-                    raise ValueError("CSV: línea {}: URI desplazada; la reconstruccion de nombre es ambigua. No se importara.".format(line))
+                    raise ValueError(f"CSV: línea {line}: URI desplazada; la reconstruccion de nombre es ambigua. No se importara.")
             if len(values) > expected:
                 if url_idx is not None and not supported_uri(values[url_idx]):
-                    raise ValueError("CSV: línea {}: URI fuera de su columna o invalida; se cancela para proteger la contrasena.".format(line))
+                    raise ValueError(f"CSV: línea {line}: URI fuera de su columna o invalida; se cancela para proteger la contrasena.")
                 hint = (" Revisa comas sin comillas en notas; vuelve a exportar el archivo"
                         " y comprueba las columnas en privado."
                         if note_last and fmt == "chromium" else
                         " Comprueba la exportacion CSV original y su separador.")
-                raise ValueError("CSV: línea {}: {} columnas, esperadas {}.{}".format(
-                    line, len(values), expected, hint))
+                raise ValueError(f"CSV: línea {line}: {len(values)} columnas, esperadas {expected}.{hint}")
             elif len(values) < expected:
                 # Ausencia del unico ultimo campo 'note' se interpreta como
                 # nota vacia. No completar otras ausencias ambiguas.
                 if len(values) == expected - 1 and note_last:
                     values.append("")
                 else:
-                    raise ValueError("CSV: línea {}: {} columnas, esperadas {}."
-                                     " No se importara parcialmente.".format(line, len(values), expected))
+                    raise ValueError(f"CSV: línea {line}: {len(values)} columnas, esperadas {expected}."
+                                     " No se importara parcialmente.")
 
             # Count after row validation/repairs and before skipping empty credentials:
             # a row that yields no credential still counts if the unknown column has data.

@@ -1,7 +1,7 @@
 """Note merging: distinct notes are always preserved, never silently dropped."""
 from __future__ import annotations
 
-from typing import Iterable
+from collections.abc import Iterable
 
 NOTE_SEPARATOR = "\n\n----- Nota adicional -----\n\n"
 

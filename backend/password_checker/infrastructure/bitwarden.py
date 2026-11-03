@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import csv
 import io
-from typing import Dict, Iterable, Protocol, TextIO, Tuple
+from collections.abc import Iterable
+from typing import Protocol, TextIO
 
 BITWARDEN_FIELDS = (
     "folder", "favorite", "type", "name", "notes", "fields", "reprompt",
@@ -20,7 +21,7 @@ class LoginRecord(Protocol):
     totp: str
 
 
-def bitwarden_row(item: LoginRecord) -> Dict[str, str]:
+def bitwarden_row(item: LoginRecord) -> dict[str, str]:
     return {
         "folder": "", "favorite": "", "type": "login",
         "name": item.name, "notes": item.note, "fields": "",
@@ -43,7 +44,7 @@ def write_bitwarden_csv(file: TextIO, items: Iterable[LoginRecord]) -> int:
     return count
 
 
-def bitwarden_csv_bytes(items: Iterable[LoginRecord]) -> Tuple[bytes, int]:
+def bitwarden_csv_bytes(items: Iterable[LoginRecord]) -> tuple[bytes, int]:
     """In-memory export, UTF-8 with BOM; return the bytes and the credential count."""
     buffer = io.StringIO(newline="")
     count = write_bitwarden_csv(buffer, items)

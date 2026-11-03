@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, NamedTuple, Optional
+from typing import Any, NamedTuple
 from urllib.parse import urlsplit
 
 # Chrome exports Android app credentials using android://signature@package/.
@@ -55,12 +55,12 @@ def parse_url(raw: str) -> UrlInfo:
         # Mantener subdominios, rutas, parametros, fragmentos, puertos y esquemas.
         # Solo normalizamos mayusculas y el / vacio en la raiz.
         default_port = _default_port(scheme)
-        network = host if port in (None, default_port) else "{}:{}".format(host, port)
+        network = host if port in (None, default_port) else f"{host}:{port}"
         # Compatibilidad con IPv6 al reconstruir la autoridad.
         if ":" in host:
-            network = "[{}]".format(host)
+            network = f"[{host}]"
             if port not in (None, default_port):
-                network += ":{}".format(port)
+                network += f":{port}"
         path = parsed.path or "/"
         canonical = (scheme, network, path, parsed.query, parsed.fragment)
         return UrlInfo(canonical, host, scheme == "http", False,
@@ -78,7 +78,7 @@ def supported_uri(raw: str) -> bool:
     return not parse_url(raw).invalid
 
 
-def android_package(raw: str) -> Optional[str]:
+def android_package(raw: str) -> str | None:
     """Package of a Chrome android:// URI, exactly as written."""
     match = ANDROID_SOURCE.fullmatch(raw.strip())
     return match.group("package") if match else None

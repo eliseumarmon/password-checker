@@ -4,6 +4,8 @@
 # so the checks do not change when Ruff changes its defaults. Ruff is pinned in
 # backend/requirements-dev.txt; how to add rules or upgrade it is in the README, section "Pruebas".
 target-version = "py312"
+# The code's own convention; no rule enforces it (E501 is not selected), but isort wraps imports at it.
+line-length = 120
 
 [lint]
 select = [

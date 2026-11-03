@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
@@ -12,13 +11,17 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from .infrastructure.bitwarden import bitwarden_csv_bytes
-from .infrastructure.csv_reader import read_upload
-from .infrastructure.sessions import (MAX_SESSION_PASSPHRASE_LENGTH,
-                                      MIN_SESSION_PASSPHRASE_LENGTH, decrypt_session, encrypt_session)
 from .application import limits
 from .application.limits import MAX_WORKSPACE_FILES
 from .application.workspace import ImportedFile, Workspace
+from .infrastructure.bitwarden import bitwarden_csv_bytes
+from .infrastructure.csv_reader import read_upload
+from .infrastructure.sessions import (
+    MAX_SESSION_PASSPHRASE_LENGTH,
+    MIN_SESSION_PASSPHRASE_LENGTH,
+    decrypt_session,
+    encrypt_session,
+)
 
 MAX_FILE_SIZE = 5 * 1024 * 1024
 MAX_TOTAL_SIZE = 20 * 1024 * 1024
@@ -52,14 +55,14 @@ async def origin_guard(request: Request, call_next):
 
 class EditRecord(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    name: Optional[str] = Field(default=None, max_length=1024)
-    url: Optional[str] = Field(default=None, max_length=4096)
-    username: Optional[str] = Field(default=None, max_length=1024)
-    password: Optional[str] = Field(default=None, max_length=8192)
-    note: Optional[str] = Field(default=None, max_length=100_000)
-    totp: Optional[str] = Field(default=None, max_length=4096)
-    included: Optional[bool] = None
-    review: Optional[str] = None
+    name: str | None = Field(default=None, max_length=1024)
+    url: str | None = Field(default=None, max_length=4096)
+    username: str | None = Field(default=None, max_length=1024)
+    password: str | None = Field(default=None, max_length=8192)
+    note: str | None = Field(default=None, max_length=100_000)
+    totp: str | None = Field(default=None, max_length=4096)
+    included: bool | None = None
+    review: str | None = None
 
 
 @app.exception_handler(RequestValidationError)

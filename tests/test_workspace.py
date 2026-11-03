@@ -1,16 +1,16 @@
 """Tests use synthetic records only. No real credentials or network calls."""
 import sys
-from dataclasses import FrozenInstanceError
 import unittest
+from dataclasses import FrozenInstanceError
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from backend.password_checker.infrastructure.bitwarden import bitwarden_csv_bytes
 from backend.password_checker.application.candidate import Candidate
 from backend.password_checker.application.limits import MAX_SNAPSHOT_FILE_NAME_CHARS
 from backend.password_checker.application.workspace import ImportedFile, Workspace
 from backend.password_checker.domain.credential import Credential
+from backend.password_checker.infrastructure.bitwarden import bitwarden_csv_bytes
 
 
 def cred(name, url, user, password, source='chrome', note=''):

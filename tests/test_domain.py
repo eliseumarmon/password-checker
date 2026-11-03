@@ -5,13 +5,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from backend.password_checker.domain.accounts import account_key, duplicate_key, origin_account  # noqa: E402
-from backend.password_checker.domain.credential import Credential  # noqa: E402
-from backend.password_checker.domain.notes import NOTE_SEPARATOR, combine_notes  # noqa: E402
-from backend.password_checker.domain.reuse import shared_password_groups  # noqa: E402
-from backend.password_checker.domain.strength import Strength, assess_strength, is_weak  # noqa: E402
-from backend.password_checker.domain.urls import (  # noqa: E402
-    bitwarden_uri, parse_url, supported_uri,
+from backend.password_checker.domain.accounts import account_key, duplicate_key, origin_account
+from backend.password_checker.domain.credential import Credential
+from backend.password_checker.domain.notes import NOTE_SEPARATOR, combine_notes
+from backend.password_checker.domain.reuse import shared_password_groups
+from backend.password_checker.domain.strength import Strength, assess_strength, is_weak
+from backend.password_checker.domain.urls import (
+    bitwarden_uri,
+    parse_url,
+    supported_uri,
 )
 
 

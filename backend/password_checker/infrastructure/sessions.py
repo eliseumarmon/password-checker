@@ -26,8 +26,8 @@ MAX_SESSION_PASSPHRASE_LENGTH = 1024
 
 def _key(passphrase: str, salt: bytes) -> bytes:
     if not MIN_SESSION_PASSPHRASE_LENGTH <= len(passphrase) <= MAX_SESSION_PASSPHRASE_LENGTH:
-        raise ValueError('La contraseña de la sesión debe tener entre {} y {} caracteres'.format(
-            MIN_SESSION_PASSPHRASE_LENGTH, MAX_SESSION_PASSPHRASE_LENGTH))
+        raise ValueError(f'La contraseña de la sesión debe tener entre {MIN_SESSION_PASSPHRASE_LENGTH} '
+                         f'y {MAX_SESSION_PASSPHRASE_LENGTH} caracteres')
     return hash_secret_raw(
         secret=passphrase.encode('utf-8'), salt=salt,
         time_cost=3, memory_cost=65536, parallelism=1,

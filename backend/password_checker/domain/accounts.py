@@ -1,13 +1,13 @@
 """Account identity: when two credentials can safely be treated as the same login."""
 from __future__ import annotations
 
-from typing import Any, Optional, Tuple
+from typing import Any
 
 from .credential import Credential
 from .urls import parse_url
 
 
-def origin_account(rec: Credential) -> Optional[Tuple[Any, str]]:
+def origin_account(rec: Credential) -> tuple[Any, str] | None:
     """Origin (scheme, host, port) or Android package + username: one account for reuse checks.
 
     Paths of one site are the same account; local apps on different ports are not.
@@ -20,13 +20,13 @@ def origin_account(rec: Credential) -> Optional[Tuple[Any, str]]:
     return url.key[:2], rec.username
 
 
-def account_key(rec: Credential) -> Optional[Any]:
+def account_key(rec: Credential) -> Any | None:
     url = parse_url(rec.url)
     if not rec.url or not rec.username or url.invalid or url.embedded_auth:
         return None  # No fusionar cuentas ambiguas o sin usuario.
     return url.key, rec.username  # No cambiar mayusculas de usuarios potencialmente sensibles.
 
 
-def duplicate_key(rec: Credential) -> Optional[Any]:
+def duplicate_key(rec: Credential) -> Any | None:
     account = account_key(rec)
     return (account, rec.password) if account and rec.password else None

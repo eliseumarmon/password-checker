@@ -5,11 +5,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from backend.password_checker.domain.credential import Credential  # noqa: E402
-from backend.password_checker.infrastructure.bitwarden import bitwarden_csv_bytes  # noqa: E402
-from backend.password_checker.application.candidate import Candidate  # noqa: E402
-from backend.password_checker.application.review_state import detect_audit  # noqa: E402
-from backend.password_checker.application.workspace import Workspace  # noqa: E402
+from backend.password_checker.application.candidate import Candidate
+from backend.password_checker.application.review_state import detect_audit
+from backend.password_checker.application.workspace import Workspace
+from backend.password_checker.domain.credential import Credential
+from backend.password_checker.infrastructure.bitwarden import bitwarden_csv_bytes
 
 SEPARATOR = '\n\n----- Nota adicional -----\n\n'
 
@@ -30,7 +30,7 @@ class WorkspaceContractTests(unittest.TestCase):
         self.assertEqual(count, 1)
         self.assertEqual(exported, (
             '﻿folder,favorite,type,name,notes,fields,reprompt,login_uri,login_username,login_password,login_totp\n'
-            ',,login,Site,n,,0,https://a.invalid,u,"fake,pw",\n').encode('utf-8'))
+            ',,login,Site,n,,0,https://a.invalid,u,"fake,pw",\n').encode())
 
     def test_android_candidate_follows_bitwarden_chrome_importer(self):
         app = candidate('android://SIGN@Com.Example.App/', 'eve', 'fake-app-123456', 'mine', name='')
