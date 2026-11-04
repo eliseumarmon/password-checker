@@ -1,7 +1,7 @@
 # Dependencias y cadena de suministro: auditoría y plan de endurecimiento
 
 Objetivo: diagnosticar riesgos de dependencias, reproducibilidad y CI, y proponer un plan proporcionado. Diagnóstico completo en [auditoria-dependencias](../../docs/auditoria-dependencias.md).
-Rama de la auditoría: `docs/dependency-audit` desde `main` (solo documentación). **Estado: fase prioritaria cerrada (L25).** P2-P8 integradas en `main`. Siguen abiertas P9 (prioridad baja) y las opcionales P10-P13; P12 queda vinculada a la Fase 1 del frontend (L26). Nada se integra en `main` sin aprobación del usuario. Pruebas de cada tarea: `python -m unittest discover -s tests`, `ruff check .`, `npm run build`, `npm run e2e`.
+Rama de la auditoría: `docs/dependency-audit` desde `main` (solo documentación). **Estado: fase prioritaria cerrada (L25).** P2-P8 integradas en `main`. P9 y P11 completadas (L28-L29). Quedan solo las opcionales P10 y P13, y P12, vinculada a la Fase 1 del frontend (L26). Nada se integra en `main` sin aprobación del usuario. Pruebas de cada tarea: `python -m unittest discover -s tests`, `ruff check .`, `npm run build`, `npm run e2e`.
 
 ## Specs
 
@@ -729,3 +729,13 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
     - `Dependency audit` (run `41802123756`) en verde, con Node 24.22.2: 24 paquetes de Python y 119 de npm sin vulnerabilidades.
   - **Observación:** las versiones de parche de Python y Node varían entre runners (en un mismo día, Python 3.12.15 y 3.12.16; Node 24.22.1 y 24.22.2). Es lo esperado al fijar solo `3.12` y `24`; las versiones de parche no se fijan.
   - **Riesgo residual que se cierra:** Python 3.14 ya se prueba en la CI. Windows sigue sin probarse en la CI.
+- **L30 (2026-11-04):** revisión de los cambios encadenados (cierre documental, P9 y P11) respecto a `main`.
+  - **Revisión** `review-6b89bc513d330891`: riesgo escalado a alto por el elemento 5; lentes de riesgo y fiabilidad; consentimiento del usuario. Aprobada y reconocida (`authority: burned`).
+  - **Riesgo:** una sugerencia, `R1-001`: volver a comprobar la procedencia de `httpx2` en cada renovación, porque sigue sin atestaciones PEP 740. Ya figura como riesgo residual (L27) y queda como regla para las renovaciones.
+  - **Fiabilidad:** tres avisos válidos, aplicados.
+    - **`R3-httpx2-test-env-dependent`:** si el entorno conserva `httpx`, Starlette recurre a él y el subcaso que bloqueaba solo `httpx2` fallaba aunque no faltara nada.
+      - RED reproducido en un entorno limpio al que se añadió `httpx==0.28.1`.
+      - El subproceso de la prueba ahora acepta varios paquetes separados por comas, y el caso bloquea `httpx2,httpx`.
+      - GREEN tanto con `httpx` sobrante como en el `.venv` limpio (163 pruebas). Ruff sin avisos.
+    - **`R3-pendiente-stale-httpx2`:** `docs/pendiente.md` decía que la migración a `httpx2` seguía pendiente; ahora solo quedan medidas opcionales.
+    - **`R3-plan-header-p9-open`:** la cabecera del plan decía que P9 seguía abierta; ahora indica P9 y P11 completadas, y abiertas solo P10, P13 y P12 (vinculada a la Fase 1).
