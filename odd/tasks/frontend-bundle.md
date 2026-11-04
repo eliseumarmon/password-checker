@@ -17,7 +17,7 @@ Entrega: `ask-on-risk`, previsión ~10 líneas en T1 (sin contar `package-lock.j
 - **S4 — Carga diferida, solo si S3 la justifica y el usuario la aprueba.**
   - Candidatos: lo que no se ve al arrancar (diálogos de comparación, ficha y sesión; pantallas de Auditoría, Papelera y Ajustes), con `defineAsyncComponent`.
   - Aceptación: ningún chunk pasa de 500 kB; todos los recursos se siguen sirviendo desde el propio origen, sin cambiar la CSP (`script-src 'self'`); las E2E pasan, incluidas las de foco de `keyboard-accessibility`, porque un diálogo que se carga bajo demanda no debe perder el foco inicial.
-- **S5 — Coherencia del plan de dependencias.** En `odd/tasks/dependency-hardening.md`, P12 deja de incluir `vue-router` 5.
+- **S5 — Coherencia con P12.** P12 ya no incluye `vue-router` 5: ahora es un paso propio de la Fase 1, [frontend-major-updates](frontend-major-updates.md) (L5). Al integrar T1, se anota allí que `vue-router` se retiró. Pinia se conserva: «**Vue Router:** retirarlo durante la Fase 1 y conservar Pinia.»
 
 ## Tasks
 
@@ -26,7 +26,7 @@ Entrega: `ask-on-risk`, previsión ~10 líneas en T1 (sin contar `package-lock.j
   - Riesgo: punto 5 (dependencias). Commit propio y verificación independiente.
 - [ ] T2 — S1, S3: medición tras `native-tables` y decisión, registradas en el Log. Ruta: inline. Sin código si no hay aviso.
 - [ ] T3 — S4: carga diferida, solo si T2 la justifica y el usuario la aprueba. Ruta: inline.
-- [ ] T4 — S5: P12 ya prevé retirar `vue-router`; lo recoge la entrada L26 de `dependency-hardening.md`, integrada en `main`. P12 sigue abierta: al integrar T1, se anota en ella que `vue-router` se retiró. Si coincide en el tiempo, se hace junto con `native-tables` T5. Ruta: inline.
+- [ ] T4 — S5: al integrar T1, anotar en el Log de `frontend-major-updates` (su T4) que `vue-router` se retiró. Si coincide en el tiempo, se hace junto con `native-tables` T5. Ruta: inline.
 
 ## Log
 
@@ -38,3 +38,4 @@ Entrega: `ask-on-risk`, previsión ~10 líneas en T1 (sin contar `package-lock.j
   - La mayor parte del peso probablemente venga de PrimeVue y del tema Aura, que se carga entero en `main.ts`, pero no se ha medido; por eso T2 espera a `native-tables`.
   - Ruta: inline.
 - **L4 (2026-11-04).** Integrado `origin/main` (`eb719fe`): `docs/close-dependency-hardening`, con la vinculación de P12, ya está en `main`. P11 fija Node 24 en `frontend/.nvmrc`; las mediciones de S3 se hacen con esa versión.
+- **L5 (2026-11-04).** Decisión del usuario, literal: «**Vue Router:** retirarlo durante la Fase 1 y conservar Pinia.» Antes se valoró conservar `vue-router` para la futura navegación multiusuario. La recomendación fue retirarlo: sigue sin usarse, el multiusuario llega después de la bóveda (Fase 6) y reinstalarlo entonces es trivial. P12 sale de `dependency-hardening`, que pasa a `odd/done`, a [frontend-major-updates](frontend-major-updates.md). S5 y T4 apuntan ahora allí. Encargo completo en `odd/tasks/roadmap-horizons.md`, L1.

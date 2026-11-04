@@ -1,7 +1,7 @@
 # Dependencias y cadena de suministro: auditoría y plan de endurecimiento
 
 Objetivo: diagnosticar riesgos de dependencias, reproducibilidad y CI, y proponer un plan proporcionado. Diagnóstico completo en [auditoria-dependencias](../../docs/auditoria-dependencias.md).
-Rama de la auditoría: `docs/dependency-audit` desde `main` (solo documentación). **Estado: fase prioritaria cerrada (L25).** P2-P8 integradas en `main`. P9 y P11 completadas (L28-L29). Quedan solo las opcionales P10 y P13, y P12, vinculada a la Fase 1 del frontend (L26). Nada se integra en `main` sin aprobación del usuario. Pruebas de cada tarea: `python -m unittest discover -s tests`, `ruff check .`, `npm run build`, `npm run e2e`.
+Rama de la auditoría: `docs/dependency-audit` desde `main` (solo documentación). **Estado: completado (L33).** P2-P8 integradas en `main`. P9 y P11 completadas (L28-L29). Las medidas que quedaban salieron de este plan, cada una a un plan propio (L33): P10 a [actions-sha-pinning](../tasks/actions-sha-pinning.md), P12 a [frontend-major-updates](../tasks/frontend-major-updates.md) (Fase 1) y P13 a [python-hash-locking](../tasks/python-hash-locking.md) (Fase 6). Nada se integra en `main` sin aprobación del usuario. Pruebas de cada tarea: `python -m unittest discover -s tests`, `ruff check .`, `npm run build`, `npm run e2e`.
 
 ## Specs
 
@@ -108,17 +108,11 @@ Plan de endurecimiento (**aprobado en L4**; cada rama se integra solo con la apr
   - Regresión: diferencias de comportamiento del cliente en `TestClient`.
   - Revisión independiente: no.
 
-**Medidas opcionales** (cada una en su propia rama si se aprueba):
+**Medidas opcionales** (cada una en su propia rama si se aprueba). P10, P12 y P13 salieron de este plan (L33); su texto original se conserva como S1 de [actions-sha-pinning](../tasks/actions-sha-pinning.md), [frontend-major-updates](../tasks/frontend-major-updates.md) y [python-hash-locking](../tasks/python-hash-locking.md).
 
-- [ ] P10 — Acciones de GitHub fijadas por SHA con comentario de versión, y `dependabot.yml` solo para `github-actions` (H9). Prioridad: baja. Archivos: `.github/workflows/*.yml`, `.github/dependabot.yml`. Aceptación: cada `uses:` apunta a un SHA de 40 caracteres que coincide con su etiqueta (`gh api repos/<acción>/git/ref/tags/<v>`), y la CI está en verde. Si se aprueba, se puede imponer activando `sha_pinning_required` en los permisos de Actions del repositorio (hoy `false`). Regresión: ninguna funcional. Revisión: sí (CI).
 - [x] P11 — Alinear los entornos (H4). Commit `07e786d` (L29). **Decidido en L27 (S13):** matriz de Python 3.12 y 3.14 en el job `python`; Node 24 como única referencia mediante `frontend/.nvmrc`. Rama `ci/align-runtimes`, encadenada sobre `chore/httpx2`.
   - Archivos: `.github/workflows/tests.yml`, `.github/workflows/dependency-audit.yml`, `frontend/.nvmrc` (nuevo) y `README.md`.
   - Aceptación: la CI prueba Python 3.12 y 3.14 (unitarias, Ruff y comprobación de restricciones) y usa Node 24 desde `.nvmrc` en todos los jobs. El README documenta las versiones de referencia. Revisión: sí, porque toca la CI.
-- [ ] P12 — Actualizaciones mayores del frontend (H10). **Vinculada a la Fase 1 del frontend (L26):**
-  - `primevue` y `@primeuix/themes` no se actualizarán: la Fase 1 retira PrimeVue (decisión D1).
-  - `vue-router`, que no se usa, también se retira en la Fase 1.
-  - Quedan `pinia` 4, `vite` 8 y `typescript` 7. Siguen siendo opcionales y fuera de este plan: cada una, si se aborda, es una funcionalidad con su propio documento ODD y sus pruebas E2E.
-- [ ] P13 — Bloqueo con hashes (uv con `--universal --generate-hashes`) si el modelo de amenazas crece con la bóveda persistente. Fuera de alcance por ahora.
 
 Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 → resto según la política de actualización. Previsión: P2-P3 unas 100 líneas, P4-P6 unas 80 más el archivo generado y P8 unas 60; cada rama por debajo de las ~400 líneas, con un PR por rama.
 
@@ -754,3 +748,8 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
     - **`R1-001`:** volver a comprobar la procedencia de `httpx2` en cada renovación; ya es la regla de L30.
     - **`R2-probe-package-list-name`:** renombrar el parámetro; ya se descartó en L31.
     - **`R3-httpx2-assertion-internal-attr`:** la prueba lee el nombre interno `httpx` de `starlette.testclient`. Si Starlette lo cambia, la prueba falla con `AttributeError` en vez de con una aserción, pero nunca da un falso éxito.
+- **L33 (2026-11-04):** cierre del plan. Petición, literal: «P12 se integra formalmente en Fase 1 con su propio paso. Desaparece de dependency-hardening. P13 se integra en la Fase 6 con su propio paso cuando se implemente la bóveda. Desaparece de dependency-hardening. Dependency hardening pasa a done.» Encargo completo en `odd/tasks/roadmap-horizons.md`, L1.
+  - **P10** se resuelve ahora, antes de la Fase 1, en su propio plan, `odd/tasks/actions-sha-pinning.md`. Así este plan puede pasar a `odd/done` sin tareas abiertas.
+  - **P12** es un paso propio de la Fase 1: `odd/tasks/frontend-major-updates.md`. `vue-router` se retira en la Fase 1 y Pinia se conserva.
+  - **P13** es un paso propio de la Fase 6: `odd/tasks/python-hash-locking.md`. Se reevalúa durante el diseño de la bóveda (`vault-discovery` T6).
+  - El texto original de cada medida se conserva literal como S1 de su nuevo plan. Este plan pasa a `odd/done`.

@@ -6,21 +6,23 @@ Este documento reúne en un solo sitio las fases de trabajo de Password Checker,
 
 | Fase | Objetivo | Estado | Bloqueada por | Planes |
 |---|---|---|---|---|
-| 0 | Endurecer dependencias y cadena de suministro | **Cerrada** (2026-11-04) | — | [dependency-hardening](../odd/tasks/dependency-hardening.md) |
-| 1 | Cimientos del frontend: colores en variables, tablas nativas, accesibilidad y tamaño del bundle | Planificada | D2, solo para una tarea | [css-tokens](../odd/tasks/css-tokens.md), [native-tables](../odd/tasks/native-tables.md), [keyboard-accessibility](../odd/tasks/keyboard-accessibility.md), [frontend-bundle](../odd/tasks/frontend-bundle.md) |
+| 0 | Endurecer dependencias y cadena de suministro | **Cerrada** (2026-11-04); P10, antes de la Fase 1 | — | [dependency-hardening](../odd/done/dependency-hardening.md), [actions-sha-pinning](../odd/tasks/actions-sha-pinning.md) (P10) |
+| 1 | Cimientos del frontend: colores en variables, tablas nativas, accesibilidad, tamaño del bundle y actualizaciones mayores | Planificada | D2, solo para una tarea | [css-tokens](../odd/tasks/css-tokens.md), [native-tables](../odd/tasks/native-tables.md), [keyboard-accessibility](../odd/tasks/keyboard-accessibility.md), [frontend-bundle](../odd/tasks/frontend-bundle.md), [frontend-major-updates](../odd/tasks/frontend-major-updates.md) (P12) |
 | 2 | Revisión más ágil, sin cambiar el formato `.pwc` | Planificada | — | [review-filters](../odd/tasks/review-filters.md), [undo-ux](../odd/tasks/undo-ux.md), [secret-visibility](../odd/tasks/secret-visibility.md), [export-preview](../odd/tasks/export-preview.md), [compare-resolution](../odd/tasks/compare-resolution.md), [local-strength](../odd/tasks/local-strength.md), [mobile-record-detail](../odd/tasks/mobile-record-detail.md) |
 | 3 | Datos de revisión que se guardan en la sesión (`.pwc` v3) | **Bloqueada** | D8, D3 (y D5 para las asociaciones de servicio) | Sin plan detallado (véase [Fase 3](#fase-3--datos-de-revisión-en-la-sesión)) |
 | 4 | Ajustes: tema claro, ayuda, bloqueo por inactividad, idioma | Planificada en parte | D4 (bloqueo), D6 (idioma) | [light-theme](../odd/tasks/light-theme.md), [help-section](../odd/tasks/help-section.md) |
 | 5 | Validación con personas | Planificada | — | [user-validation](../odd/tasks/user-validation.md) |
-| 6 | Bóveda persistente: primero diseño, después implementación | Diseño planificado; implementación **bloqueada** | D7 | [vault-discovery](../odd/tasks/vault-discovery.md) |
+| 6 | Bóveda persistente: primero diseño, después implementación | Diseño planificado; implementación **bloqueada** | D7 | [vault-discovery](../odd/tasks/vault-discovery.md), [python-hash-locking](../odd/tasks/python-hash-locking.md) (P13) |
 
-Fuera de la hoja de ruta, por no ser viables sin un modelo de amenazas: multiusuario y compartición, sincronización entre equipos y acceso móvil sin ADB. Sigue vigente la restricción de no reintroducir la CLI.
+**Horizontes futuros, previstos pero sin planificar:** cuentas de usuario; bóvedas personales y de organización, con departamentos y permisos; compartición de secretos, y sincronización entre equipos. Llegarán después de validar la bóveda personal y local de la Fase 6, y antes necesitan su propio modelo de amenazas; por eso todavía no tienen fase. La primera bóveda no los incluye, pero su diseño los tiene en cuenta para no dificultarlos ([vault-discovery](../odd/tasks/vault-discovery.md), T4-T6). Las ideas de origen están en el trabajo pendiente: [compartición y equipos](pendiente.md#compartición-equipos-y-verificación-en-dos-pasos) y [sincronización](pendiente.md#dispositivos-sincronización-e-integraciones).
+
+Fuera de la hoja de ruta, por no ser viable sin un modelo de amenazas: el acceso móvil sin ADB. Sigue vigente la restricción de no reintroducir la CLI.
 
 ## Cómo leer las fases
 
 - **Las fases agrupan; las dependencias ordenan.** El orden real lo marca el apartado «Depende de» de cada plan, no una secuencia rígida. Por ejemplo, `local-strength` es casi todo backend y puede empezar en cualquier momento, y la validación con personas se hace en rondas a medida que avanzan las fases.
 - **Una decisión pendiente solo bloquea lo que la necesita.** Cada plan indica qué decisión lo bloquea, si alguna lo hace.
-- **Los pendientes opcionales de la Fase 0 (P10 y P13) no bloquean ninguna fase.** P12 queda absorbida en parte por la Fase 1.
+- **Los pendientes que quedaban de la Fase 0 tienen ya su propio plan.** P10 se cierra antes de empezar la Fase 1; P12 es un paso de la Fase 1, y P13, de la Fase 6. Ninguno bloquea otra fase.
 - **Cada plan es un documento ODD** en `odd/tasks/`, con sus specs, tareas, pruebas y registro. Ningún plan está aprobado para implementarse hasta que el usuario lo diga.
 
 ## Decisiones
@@ -33,7 +35,7 @@ Fuera de la hoja de ruta, por no ser viables sin un modelo de amenazas: multiusu
 | D4 | ¿Qué significa «bloquear» por inactividad? | **Pendiente** | Bloqueo por inactividad (Fase 4) | Opción B, como primer paso de la bóveda |
 | D5 | ¿Las credenciales se identifican por su URL o se vinculan a un servicio lógico común? | **Pendiente** | Asociaciones de servicio (Fase 3) y modelo de la bóveda (Fase 6) | Decidir en `vault-discovery` T4 |
 | D6 | ¿Se traduce la interfaz a otros idiomas? | **Pendiente** | Ajuste de idioma (Fase 4) | Aplazar hasta la validación con personas |
-| D7 | ¿Cuál es el alcance de la primera versión de la bóveda? | **Pendiente** | Implementación de la Fase 6 | Decidir con los documentos de `vault-discovery` |
+| D7 | ¿Cuál es el alcance de la primera versión de la bóveda? | **Pendiente**, con una orientación (2026-11-04): bóveda personal, local y cifrada | Implementación de la Fase 6 | Decidir el resto con los documentos de `vault-discovery` |
 | D8 | ¿Cómo encaja `.pwc` v3 con la futura bóveda? | **Pendiente** (nueva, 2026-11-04) | Fase 3 | Definir antes el contrato de persistencia y exportación |
 
 ### D2 — `Esc` en los diálogos
@@ -77,6 +79,8 @@ Hay textos fijos en español en todos los componentes, y los mensajes de error d
 
 El [trabajo pendiente](pendiente.md) pide: «Elegir el primer alcance útil: bóveda personal local, tipos de elementos básicos y respaldos, o requisitos empresariales desde el inicio; evitar mezclar estas fases en una sola implementación.» Se decide con los documentos de `vault-discovery`.
 
+**Orientación del usuario (2026-11-04):** «Primero desarrollaremos una bóveda personal, local y cifrada.» Los requisitos empresariales no entran en la primera versión, aunque su diseño los tiene en cuenta (véanse los horizontes futuros del [resumen](#resumen)). Falta decidir el resto del alcance, como los tipos de elementos y los respaldos, en `vault-discovery` T6.
+
 ### D8 — `.pwc` v3 y la bóveda
 
 La Fase 3 cambiaría el formato `.pwc` para guardar datos de revisión antes de diseñar la bóveda, que también cambiará el formato: el trabajo pendiente prevé el `.pwc` como «respaldo portable» capaz de incluir «diferentes tipos de elementos, sus adjuntos y metadatos necesarios». Hacer v3 sin ese diseño puede obligar a una segunda migración.
@@ -92,16 +96,25 @@ Recomendación: hacer primero `vault-discovery` T2 y decidir entre A y B con ese
 
 ### Fase 0 — Endurecimiento de dependencias
 
-Cerrada el 2026-11-04: P2-P8 integradas en `main`, con las alertas de Dependabot (P7) activadas y la auditoría automática (P8) en marcha. También están completadas e integradas P9 (pruebas de la API con `httpx2`) y P11 (CI con Python 3.12 y 3.14, y Node 24 fijado en `frontend/.nvmrc`). Quedan solo las opcionales P10 y P13, que no bloquean nada, y P12, absorbida en parte por la Fase 1: `primevue`, `@primeuix/themes` y `vue-router` se retiran en lugar de actualizarse; `pinia` 4, `vite` 8 y `typescript` 7 siguen siendo opcionales. Detalle en [dependency-hardening](../odd/tasks/dependency-hardening.md).
+Cerrada el 2026-11-04: P2-P8 integradas en `main`, con las alertas de Dependabot (P7) activadas y la auditoría automática (P8) en marcha. También están completadas e integradas P9 (pruebas de la API con `httpx2`) y P11 (CI con Python 3.12 y 3.14, y Node 24 fijado en `frontend/.nvmrc`). El plan, [dependency-hardening](../odd/done/dependency-hardening.md), está completado. Las tres medidas que quedaban salieron de él, cada una a su propio plan:
+
+| Medida | Plan | Cuándo |
+|---|---|---|
+| P10: acciones de GitHub fijadas por SHA y Dependabot para `github-actions` | [actions-sha-pinning](../odd/tasks/actions-sha-pinning.md) | Antes de la Fase 1 |
+| P12: actualizaciones mayores del frontend (`pinia` 4, `vite` 8, `typescript` 7) | [frontend-major-updates](../odd/tasks/frontend-major-updates.md) | Fase 1 |
+| P13: instalación de Python con hashes | [python-hash-locking](../odd/tasks/python-hash-locking.md) | Fase 6, si el diseño de la bóveda la confirma |
 
 ### Fase 1 — Cimientos del frontend
+
+**Antes de empezar** se cierran dos pendientes pequeños, cada uno en su rama, ninguno del frontend: P10 ([actions-sha-pinning](../odd/tasks/actions-sha-pinning.md)) y DT4, la línea que se informa cuando falla la cabecera de un CSV ([reliability-hardening](../odd/tasks/reliability-hardening.md)).
 
 | Plan | Depende de |
 |---|---|
 | [css-tokens](../odd/tasks/css-tokens.md): colores en variables CSS, sin cambio visual | — |
 | [native-tables](../odd/tasks/native-tables.md): tablas nativas y retirada de PrimeVue (D1) | `css-tokens` |
 | [keyboard-accessibility](../odd/tasks/keyboard-accessibility.md): revisión de accesibilidad, foco en diálogos, pestañas | `css-tokens`, `native-tables`; T2, de D2 |
-| [frontend-bundle](../odd/tasks/frontend-bundle.md): retirar `vue-router`; dividir el código solo si sigue el aviso de 500 kB | T1: nada; T2-T3: `native-tables` |
+| [frontend-bundle](../odd/tasks/frontend-bundle.md): retirar `vue-router` (Pinia se conserva); dividir el código solo si sigue el aviso de 500 kB | T1: nada; T2-T3: `native-tables` |
+| [frontend-major-updates](../odd/tasks/frontend-major-updates.md): P12, evaluar `pinia` 4, `vite` 8 y `typescript` 7, cada una en su rama | `native-tables`, `frontend-bundle` T1 |
 
 ### Fase 2 — Revisión más ágil
 
@@ -141,7 +154,9 @@ Es un cambio de formato persistido: requerirá verificación independiente y un 
 
 ### Fase 6 — Bóveda persistente
 
-[vault-discovery](../odd/tasks/vault-discovery.md): modelo de amenazas y documentos de decisión, sin código. Su T2 (contrato de persistencia y exportación) se adelanta porque D8 lo necesita. La implementación queda **bloqueada por D7**, que se decide con esos documentos.
+[vault-discovery](../odd/tasks/vault-discovery.md): modelo de amenazas y documentos de decisión, sin código. Su T2 (contrato de persistencia y exportación) se adelanta porque D8 lo necesita. La implementación queda **bloqueada por D7**, que se decide con esos documentos. La primera versión es una bóveda personal, local y cifrada. Además, T4-T6 estudian cómo evolucionaría hacia varias bóvedas y propietarios, y hacia una arquitectura de claves multiusuario, sin implementarlo.
+
+[python-hash-locking](../odd/tasks/python-hash-locking.md): P13, instalación de Python con hashes. Se reevalúa durante el diseño (`vault-discovery` T6) y, si se confirma, se implementa junto con la bóveda.
 
 ## Origen y cambios
 
@@ -151,3 +166,5 @@ Es un cambio de formato persistido: requerirá verificación independiente y un 
 | 2026-11-03 | D1 aprobada; planes de la Fase 1 en `odd/tasks/`. |
 | 2026-11-04 | Fase 0 cerrada (P7 y P8). Después, P9 y P11 completadas e integradas en `main`. |
 | 2026-11-04 | Revisión externa de la hoja de ruta, aportada por el usuario. Se incorporan tres puntos: (1) resolver D2 durante la Fase 1, antes del trabajo de teclado en los diálogos; (2) definir la relación entre `.pwc` v3 y la bóveda antes de comprometer v3, que da lugar a D8 y a adelantar `vault-discovery` T2; (3) leer las fases como agrupaciones con dependencias, no como una secuencia rígida. |
+| 2026-11-04 | El multiusuario, la compartición y la sincronización pasan a figurar como horizontes futuros previstos, no como funcionalidades descartadas. `vault-discovery` T4-T6 estudian esa evolución. D7 recibe una orientación: bóveda personal, local y cifrada. |
+| 2026-11-04 | `dependency-hardening` pasa a `odd/done`. P10, P12 y P13 tienen su propio plan: P10 se cierra antes de la Fase 1, junto con DT4; P12 es un paso de la Fase 1, y P13, de la Fase 6. Se retira `vue-router` y se conserva Pinia. |

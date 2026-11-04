@@ -61,7 +61,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - Medición posterior y comparación con T1 en el Log; capturas finales (S5).
   - Riesgo: punto 5 (dependencias). Commit propio y verificación independiente.
 - [ ] T5 — Coherencia del plan de dependencias. Ruta: inline.
-  - P12 ya está vinculada a esta fase (L5). Al integrar T4, se anota en P12 de `odd/tasks/dependency-hardening.md` que `primevue` y `@primeuix/themes` ya se retiraron, y en `docs/auditoria-dependencias.md`, que ya no son dependencias.
+  - P12 es un paso propio de esta fase, [frontend-major-updates](frontend-major-updates.md) (L7). Al integrar T4, se anota en su Log (su T4) que `primevue` y `@primeuix/themes` ya se retiraron, y en `docs/auditoria-dependencias.md`, que ya no son dependencias.
   - Depende de: T4. `docs/close-dependency-hardening`, que modificaba esos dos archivos, ya está integrada en `main` (L6).
 
 ## Log
@@ -114,3 +114,4 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - P9 (`httpx2`, `ea9dde3`) y P11 (Python 3.12 y 3.14, Node 24 en `frontend/.nvmrc`, `eb719fe`) están completadas.
   - Del plan de dependencias quedan las opcionales P10 y P13, y P12 vinculada a esta fase.
   - T5 ya no espera a otra rama, solo a T4.
+- **L7 (2026-11-04).** `dependency-hardening` pasa a `odd/done`, y P12 sale de él a un paso propio de esta fase, [frontend-major-updates](frontend-major-updates.md). T5 anota allí la retirada de PrimeVue. Encargo en `odd/tasks/roadmap-horizons.md`, L1.
