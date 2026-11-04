@@ -97,7 +97,17 @@ class CsvUploadTests(unittest.TestCase):
         self.assertIn('línea 3', message)
 
     def test_bad_quoting_in_the_header_is_a_readable_error(self):
-        self.assert_readable_error(b'name,"url"fictional-header,username,password,note\n', 'fictional-header')
+        message = self.assert_readable_error(b'name,"url"fictional-header,username,password,note\n',
+                                             'fictional-header')
+        self.assertIn('en la línea 1:', message)
+
+    def test_a_multiline_header_error_names_the_line_where_it_fails(self):
+        huge = b'fictional-huge-' + b'x' * csv.field_size_limit()
+        for newline in (b'\n', b'\r\n'):
+            with self.subTest(newline=newline):
+                content = b'name,url,username,password,"note' + newline + b'second' + newline + huge + b'"' + newline
+                message = self.assert_readable_error(content, 'fictional-huge-')
+                self.assertIn('en la línea 3:', message)
 
     def test_field_over_the_csv_reader_limit_is_a_readable_error(self):
         huge = b'fictional-huge-' + b'x' * csv.field_size_limit()

@@ -106,7 +106,7 @@ Cerrada el 2026-11-04: P2-P8 integradas en `main`, con las alertas de Dependabot
 
 ### Fase 1 — Cimientos del frontend
 
-**Antes de empezar** se cierran dos pendientes pequeños, cada uno en su rama, ninguno del frontend: P10 ([actions-sha-pinning](../odd/tasks/actions-sha-pinning.md)) y DT4, la línea que se informa cuando falla la cabecera de un CSV ([reliability-hardening](../odd/tasks/reliability-hardening.md)).
+**Antes de empezar** se cierran dos pendientes pequeños, cada uno en su rama, ninguno del frontend: P10 ([actions-sha-pinning](../odd/tasks/actions-sha-pinning.md)) y DT4, la línea que se informa cuando falla la cabecera de un CSV ([reliability-hardening](../odd/done/reliability-hardening.md)).
 
 | Plan | Depende de |
 |---|---|

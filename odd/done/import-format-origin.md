@@ -59,7 +59,7 @@ Una rama por tarea desde `main`, encadenadas cuando compartan archivos; test pri
 
 Sin cambios en la bienvenida (selector y arrastre), el diálogo «Importar reemplazará la sesión actual», las acciones de revisión, los filtros, los estados ni el exportador de Bitwarden.
 Fuera de alcance: elegir el navegador a mano; formatos de gestores (KeePass, 1Password, Bitwarden); Safari, que va en su propia lista.
-Relación: `odd/tasks/reliability-hardening.md` T2 (errores de lectura CSV como 422) cubre parte de S7; si se hace antes, T3 lo reutiliza.
+Relación: `odd/done/reliability-hardening.md` T2 (errores de lectura CSV como 422) cubre parte de S7; si se hace antes, T3 lo reutiliza.
 
 ## Registro
 
