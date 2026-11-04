@@ -2,7 +2,7 @@
 
 Objetivo: que la CI no ejecute otro código sin una decisión explícita. Cada acción se fija por el SHA de su commit, con la versión en un comentario, y Dependabot propone las actualizaciones. Corresponde al hallazgo H9 de la [auditoría de dependencias](../../docs/auditoria-dependencias.md#h9--acciones-de-github-referenciadas-por-etiqueta-mutable).
 Rama: `ci/pin-actions-sha`, encadenada sobre `docs/roadmap-horizons`. No se integra en `main` sin la aprobación del usuario. Entrega: `single-pr`, previsión de unas 40 líneas.
-Comprobaciones: cada SHA, contrastado con su etiqueta mediante `gh api`; YAML válido; y la CI en verde, que exige subir la rama. Estado: T1 hecha y verificada (L4); falta la CI en verde, que exige subir la rama, y la revisión.
+Comprobaciones: cada SHA, contrastado con su etiqueta mediante `gh api`; YAML válido; y la CI en verde, que exige subir la rama. Estado: T1 hecha, verificada (L4) y revisada (L5); falta la CI en verde, que exige subir la rama.
 
 ## Specs
 
@@ -46,3 +46,4 @@ Comprobaciones: cada SHA, contrastado con su etiqueta mediante `gh api`; YAML v�
     - (2) Se fijan las etiquetas de parche (v7.0.1…) y no `v7`. Es correcto y coincide con el formato de comentario que actualiza Dependabot.
     - (3) No se configuran `cooldown`, grupos ni `open-pull-requests-limit`; son opcionales y quedan fuera de S1.
   - El verificador dejó archivos temporales fuera del repositorio; ya se eliminaron.
+- **L5 (2026-11-04).** Revisión del rango `1c31f31..52e2059`: riesgo alto (scripts de shell en `dependency-audit.yml`), lente de riesgo y consentimiento del usuario. `review-aaa6aa62dd7a3d04`, aprobada sin hallazgos y reconocida (`authority: burned`). Antes, el usuario avanzó `main` hasta `1c31f31` (fast-forward), de modo que el rango ya solo contiene P10.
