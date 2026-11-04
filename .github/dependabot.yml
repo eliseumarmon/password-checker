@@ -1,0 +1,9 @@
+# Version updates for GitHub Actions only: they are pinned by commit SHA with the
+# release in a trailing comment, and Dependabot updates both. Python and npm are
+# covered by Dependabot alerts and the dependency-audit workflow.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
