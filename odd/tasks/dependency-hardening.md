@@ -101,7 +101,7 @@ Plan de endurecimiento (**aprobado en L4**; cada rama se integra solo con la apr
   - Pruebas: los runs de CI descritos.
   - Regresión: falsos positivos en los runs programados (gestionados con excepciones justificadas). `tests.yml` no cambia.
   - Revisión independiente: **sí** (CI: elemento 5).
-- [ ] P9 — Migrar las pruebas de API de `httpx` a `httpx2` (H6). **Adelantada por el usuario (L27, S13).** Rama `chore/httpx2`, encadenada sobre `docs/close-dependency-hardening`. Depende de: P4.
+- [x] P9 — Migrar las pruebas de API de `httpx` a `httpx2` (H6). Commit `810db17` (L28). **Adelantada por el usuario (L27, S13).** Rama `chore/httpx2`, encadenada sobre `docs/close-dependency-hardening`. Depende de: P4.
   - Archivos: `backend/requirements-dev.txt`, `backend/constraints.txt` y, si cambia la importación, `tests/test_api.py`.
   - Aceptación: sin `StarletteDeprecationWarning` en la CI y con la suite en verde. Procedencia de `httpx2` revisada de nuevo (sus archivos no tenían atestación PEP 740 el 2026-11-03).
   - Pruebas: suite.
@@ -704,3 +704,12 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
     - Dependencias nuevas: `httpcore2==2.16.0`, del mismo repositorio, que pide `h11>=0.16` y `truststore>=0.10`; y `truststore` 0.10.5, de Seth Larson, que usa los certificados del sistema en lugar de `certifi`.
     - Starlette no ha anunciado ninguna fecha para retirar `httpx`.
   - **Ramas:** `chore/httpx2` y `ci/align-runtimes`, encadenadas sobre `docs/close-dependency-hardening`, porque las tres tocan este plan.
+- **L28 (2026-11-04):** P9 en local (Windows, Python 3.14.7).
+  - **Prueba primero:** en `tests/test_required_dependencies.py`, el caso que bloqueaba `httpx` pasa a bloquear `httpx2`. RED con las dependencias anteriores: Starlette recurría a `httpx` instalado y `test_api` no fallaba («[] is not true»).
+  - **`810db17`:**
+    - `requirements-dev.txt` cambia `httpx>=0.27,<1` por `httpx2>=2.16,<3`.
+    - Para `constraints.txt`, las versiones se resolvieron en un entorno limpio manteniendo fijado todo lo demás. Salen `httpx==0.28.1`, `httpcore==1.0.9` y `certifi==2026.10.23`; entran `httpx2==2.16.0`, `httpcore2==2.16.0` y `truststore==0.10.5`. Siguen siendo 24 versiones y no cambia ninguna otra.
+    - `tests/test_api.py` no cambia: `fastapi.testclient` elige `httpx2`.
+  - **GREEN en el entorno limpio:** `pip check` sin problemas; suite 163 OK; Ruff sin avisos. `fastapi.testclient` se importa con los avisos convertidos en errores, sin `StarletteDeprecationWarning`.
+  - **`.venv` local:** se desinstalaron los 32 paquetes que no estaban en las restricciones (las familias de `pytest`, `pip-audit` y `httpx`) y se instaló con `-c`. Quedan exactamente 24 paquetes, idénticos a `constraints.txt`; `pip check` limpio, suite y Ruff en verde. No se borró la carpeta, porque había procesos de Python abiertos que podían bloquearla.
+  - **Riesgo residual:** los archivos de `httpx2` en PyPI no tienen atestación PEP 740 (L27).
