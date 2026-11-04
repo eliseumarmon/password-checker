@@ -739,3 +739,12 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
       - GREEN tanto con `httpx` sobrante como en el `.venv` limpio (163 pruebas). Ruff sin avisos.
     - **`R3-pendiente-stale-httpx2`:** `docs/pendiente.md` decía que la migración a `httpx2` seguía pendiente; ahora solo quedan medidas opcionales.
     - **`R3-plan-header-p9-open`:** la cabecera del plan decía que P9 seguía abierta; ahora indica P9 y P11 completadas, y abiertas solo P10, P13 y P12 (vinculada a la Fase 1).
+- **L31 (2026-11-04):** revisión del estado final de P9 y P11.
+  - **Revisión** `review-65075d38c78d3b39`: 4 lentes, consentimiento del usuario. Aprobada y reconocida (`authority: burned`). Riesgo y resiliencia: sin hallazgos.
+  - **Aplicado:**
+    - **`R2-audit-status-p11-stale` (aviso):** la línea de estado de la auditoría decía que la alineación de versiones seguía pendiente como P11; ahora la da por resuelta (matriz 3.12/3.14 y Node 24 desde `.nvmrc`).
+    - **`R3-no-httpx2-selection-assertion`:** ninguna prueba comprobaba el criterio de P9 (que el cliente de pruebas sea `httpx2`). Nueva prueba, `test_the_api_test_client_uses_httpx2`:
+      - comprueba que `starlette.testclient` usa `httpx2`;
+      - en un entorno con `httpx` y sin `httpx2` falla («'httpx' != 'httpx2'»);
+      - en el `.venv` real pasa: suite 164 OK y Ruff sin avisos.
+  - **Descartado:** `R2-probe-package-name-plural`, renombrar el parámetro `package`, por ser cosmético.
