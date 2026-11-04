@@ -26,7 +26,7 @@ Entrega: `ask-on-risk`, previsión ~10 líneas en T1 (sin contar `package-lock.j
   - Riesgo: punto 5 (dependencias). Commit propio y verificación independiente.
 - [ ] T2 — S1, S3: medición tras `native-tables` y decisión, registradas en el Log. Ruta: inline. Sin código si no hay aviso.
 - [ ] T3 — S4: carga diferida, solo si T2 la justifica y el usuario la aprueba. Ruta: inline.
-- [ ] T4 — S5: P12 ya prevé retirar `vue-router` (L26 de `dependency-hardening.md`, ya en `main`); al integrar T1, se anota que se retiró. Si coincide en el tiempo, se hace junto con `native-tables` T5. Ruta: inline.
+- [ ] T4 — S5: P12 ya prevé retirar `vue-router`; lo recoge la entrada L26 de `dependency-hardening.md`, integrada en `main`. P12 sigue abierta: al integrar T1, se anota en ella que `vue-router` se retiró. Si coincide en el tiempo, se hace junto con `native-tables` T5. Ruta: inline.
 
 ## Log
 
