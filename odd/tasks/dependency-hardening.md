@@ -748,3 +748,9 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
       - en un entorno con `httpx` y sin `httpx2` falla («'httpx' != 'httpx2'»);
       - en el `.venv` real pasa: suite 164 OK y Ruff sin avisos.
   - **Descartado:** `R2-probe-package-name-plural`, renombrar el parámetro `package`, por ser cosmético.
+- **L32 (2026-11-04):** revisión `review-ac7d3d6c309e38fa`, aprobada y reconocida (`authority: burned`). Riesgo y resiliencia: sin nuevos hallazgos.
+  - **Aplicado `R2-audit-status-h4-sentence-conflated` (aviso):** la línea de estado de la auditoría (editada en L31) mezclaba dos frases, como si P11 se hubiera hecho en `chore/reproducible-installs`. Ahora indica que la parte de Python de H4 (con R1, H7 y H8) se resolvió en `chore/reproducible-installs`, P11 en `ci/align-runtimes` y H6 en `chore/httpx2`.
+  - **Opcionales, sin aplicar:**
+    - **`R1-001`:** volver a comprobar la procedencia de `httpx2` en cada renovación; ya es la regla de L30.
+    - **`R2-probe-package-list-name`:** renombrar el parámetro; ya se descartó en L31.
+    - **`R3-httpx2-assertion-internal-attr`:** la prueba lee el nombre interno `httpx` de `starlette.testclient`. Si Starlette lo cambia, la prueba falla con `AttributeError` en vez de con una aserción, pero nunca da un falso éxito.
