@@ -103,7 +103,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
 - **L4 (2026-11-03).** Análisis en `main`:
   - PrimeVue solo se usa en tres componentes (`DataTable` y `Column`) y en `main.ts` (`PrimeVue` y el tema `Aura`). Versiones: `primevue` 4.5.5, `@primevue/core` 4.5.5, `@primeuix/themes` 1.2.5, `@primeuix/styled` 0.7.4.
   - Los E2E dependen de PrimeVue solo por `.p-paginator` y `.p-paginator-next` (`review.spec.ts:56-59`); todo lo demás usa `.desktop-table`, `getByRole('row', …)` y `.desktop-table tbody tr`, que la tabla nativa debe conservar.
-  - `ui-basics.md` (L2 y L3) documenta por qué `style.css` tiene selectores `.p-datatable…`: igualar el padding y ocultar la tabla en móvil.
+  - `odd/done/ui-basics.md` (L2 y L3) documenta por qué `style.css` tiene selectores `.p-datatable…`: igualar el padding y ocultar la tabla en móvil.
   - Ruta: inline en todas las tareas. No aplica el disparador de escritor: las unidades se suceden y comparten archivos (`style.css`, el módulo de lógica y los E2E).
 - **L5 (2026-11-04).** Fase 0 cerrada; actualiza L3:
   - P8 está integrada en `main` (`cf3f089`) y P7 está activada (`vulnerability-alerts` devuelve 204).

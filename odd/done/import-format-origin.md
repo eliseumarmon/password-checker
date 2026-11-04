@@ -1,7 +1,7 @@
 # Importación: formato y origen separados
 
 Separar cómo se lee un CSV (formato) de dónde viene (origen), dejar de inventar un origen y avisar de las columnas con datos que se descartan.
-Va antes del soporte de Safari (`odd/tasks/safari-support.md`), que se apoyará en esta separación.
+Va antes del soporte de Safari (`odd/done/safari-support.md`), que se apoyará en esta separación.
 Una rama por tarea desde `main`, encadenadas cuando compartan archivos; test primero; solo credenciales ficticias.
 
 ## Specs

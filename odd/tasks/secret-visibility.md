@@ -12,7 +12,7 @@ Comprobaciones: `python -m unittest discover -s tests`, `ruff check .`, `npm run
   - **Supuesto:** el botón solo aparece cuando hay algo revelado.
 - **S2 — Revelar en la comparación.** `docs/pendiente.md`: «revelar contraseñas de forma individual dentro de la comparación».
   - Cada registro de la comparación tiene su propio «Mostrar/Ocultar contraseña». Revelar uno no revela los demás.
-  - Un endpoint nuevo devuelve **solo** la contraseña de un registro. No se reutiliza `GET /api/records/{id}`, porque también trae el código 2FA, y `odd/tasks/safari-support.md` (S4) limita dónde viaja: «Solo viaja en la importación, la ficha de edición, la sesión cifrada y la exportación.»
+  - Un endpoint nuevo devuelve **solo** la contraseña de un registro. No se reutiliza `GET /api/records/{id}`, porque también trae el código 2FA, y `odd/done/safari-support.md` (S4) limita dónde viaja: «Solo viaja en la importación, la ficha de edición, la sesión cifrada y la exportación.»
   - El endpoint tiene las mismas protecciones que el resto de `/api/` (origen, `Cache-Control: no-store`), responde 404 si el registro no existe y nunca escribe la contraseña en un error.
   - La guía (§4) sigue vigente: «No utilizar atajos para revelar contraseñas globalmente.»
 - **S3 — Copiar contraseña.** `docs/pendiente.md`, ficha: «botón para copiar la contraseña con aviso de portapapeles».

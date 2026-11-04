@@ -2,7 +2,7 @@
 
 Objetivo: cerrar tres riesgos de fiabilidad identificados en la revisión del 2026-11-01 tras retirar la CLI. El producto es la GUI local FastAPI + Vue; Python mínimo: 3.12.
 
-Estado: **completado y aprobado**. T1, T2 y T3 hechas, con revisión independiente aprobada e integradas en `main` (L13). La deuda técnica no bloqueante queda en «Deuda técnica registrada» (DT1-DT4); DT1 y DT2, resueltas (L14); DT3, resuelta en [ruff-config-and-ci](ruff-config-and-ci.md).
+Estado: **completado y aprobado**. T1, T2 y T3 hechas, con revisión independiente aprobada e integradas en `main` (L13). La deuda técnica no bloqueante queda en «Deuda técnica registrada» (DT1-DT4); DT1 y DT2, resueltas (L14); DT3, resuelta en [ruff-config-and-ci](../done/ruff-config-and-ci.md).
 
 ## Contexto y alcance
 
@@ -76,7 +76,7 @@ Observaciones no bloqueantes de la revisión de T1 (`ea9d190`), aceptadas como d
 - **DT1 — El rechazo nombra un límite que no empeoró** (de T1). Condición de reproducción: el workspace ya supera un límite (solo posible si se bajan los límites) y una operación empeora otro. La operación se rechaza correctamente, pero `_ensure_restorable` devuelve `SessionFit.problem`, que nombra el primer límite superado en orden fijo (registros, archivos, caracteres, tamaño) y no la medida que creció. Ejemplo: ya sobran caracteres en «notas» y una edición hace que el archivo supere 25 MiB; el mensaje habla de «notas». Mejora prevista: informar de la primera medida que empeora. **Resuelta (L14):** `SessionFit.worsened` nombra la primera medida que crece y, en caracteres, el primer campo cuyo exceso crece (L15).
 - **DT2 — Rechazos por límite sin prueba por HTTP** (de T1). Condición: `/api/import` y `PATCH /api/records/{id}` traducen a 422 el `ValueError` de `_ensure_restorable`, pero ese rechazo solo está probado a nivel de `Workspace` (`tests/test_session_limits.py`). Mejora prevista: una prueba de API por ruta con límites reducidos que compruebe el 422, el mensaje sin secretos y el workspace sin cambios. **Resuelta (L14):** dos pruebas en `tests/test_api.py`, una por ruta.
 - **DT4 — Línea fija al fallar la cabecera de un CSV** (de T2, revisión de `4839c94`; no bloqueante). Condición de reproducción: un CSV cuya cabecera tiene un campo entre comillas que ocupa varias líneas y falla al leerla para detectar el navegador (por ejemplo, porque supera `csv.field_size_limit()`). `read_upload` captura el `csv.Error` y siempre informa de la línea 1, sin nombrar el navegador, mientras que las filas usan `reader.line_num` y el origen. La prueba de cabecera solo comprueba «formato no válido», no la línea. Mejora prevista: usar `reader.line_num` también en la cabecera y comprobar la línea en la prueba.
-- **DT3 — Avisos de `ruff` preexistentes** (independiente de T1). 81 avisos en esta rama y 82 en `main`; T1 no introduce ninguno y `ruff` no se ejecuta en CI. Requiere una tarea propia de limpieza; no se corrigen ahora. **Resuelta** en [ruff-config-and-ci](ruff-config-and-ci.md): `ruff.toml` con reglas explícitas, Ruff fijado a 0.17.3, sin avisos y comprobado en CI.
+- **DT3 — Avisos de `ruff` preexistentes** (independiente de T1). 81 avisos en esta rama y 82 en `main`; T1 no introduce ninguno y `ruff` no se ejecuta en CI. Requiere una tarea propia de limpieza; no se corrigen ahora. **Resuelta** en [ruff-config-and-ci](../done/ruff-config-and-ci.md): `ruff.toml` con reglas explícitas, Ruff fijado a 0.17.3, sin avisos y comprobado en CI.
 
 ## Orden de ejecución y validación
 
