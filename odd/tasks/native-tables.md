@@ -44,6 +44,10 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
     - `style.css` no tiene selectores `.p-*` (hoy son tres: `.p-datatable-table`, `.desktop-table.p-datatable` y `.p-datatable-thead`/`.p-datatable-tbody`);
     - `index.html` pierde la clase `app-dark` si nada más la usa (hoy solo la lee el `darkModeSelector` de PrimeVue).
 - **S7 — Flujo.** «Mantendría las tareas pequeñas e independientes y el flujo habitual de implementación, revisión y aceptación antes de integrar en `main`.» Nada se integra en `main` sin la aprobación del usuario.
+- **S8 — La ordenación se conserva al cambiar de pantalla (L8).** Del usuario: «El orden que ya te lo he mencionado.»
+  - Cada tabla conserva su columna y su dirección de ordenación al salir de su pantalla y volver. La paginación también se conserva mientras siga siendo válida.
+  - Hoy se pierde porque `App.vue` cambia de pantalla con `v-if` y cada tabla se desmonta. El estado de orden tiene que vivir fuera del componente; por ejemplo, en el módulo de lógica de S4.
+  - Conservarla también al recargar la página es `review-filters` (S3), en la Fase 2.
 
 ## Tasks
 
@@ -63,6 +67,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
 - [ ] T5 — Coherencia del plan de dependencias. Ruta: inline.
   - P12 es un paso propio de esta fase, [frontend-major-updates](frontend-major-updates.md) (L7). Al integrar T4, se anota en su Log (su T4) que `primevue` y `@primeuix/themes` ya se retiraron, y en `docs/auditoria-dependencias.md`, que ya no son dependencias.
   - Depende de: T4. `docs/close-dependency-hardening`, que modificaba esos dos archivos, ya está integrada en `main` (L6).
+- [ ] T6 — S8: continuidad de la ordenación y la paginación al cambiar de pantalla, en las tres tablas. RED primero en E2E: ordenar, cambiar de pantalla y volver. Depende de: T3. Ruta: inline.
 
 ## Log
 
@@ -114,4 +119,5 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - P9 (`httpx2`, `ea9dde3`) y P11 (Python 3.12 y 3.14, Node 24 en `frontend/.nvmrc`, `eb719fe`) están completadas.
   - Del plan de dependencias quedan las opcionales P10 y P13, y P12 vinculada a esta fase.
   - T5 ya no espera a otra rama, solo a T4.
-- **L7 (2026-11-04).** `dependency-hardening` pasa a `odd/done`, y P12 sale de él a un paso propio de esta fase, [frontend-major-updates](frontend-major-updates.md). T5 anota allí la retirada de PrimeVue. Encargo en `odd/tasks/roadmap-horizons.md`, L1.
+- **L7 (2026-11-04).** `dependency-hardening` pasa a `odd/done`, y P12 sale de él a un paso propio de esta fase, [frontend-major-updates](frontend-major-updates.md). T5 anota allí la retirada de PrimeVue. Encargo en `odd/done/roadmap-horizons.md`, L1.
+- **L8 (2026-11-04).** Anotaciones del usuario sobre una conversación externa, pegada en la sesión, para añadirlas a la hoja de ruta. Se añaden S8 y T6: la ordenación de cada tabla se conserva al cambiar de pantalla. La conversación la situaba aquí («Fase 1 · native-tables»), y la continuidad tras recargar, en `review-filters`.

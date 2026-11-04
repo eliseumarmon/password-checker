@@ -7,7 +7,7 @@ Comprobaciones por tarea: `npm run build` (incluye `vue-tsc`) y `npm run e2e` en
 ## Specs
 
 - **S1 — Origen.** P12 de [dependency-hardening](../done/dependency-hardening.md), literal: «Actualizaciones mayores del frontend (H10).» «`primevue` y `@primeuix/themes` no se actualizarán: la Fase 1 retira PrimeVue (decisión D1).» «`vue-router`, que no se usa, también se retira en la Fase 1.» «Quedan `pinia` 4, `vite` 8 y `typescript` 7. Siguen siendo opcionales y fuera de este plan: cada una, si se aborda, es una funcionalidad con su propio documento ODD y sus pruebas E2E.»
-- **S2 — Encargo.** Del usuario (L1 de [roadmap-horizons](roadmap-horizons.md)): «P12 se integra formalmente en Fase 1 con su propio paso. Desaparece de dependency-hardening.» «**P12:** mantenerla vinculada a la Fase 1, como ya está.» «**Vue Router:** retirarlo durante la Fase 1 y conservar Pinia.»
+- **S2 — Encargo.** Del usuario (L1 de [roadmap-horizons](../done/roadmap-horizons.md)): «P12 se integra formalmente en Fase 1 con su propio paso. Desaparece de dependency-hardening.» «**P12:** mantenerla vinculada a la Fase 1, como ya está.» «**Vue Router:** retirarlo durante la Fase 1 y conservar Pinia.»
 - **S3 — Aceptación de cada actualización.** Antes de actualizar, comprobar que la versión mayor sigue siendo la vigente y leer su guía de migración. Después, el build y las E2E en verde, sin cambios de comportamiento.
 
 ## Tasks
@@ -21,5 +21,5 @@ Cada tarea es una funcionalidad con su propia rama, como pedía P12. Este plan s
 
 ## Log
 
-- **L1 (2026-11-04).** P12 sale de `dependency-hardening` (su L33) a este plan, como paso propio de la Fase 1. Encargo completo en [roadmap-horizons](roadmap-horizons.md), L1.
+- **L1 (2026-11-04).** P12 sale de `dependency-hardening` (su L33) a este plan, como paso propio de la Fase 1. Encargo completo en [roadmap-horizons](../done/roadmap-horizons.md), L1.
 - **L2 (2026-11-04).** Decisión sobre `vue-router` y Pinia, tras comprobar el código: `vue-router` no tiene ningún import en `frontend/src` y Pinia sí se usa (`useWorkspace`). Se valoró conservar `vue-router` para la futura navegación multiusuario. La recomendación fue retirarlo, porque el multiusuario llega después de la bóveda (Fase 6) y reinstalarlo entonces es trivial. El usuario decidió retirarlo en la Fase 1 y conservar Pinia (S2).

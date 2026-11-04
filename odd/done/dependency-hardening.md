@@ -748,7 +748,7 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
     - **`R1-001`:** volver a comprobar la procedencia de `httpx2` en cada renovación; ya es la regla de L30.
     - **`R2-probe-package-list-name`:** renombrar el parámetro; ya se descartó en L31.
     - **`R3-httpx2-assertion-internal-attr`:** la prueba lee el nombre interno `httpx` de `starlette.testclient`. Si Starlette lo cambia, la prueba falla con `AttributeError` en vez de con una aserción, pero nunca da un falso éxito.
-- **L33 (2026-11-04):** cierre del plan. Petición, literal: «P12 se integra formalmente en Fase 1 con su propio paso. Desaparece de dependency-hardening. P13 se integra en la Fase 6 con su propio paso cuando se implemente la bóveda. Desaparece de dependency-hardening. Dependency hardening pasa a done.» Encargo completo en `odd/tasks/roadmap-horizons.md`, L1.
+- **L33 (2026-11-04):** cierre del plan. Petición, literal: «P12 se integra formalmente en Fase 1 con su propio paso. Desaparece de dependency-hardening. P13 se integra en la Fase 6 con su propio paso cuando se implemente la bóveda. Desaparece de dependency-hardening. Dependency hardening pasa a done.» Encargo completo en `odd/done/roadmap-horizons.md`, L1.
   - **P10** se resuelve ahora, antes de la Fase 1, en su propio plan, `odd/tasks/actions-sha-pinning.md`. Así este plan puede pasar a `odd/done` sin tareas abiertas.
   - **P12** es un paso propio de la Fase 1: `odd/tasks/frontend-major-updates.md`. `vue-router` se retira en la Fase 1 y Pinia se conserva.
   - **P13** es un paso propio de la Fase 6: `odd/tasks/python-hash-locking.md`. Se reevalúa durante el diseño de la bóveda (`vault-discovery` T6).

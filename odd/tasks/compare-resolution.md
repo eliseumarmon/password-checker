@@ -1,7 +1,11 @@
 # Resolver duplicados desde la comparación
 
-Objetivo: convertir la comparación en un panel de decisión. Muestra cada registro con sus datos originales y permite conservar A, B o ambos, fusionar notas y editar el candidato final en una sola operación reversible.
-Rama: `feat/compare-resolution` desde `main`. Fase 2. Depende de: `secret-visibility` (revelado y endpoint de solo contraseña) y `keyboard-accessibility` (foco en diálogos). Entrega: `ask-on-risk`, previsión ~600 líneas, por encima de ~400: se preguntará la estrategia de encadenado. T1 va en un commit propio por riesgo.
+Objetivo: que la comparación se entienda y permita decidir, en dos etapas (L4).
+- **Etapa A, comprensión:** agrupar por sitio y usuario, identificar las versiones de contraseña sin mostrarlas, y retirar los chips que comparan cada registro con el primero (S5-S7).
+- **Etapa B, resolución:** convertir la comparación en un panel de decisión. Muestra cada registro con sus datos originales y permite conservar A, B o ambos, fusionar notas y editar el candidato final en una sola operación reversible (S1-S4).
+
+La Etapa A va primero y no mezcla la legibilidad con las operaciones delicadas sobre credenciales.
+Rama: `feat/compare-resolution` desde `main`. Fase 2. Depende de: `keyboard-accessibility` (foco en diálogos); la Etapa B, además, de `secret-visibility` (revelado y endpoint de solo contraseña). Entrega: `ask-on-risk`, previsión ~600 líneas, por encima de ~400: se preguntará la estrategia de encadenado. T1 va en un commit propio por riesgo.
 Comprobaciones: `python -m unittest discover -s tests`, `ruff check .`, `npm run build` y `npm run e2e`. Estado: planificado, sin empezar.
 
 ## Specs
@@ -18,8 +22,40 @@ Comprobaciones: `python -m unittest discover -s tests`, `ruff check .`, `npm run
   - Se valida todo antes de aplicar nada: los ids existen, el conservado está entre ellos y el resultado cabe en una sesión cifrada (`_ensure_restorable`).
   - No cambia el formato `.pwc`: solo cambian candidatos e inclusión.
 - **S4 — Móvil.** `docs/pendiente.md`: «en móvil, acciones «Elegir para exportación», «Conservar ambas» y «Fusionar notas»». «Elegir para exportación» equivale a conservar ese registro.
+- **S5 — Etapa A: agrupar cuentas en lugar de comparar con el primero (L4).**
+  - **Hoy** (`CompareDialog.vue`): cada miembro lleva los chips «URL ✓/≠», «Usuario ✓/≠» y «Clave ✓/≠». La propia interfaz avisa: «Las coincidencias se comparan respecto al primer registro activo del grupo.» Con varios usuarios en un grupo resulta confuso. El backend ya clasifica cada grupo como `exact`, `conflict` o `multiple-accounts`.
+  - **Requisitos**, tal como los fijó la conversación del usuario:
+
+    | Requisito | Comportamiento esperado |
+    |---|---|
+    | Agrupación visual | Sitio → Usuario → Registros |
+    | Contraseñas | Identificadores A/B/C por contraseña diferente dentro de cada cuenta |
+    | Coincidencias | Varios navegadores con la misma contraseña muestran la misma letra |
+    | Conflictos | Se destacan cuando una misma cuenta tiene contraseñas distintas |
+    | Cuentas diferentes | No se presentan como conflictos entre sí |
+    | Procedencia | Se conserva navegador, archivo y línea de importación |
+    | Comparación detallada | Permite comparar variantes sin revelar contraseñas automáticamente |
+    | Móvil | Secciones por usuario, potencialmente desplegables |
+    | Seguridad | No exponer contraseñas ni códigos TOTP en los resúmenes |
+
+  - **Requisito técnico:** «las equivalencias entre contraseñas deben calcularse en el backend y comunicarse mediante identificadores opacos de grupo, sin enviar contraseñas ni hashes al resumen del frontend».
+  - **Sin cambios de reglas:** se mantienen las reglas actuales de detección de duplicados y de tratamiento de TOTP. «Agrupar visualmente no debe significar fusionar registros automáticamente.»
+  - **Solo identidades conocidas:** se agrupa por las que ya existen, sin deducir que dos dominios de una misma organización son intercambiables (véase D5).
+  - Ni el modelo de datos ni el formato `.pwc` cambian.
+- **S6 — Notas en la comparación (L4).** Del usuario: «Mostrar la nota en la comparación ¿por ejemplo con un chip de nota que muestre la nota en el :hover?»
+  - Un indicador «Tiene nota» que se activa al pulsarlo o con el teclado, no al pasar el ratón. Es accesible, funciona en móvil y no revela notas por un movimiento accidental.
+  - `CredentialSummary` no incluye notas, y no se añaden a todas las respuestas de `/api/workspace`. Tampoco se piden contraseñas ni TOTP solo para mostrar una nota: si hace falta, una consulta específica y explícita.
+- **S7 — Estado en una línea (L4).** Del usuario: «En la comparación cuando descartas un registro su estado indica "en la papelera" y ocupa dos líneas de texto quiero que ocupe solo una.» El estado (`<span class="status">`) no se parte en dos líneas y no desborda en móvil.
 
 ## Tasks
+
+Etapa A (va primero):
+
+- [ ] T5 — S5: equivalencias de contraseña calculadas en el backend, como identificadores opacos por cuenta dentro de cada grupo. Sustituyen a `match_url`, `match_username` y `match_password` de `GroupMember`. RED primero en `tests/test_workspace.py` y `tests/test_workspace_contract.py`: misma contraseña da la misma letra; ni contraseñas ni hashes en la respuesta. Ruta: inline. Riesgo: punto 2 (información derivada de secretos en la API) y punto 3 (cambia el contrato de `/api/workspace`). Commit propio y verificación independiente.
+- [ ] T6 — S5-S7: presentación Sitio → Usuario → Registros en escritorio y en móvil, sin los chips; indicador «Tiene nota»; estado en una línea. RED primero en E2E. Ruta: inline.
+- [ ] T7 — Documentación de la Etapa A en `docs/flujo-usuario.md` (paso 3) y en la guía. Ruta: inline.
+
+Etapa B:
 
 - [ ] T1 — S2, S3: caso de uso, endpoint y contrato. Ruta: inline.
   - RED primero en `tests/test_workspace.py`: cada tipo de resolución, un solo paso de deshacer, validación sin cambios parciales, el registro vuelve a pendiente al editar un secreto, códigos 2FA que no se pierden (siguen en la papelera).
@@ -38,3 +74,4 @@ Comprobaciones: `python -m unittest discover -s tests`, `ruff check .`, `npm run
   - `merge_exact()` ya resuelve grupos en un solo paso con `combine_notes` y `merged_totp`, y sirve de modelo.
   - Nada de esto cambia el formato `.pwc`. No depende de ninguna decisión pendiente; los supuestos de S2 y S3 se confirman al aprobar el plan.
   - Ruta: inline.
+- **L4 (2026-11-04).** Anotaciones del usuario sobre una conversación externa, pegada en la sesión, para añadirlas a la hoja de ruta. La conversación recomendaba: «actualizar compare-resolution.md con estos criterios antes de aprobar su implementación», con una «Etapa A — Comprensión de los datos» y una «Etapa B — Resolución de conflictos». Se añaden S5-S7 y T5-T7 (Etapa A, va primero); T1-T4 pasan a ser la Etapa B. Las capturas de la conversación tenían identificadores reales; no se copian. Comprobado en `main` (`ec8d167`): los chips y el aviso citados en S5, `CredentialSummary` sin notas y `<span class="status">` con «En la papelera».

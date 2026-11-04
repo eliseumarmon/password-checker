@@ -2,7 +2,7 @@
 
 Objetivo: que la hoja de ruta presente el multiusuario, la compartición y la sincronización como horizontes previstos y no como funcionalidades descartadas; que el diseño de la bóveda estudie esa evolución sin incluirla en la primera versión; y que P10, P12 y P13 salgan de `dependency-hardening`, que pasa a `odd/done`.
 Rama: `docs/roadmap-horizons`, encadenada sobre `docs/odd-done`, que mueve los planes completados a `odd/done`. No se integra en `main` sin la aprobación del usuario. Entrega: `single-pr`, solo documentación, previsión de unas 200 líneas.
-Comprobaciones: enlaces relativos y anclas válidos, y lectura estructural. No hay código ni pruebas. Estado: T1 y T2 hechas; pendiente de la aprobación del usuario para integrar.
+Comprobaciones: enlaces relativos y anclas válidos, y lectura estructural. No hay código ni pruebas. Estado: **completado** (L4): integrado en `main`.
 
 ## Specs
 
@@ -61,3 +61,7 @@ Comprobaciones: enlaces relativos y anclas válidos, y lectura estructural. No h
   - **Comprobación de enlaces:** script de solo lectura, fuera del repositorio, sobre los 11 Markdown del commit. Todos los destinos relativos y anclas resuelven. Solo avisa de `../README.md#L15` en la auditoría, un ancla de línea de GitHub que ya existía y no es un encabezado.
   - **Sin tocar:** las menciones históricas a `odd/tasks/dependency-hardening.md` en los Log, como `native-tables` L3. El enlace a `reliability-hardening` de la hoja de ruta se actualizará en la rama de DT4 si ese plan pasa a `odd/done`.
   - **Siguiente:** DT4 en `fix/csv-header-line` y P10 en `ci/pin-actions-sha`, las dos encadenadas sobre esta rama.
+- **L4 (2026-11-04).** Cierre.
+  - **Integración en `main`:** el usuario la avanzó hasta `1c31f31` por fast-forward. Esto incluye `docs/odd-done` (`5a2599a`) y esta rama. La revisión nativa la había dado como pasiva.
+  - **S6, DT4 y P10:** cerradas en sus ramas e integradas con la CI en verde y la revisión aprobada. DT4 entró con el merge `9ec9a30` (L16-L18 de [reliability-hardening](reliability-hardening.md)) y P10, con el merge `ec8d167` ([actions-sha-pinning](actions-sha-pinning.md)).
+  - **Movido a `odd/done` con un commit directo en `main`.** Petición, literal: «No hace falta que crees una rama de documentación para cerrar roadmap-horizons. Haz el commit modificandolo directamente con el prefijo docs».

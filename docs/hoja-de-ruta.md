@@ -7,8 +7,9 @@ Este documento reúne en un solo sitio las fases de trabajo de Password Checker,
 | Fase | Objetivo | Estado | Bloqueada por | Planes |
 |---|---|---|---|---|
 | 0 | Endurecer dependencias y cadena de suministro | **Cerrada** (2026-11-04), con P10 integrada el mismo día | — | [dependency-hardening](../odd/done/dependency-hardening.md), [actions-sha-pinning](../odd/done/actions-sha-pinning.md) (P10) |
+| — | Correcciones independientes: «Abrir sitio» y normalización de URL | Planificada | D9, solo para una tarea | [site-link-navigation](../odd/tasks/site-link-navigation.md) |
 | 1 | Cimientos del frontend: colores en variables, tablas nativas, accesibilidad, tamaño del bundle y actualizaciones mayores | Planificada | D2, solo para una tarea | [css-tokens](../odd/tasks/css-tokens.md), [native-tables](../odd/tasks/native-tables.md), [keyboard-accessibility](../odd/tasks/keyboard-accessibility.md), [frontend-bundle](../odd/tasks/frontend-bundle.md), [frontend-major-updates](../odd/tasks/frontend-major-updates.md) (P12) |
-| 2 | Revisión más ágil, sin cambiar el formato `.pwc` | Planificada | — | [review-filters](../odd/tasks/review-filters.md), [undo-ux](../odd/tasks/undo-ux.md), [secret-visibility](../odd/tasks/secret-visibility.md), [export-preview](../odd/tasks/export-preview.md), [compare-resolution](../odd/tasks/compare-resolution.md), [local-strength](../odd/tasks/local-strength.md), [mobile-record-detail](../odd/tasks/mobile-record-detail.md) |
+| 2 | Revisión más ágil, sin cambiar el formato `.pwc` | Planificada | — | [review-filters](../odd/tasks/review-filters.md), [undo-ux](../odd/tasks/undo-ux.md), [secret-visibility](../odd/tasks/secret-visibility.md), [export-preview](../odd/tasks/export-preview.md), [compare-resolution](../odd/tasks/compare-resolution.md), [local-strength](../odd/tasks/local-strength.md), [mobile-record-detail](../odd/tasks/mobile-record-detail.md), [audit-layout](../odd/tasks/audit-layout.md) |
 | 3 | Datos de revisión que se guardan en la sesión (`.pwc` v3) | **Bloqueada** | D8, D3 (y D5 para las asociaciones de servicio) | Sin plan detallado (véase [Fase 3](#fase-3--datos-de-revisión-en-la-sesión)) |
 | 4 | Ajustes: tema claro, ayuda, bloqueo por inactividad, idioma | Planificada en parte | D4 (bloqueo), D6 (idioma) | [light-theme](../odd/tasks/light-theme.md), [help-section](../odd/tasks/help-section.md) |
 | 5 | Validación con personas | Planificada | — | [user-validation](../odd/tasks/user-validation.md) |
@@ -16,12 +17,15 @@ Este documento reúne en un solo sitio las fases de trabajo de Password Checker,
 
 **Horizontes futuros, previstos pero sin planificar:** cuentas de usuario; bóvedas personales y de organización, con departamentos y permisos; compartición de secretos, y sincronización entre equipos. Llegarán después de validar la bóveda personal y local de la Fase 6, y antes necesitan su propio modelo de amenazas; por eso todavía no tienen fase. La primera bóveda no los incluye, pero su diseño los tiene en cuenta para no dificultarlos ([vault-discovery](../odd/tasks/vault-discovery.md), T4-T6). Las ideas de origen están en el trabajo pendiente: [compartición y equipos](pendiente.md#compartición-equipos-y-verificación-en-dos-pasos) y [sincronización](pendiente.md#dispositivos-sincronización-e-integraciones).
 
+**Otro horizonte previsto, independiente del anterior:** una extensión de navegador con autocompletado seguro, como la de Bitwarden. Llegará después de la primera bóveda local y no necesita multiusuario ni sincronización: funciona también con una bóveda personal en el propio equipo. Tampoco tiene fase todavía. `vault-discovery` T1, T4 y T5 evitan que el modelo de la bóveda la dificulte. El detalle está en el [trabajo pendiente](pendiente.md#dispositivos-sincronización-e-integraciones).
+
 Fuera de la hoja de ruta, por no ser viable sin un modelo de amenazas: el acceso móvil sin ADB. Sigue vigente la restricción de no reintroducir la CLI.
 
 ## Cómo leer las fases
 
 - **Las fases agrupan; las dependencias ordenan.** El orden real lo marca el apartado «Depende de» de cada plan, no una secuencia rígida. Por ejemplo, `local-strength` es casi todo backend y puede empezar en cualquier momento, y la validación con personas se hace en rondas a medida que avanzan las fases.
 - **Una decisión pendiente solo bloquea lo que la necesita.** Cada plan indica qué decisión lo bloquea, si alguna lo hace.
+- **Las correcciones independientes no esperan a ninguna fase.** Son posibles errores funcionales y pueden hacerse en cualquier momento, salvo lo que bloquee una decisión.
 - **Los pendientes que quedaban de la Fase 0 tienen ya su propio plan.** P10 ya está integrada; P12 es un paso de la Fase 1, y P13, de la Fase 6. Ninguno bloquea otra fase.
 - **Cada plan es un documento ODD** en `odd/tasks/`, con sus specs, tareas, pruebas y registro. Ningún plan está aprobado para implementarse hasta que el usuario lo diga.
 
@@ -37,6 +41,7 @@ Fuera de la hoja de ruta, por no ser viable sin un modelo de amenazas: el acceso
 | D6 | ¿Se traduce la interfaz a otros idiomas? | **Pendiente** | Ajuste de idioma (Fase 4) | Aplazar hasta la validación con personas |
 | D7 | ¿Cuál es el alcance de la primera versión de la bóveda? | **Pendiente**, con una orientación (2026-11-04): bóveda personal, local y cifrada | Implementación de la Fase 6 | Decidir el resto con los documentos de `vault-discovery` |
 | D8 | ¿Cómo encaja `.pwc` v3 con la futura bóveda? | **Pendiente** (nueva, 2026-11-04) | Fase 3 | Definir antes el contrato de persistencia y exportación |
+| D9 | ¿Qué URL abre «Abrir sitio»? | **Pendiente** (nueva, 2026-11-04) | `site-link-navigation` T2 | Opción C |
 
 ### D2 — `Esc` en los diálogos
 
@@ -71,6 +76,14 @@ El backend sigue entregando datos aunque la interfaz se oculte, así que un bloq
 
 Pregunta literal del [trabajo pendiente](pendiente.md): «definir si las credenciales se identifican por la URL/URI encontrada al importar o si se vinculan a un servicio lógico común (web, Android, iOS). Conservar las asociaciones originales y evaluar las consecuencias para la detección de duplicados; pertenecer al mismo servicio no implica fusionarlas automáticamente.» Como forma parte del modelo de datos de la bóveda, se estudia en `vault-discovery` T4 para no diseñarlo dos veces.
 
+**Ampliación (2026-11-04).** `vault-discovery` S5 recoge dos casos de diseño y la agrupación manual de servicios:
+- El servicio lógico es distinto del dominio.
+- Un servicio puede tener varias credenciales, y una credencial, varias URI.
+- Agrupar no es fusionar.
+- Las agrupaciones que haga el usuario prevalecen sobre las automáticas, sin cambiar las reglas de seguridad.
+
+La agrupación por sitio y usuario de `compare-resolution` (Etapa A) no depende de D5: usa solo las identidades que ya se conocen.
+
 ### D6 — Idioma
 
 Hay textos fijos en español en todos los componentes, y los mensajes de error del backend también están en español. Traducir exige extraer todos los textos y dar códigos a los errores. Se recomienda aplazarlo hasta que la validación con personas muestre que hace falta.
@@ -92,6 +105,18 @@ La Fase 3 cambiaría el formato `.pwc` para guardar datos de revisión antes de 
 
 Recomendación: hacer primero `vault-discovery` T2 y decidir entre A y B con ese documento.
 
+### D9 — ¿Qué URL abre «Abrir sitio»?
+
+**Hoy:** `safeWebUrl()` abre solo el origen de la URL guardada, a propósito, para no enviar la ruta, los parámetros ni el fragmento. Una página de acceso con una ruta propia, como `https://auth.example.edu/cgi-bin/AuthServer`, se abre como `https://auth.example.edu`, que puede no llevar al mismo sitio.
+
+| Opción | Efecto | Ventaja | Inconveniente |
+|---|---|---|---|
+| A. Mantener el origen | Como hoy | Nunca envía la ruta ni los parámetros | Puede no llevar al recurso guardado |
+| B. Origen y ruta, sin parámetros ni fragmento | Abre `https://auth.example.edu/cgi-bin/AuthServer` | Resuelve las páginas de acceso con ruta propia | Una ruta también puede contener secretos, y los accesos que necesitan parámetros siguen sin funcionar |
+| C. URL completa validada, con confirmación cuando tenga parámetros, fragmento o datos que parezcan sensibles | Abre la dirección guardada | Lleva siempre al recurso guardado | Detectar lo sensible es heurístico, y añade una confirmación |
+
+Recomendación: C, como proponía la conversación del usuario: «validar el protocolo y la URL, detectar posibles datos sensibles y, cuando sea necesario, pedir confirmación antes de abrir la dirección original. No sustituir automáticamente una URL funcional por la raíz del dominio.» `site-link-navigation` T1 prepara los casos de prueba para decidir.
+
 ## Fases
 
 ### Fase 0 — Endurecimiento de dependencias
@@ -104,6 +129,10 @@ Cerrada el 2026-11-04: P2-P8 integradas en `main`, con las alertas de Dependabot
 | P12: actualizaciones mayores del frontend (`pinia` 4, `vite` 8, `typescript` 7) | [frontend-major-updates](../odd/tasks/frontend-major-updates.md) | Fase 1 |
 | P13: instalación de Python con hashes | [python-hash-locking](../odd/tasks/python-hash-locking.md) | Fase 6, si el diseño de la bóveda la confirma |
 
+### Correcciones independientes
+
+[site-link-navigation](../odd/tasks/site-link-navigation.md): «Abrir sitio» abre solo el origen de la URL (D9) y hay un caso anómalo de normalización pendiente de reproducir. Son posibles errores funcionales, con prioridad sobre el rediseño visual, y no esperan a la Fase 2.
+
 ### Fase 1 — Cimientos del frontend
 
 **Antes de empezar** se cerraron dos pendientes pequeños, cada uno en su rama y ya integrados en `main` (2026-11-04), ninguno del frontend: P10 ([actions-sha-pinning](../odd/done/actions-sha-pinning.md)) y DT4, la línea que se informa cuando falla la cabecera de un CSV ([reliability-hardening](../odd/done/reliability-hardening.md)).
@@ -111,7 +140,7 @@ Cerrada el 2026-11-04: P2-P8 integradas en `main`, con las alertas de Dependabot
 | Plan | Depende de |
 |---|---|
 | [css-tokens](../odd/tasks/css-tokens.md): colores en variables CSS, sin cambio visual | — |
-| [native-tables](../odd/tasks/native-tables.md): tablas nativas y retirada de PrimeVue (D1) | `css-tokens` |
+| [native-tables](../odd/tasks/native-tables.md): tablas nativas y retirada de PrimeVue (D1); la ordenación se conserva al cambiar de pantalla | `css-tokens` |
 | [keyboard-accessibility](../odd/tasks/keyboard-accessibility.md): revisión de accesibilidad, foco en diálogos, pestañas | `css-tokens`, `native-tables`; T2, de D2 |
 | [frontend-bundle](../odd/tasks/frontend-bundle.md): retirar `vue-router` (Pinia se conserva); dividir el código solo si sigue el aviso de 500 kB | T1: nada; T2-T3: `native-tables` |
 | [frontend-major-updates](../odd/tasks/frontend-major-updates.md): P12, evaluar `pinia` 4, `vite` 8 y `typescript` 7, cada una en su rama | `native-tables`, `frontend-bundle` T1 |
@@ -122,11 +151,13 @@ Nada de esta fase cambia el formato `.pwc`.
 
 | Plan | Depende de |
 |---|---|
-| [review-filters](../odd/tasks/review-filters.md): filtro por estado, orden por riesgo y por URL, continuidad de filtros | `native-tables` |
+| [review-filters](../odd/tasks/review-filters.md): filtro por estado, orden por riesgo y por URL, continuidad de filtros y de la ordenación al recargar | `native-tables` |
 | [undo-ux](../odd/tasks/undo-ux.md): `Ctrl/Cmd+Z` y aviso tras guardar con «Deshacer» | — |
 | [secret-visibility](../odd/tasks/secret-visibility.md): «Ocultar todo», revelar contraseñas en la comparación, copiar contraseña | — |
 | [export-preview](../odd/tasks/export-preview.md): ventana de exportación con incluidos, excluidos y conflictos | `keyboard-accessibility` (foco en diálogos) |
-| [compare-resolution](../odd/tasks/compare-resolution.md): conservar A, B o ambas, fusionar notas, editar el candidato final | `secret-visibility`, `keyboard-accessibility` |
+| [compare-resolution](../odd/tasks/compare-resolution.md), Etapa A: agrupar por sitio y usuario, claves A/B/C sin mostrarlas, indicador de nota, estado en una línea | `keyboard-accessibility` |
+| [compare-resolution](../odd/tasks/compare-resolution.md), Etapa B: conservar A, B o ambas, fusionar notas, editar el candidato final | Etapa A, `secret-visibility`, `keyboard-accessibility` |
+| [audit-layout](../odd/tasks/audit-layout.md): cuadrícula 2×2 ampliable en escritorio, acordeón en móvil | `css-tokens`, `keyboard-accessibility` |
 | [local-strength](../odd/tasks/local-strength.md): evaluación local de fortaleza más completa | — |
 | [mobile-record-detail](../odd/tasks/mobile-record-detail.md): ficha móvil a pantalla completa, acciones rápidas de revisión, «Buscar en tienda» | `keyboard-accessibility` |
 
@@ -154,7 +185,7 @@ Es un cambio de formato persistido: requerirá verificación independiente y un 
 
 ### Fase 6 — Bóveda persistente
 
-[vault-discovery](../odd/tasks/vault-discovery.md): modelo de amenazas y documentos de decisión, sin código. Su T2 (contrato de persistencia y exportación) se adelanta porque D8 lo necesita. La implementación queda **bloqueada por D7**, que se decide con esos documentos. La primera versión es una bóveda personal, local y cifrada. Además, T4-T6 estudian cómo evolucionaría hacia varias bóvedas y propietarios, y hacia una arquitectura de claves multiusuario, sin implementarlo.
+[vault-discovery](../odd/tasks/vault-discovery.md): modelo de amenazas y documentos de decisión, sin código. Su T2 (contrato de persistencia y exportación) se adelanta porque D8 lo necesita. La implementación queda **bloqueada por D7**, que se decide con esos documentos. La primera versión es una bóveda personal, local y cifrada. Además, T4-T6 estudian cómo evolucionaría hacia varias bóvedas y propietarios, y hacia una arquitectura de claves multiusuario, sin implementarlo. T4 también estudia el modelo de servicios (varias URI por credencial y agrupación manual), y T1, T4 y T5 preparan la futura extensión de navegador.
 
 [python-hash-locking](../odd/tasks/python-hash-locking.md): P13, instalación de Python con hashes. Se reevalúa durante el diseño (`vault-discovery` T6) y, si se confirma, se implementa junto con la bóveda.
 
@@ -169,3 +200,4 @@ Es un cambio de formato persistido: requerirá verificación independiente y un 
 | 2026-11-04 | El multiusuario, la compartición y la sincronización pasan a figurar como horizontes futuros previstos, no como funcionalidades descartadas. `vault-discovery` T4-T6 estudian esa evolución. D7 recibe una orientación: bóveda personal, local y cifrada. |
 | 2026-11-04 | `dependency-hardening` pasa a `odd/done`. P10, P12 y P13 tienen su propio plan: P10 se cierra antes de la Fase 1, junto con DT4; P12 es un paso de la Fase 1, y P13, de la Fase 6. Se retira `vue-router` y se conserva Pinia. |
 | 2026-11-04 | DT4 y P10 integradas en `main`, con la CI en verde y la revisión aprobada: la cabecera CSV de varias líneas informa de la línea donde falla, y las acciones de GitHub van fijadas por SHA con Dependabot para `github-actions`. |
+| 2026-11-04 | Anotaciones del usuario sobre una conversación externa con capturas de otro gestor de contraseñas. Se añaden: <ul><li>correcciones independientes de «Abrir sitio» y de la normalización de URL (`site-link-navigation`, D9);</li><li>la ordenación conservada al cambiar de pantalla (`native-tables`) y al recargar (`review-filters`);</li><li>una Etapa A de comprensión en `compare-resolution`;</li><li>`audit-layout` en la Fase 2;</li><li>el modelo de servicios y la agrupación manual (D5, `vault-discovery` T4);</li><li>la extensión de navegador como horizonte futuro.</li></ul> Los datos reales de las capturas se sustituyen por otros ficticios. |

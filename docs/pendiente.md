@@ -7,6 +7,7 @@ Este documento reúne lo que la aplicación todavía no hace: limitaciones conoc
 - El progreso solo se conserva mientras el backend está activo o si se descarga una sesión cifrada. No hay guardado automático, bloqueo por inactividad ni recuperación de contraseña.
 - El comparador muestra coincidencias y procedencia, pero no ofrece una comparación completa de contraseñas y notas originales. Cada registro se abre por separado para editarlo. No hay una vista previa detallada de la exportación.
 - El identificador de paquete Android no garantiza un enlace para abrir la aplicación. El acceso desde móvil mediante ADB requiere configuración adicional.
+- «Abrir sitio» abre solo el origen de la URL guardada (esquema, dominio y puerto), a propósito, para no enviar datos sensibles de la ruta o los parámetros. Así, una página de acceso con una ruta propia, como `https://auth.example.edu/cgi-bin/AuthServer`, se abre como `https://auth.example.edu`, que puede no llevar al mismo sitio. Hay además un caso anómalo de normalización de URL pendiente de reproducir. Las dos cosas se planifican en [site-link-navigation](../odd/tasks/site-link-navigation.md).
 
 ## Trabajo pendiente
 
@@ -27,8 +28,15 @@ Este apartado reúne tanto las mejoras de la propuesta visual inicial como las i
 
 ### Mejoras de la interfaz actual
 
-- **Interfaz general:** tema claro; ajustes de idioma, tema y caducidad por inactividad, y una sección de ayuda; botón «Ocultar todo» en la cabecera; filtro por estado y selector de orden junto a la búsqueda; en «Todas», orden por riesgo y por URL, con los grupos de una misma URL contiguos; continuidad de filtros; atajo `Ctrl/Cmd+Z` para el «Deshacer» de la aplicación (hoy solo funciona el deshacer nativo dentro de los campos de texto).
+- **Interfaz general:** tema claro; ajustes de idioma, tema y caducidad por inactividad, y una sección de ayuda; botón «Ocultar todo» en la cabecera; filtro por estado y selector de orden junto a la búsqueda; en «Todas», orden por riesgo y por URL, con los grupos de una misma URL contiguos; continuidad de filtros y de la ordenación de cada tabla, al cambiar de pantalla y al recargar; atajo `Ctrl/Cmd+Z` para el «Deshacer» de la aplicación (hoy solo funciona el deshacer nativo dentro de los campos de texto).
 - **Comparación:** revelar contraseñas de forma individual dentro de la comparación; panel comparativo que muestre de cada registro la URL original, el nombre, el usuario, la contraseña oculta, las notas y el estado, y permita conservar A, B o ambos, fusionar notas y editar el candidato final, distinguiendo los datos originales (inmutables) de la salida editable; en móvil, acciones «Elegir para exportación», «Conservar ambas» y «Fusionar notas»; una comparación más completa de originales.
+  - Antes, hacerla comprensible: agrupar por sitio y, dentro, por usuario, en lugar de comparar cada registro con el primero mediante chips «URL ✓», «Usuario ≠» o «Clave ≠».
+  - Identificar con letras (Clave A, B, C) las contraseñas distintas de cada cuenta, sin mostrarlas. Las equivalencias las calcula el backend.
+  - Distinguir duplicados exactos, conflictos reales (mismo sitio y usuario, contraseñas distintas) y cuentas distintas, que no son un conflicto.
+  - Un indicador «Tiene nota» que se activa al pulsarlo, no al pasar el ratón.
+  - Que el estado «En la papelera» ocupe una sola línea.
+  - Plan: [compare-resolution](../odd/tasks/compare-resolution.md), Etapa A.
+- **Auditoría:** en escritorio, mantener la cuadrícula 2×2 y poder ampliar cualquier categoría a todo el ancho y el alto disponibles; en móvil, un acordeón con una categoría abierta a la vez ([audit-layout](../odd/tasks/audit-layout.md)).
 - **Ficha:** en móvil, detalle a pantalla completa con navegación «Anterior / Siguiente pendiente»; botón para copiar la contraseña con aviso de portapapeles; fecha local al confirmar manualmente y acciones «Marcar revisada» y «Acceso verificado» separadas; aviso de edición con deshacer e indicación de qué cambió.
 - **Exportación:** modal con resultados incluidos y excluidos, conflictos pendientes, destino y formato Bitwarden, en lugar de la confirmación actual con recuentos; resumen y vista previa antes de exportar.
 - **Sesión:** bloqueo tras una inactividad configurada que oculte la interfaz y exija reabrir la sesión cifrada; en la cabecera móvil, un indicador de sesión local o bloqueada.
@@ -51,6 +59,14 @@ La evolución planteada conserva la revisión y auditoría de credenciales que y
 
 - **Propuesta — elemento de bóveda extensible:** un modelo conceptual como `VaultItem`, separado de los registros temporales de importación, con tipo, nombre, identificador estable, etiquetas/colección, notas, campos públicos y campos secretos. Admitir **campos personalizados** y, cuando proceda, adjuntos binarios cifrados. La estructura definitiva, las validaciones y los límites de tamaño están pendientes.
 - **Decisión pendiente — servicio, cuenta y acceso:** distinguir una cuenta de sus accesos web, Android, iOS y, quizá, escritorio. Una misma cuenta podría tener varias URL, dominios afiliados o identificadores de paquete, conservando siempre las referencias originales importadas. Estudiar relaciones con servicios lógicos para reducir falsos duplicados y reutilizaciones aparentes; **compartir servicio no autoriza una fusión automática**. Extensiones a accesos SSH, bases de datos o red serían tipos o relaciones nuevas, no categorías disponibles hoy.
+  - Hay dos casos que distinguir:
+    - una institución cuyo sistema de autenticación común sirve a varios portales: es una cuenta con varias URI, no varias cuentas;
+    - un servicio con varias credenciales distintas y de dominios que ni siquiera comparten el registrable, como agrupa el gestor de Google bajo «firefox.com» las de `accounts.firefox.com` y `firefox.mozilla.org`.
+  - El servicio lógico es distinto del dominio, y agrupar no es fusionar. Se estudia en [vault-discovery](../odd/tasks/vault-discovery.md) T4.
+- **Propuesta — agrupación manual de servicios:** que el usuario cree, renombre y deshaga grupos de servicios, y añada o quite servicios, sin borrar ninguna contraseña. Por ejemplo, reunir varios portales de una institución bajo su nombre.
+  - Las agrupaciones manuales prevalecen sobre las sugerencias automáticas, sin cambiar por sí mismas las reglas de seguridad.
+  - Se empezaría con grupos simples, sin anidar.
+  - Agrupar servicios es una decisión de organización. Asociar varias URI a una credencial afecta a la seguridad si llega el autocompletado.
 - **Propuesta — organización y búsqueda:** colecciones personales o de equipo, carpetas/etiquetas, búsqueda en metadatos permitidos, filtros por tipo, estado y pertenencia, y fichas adaptadas a los datos de cada elemento. Determinar qué metadatos podrían usarse en índices sin filtrar información sensible.
 
 #### Tipos de secretos considerados
@@ -72,6 +88,19 @@ La evolución planteada conserva la revisión y auditoría de credenciales que y
 
 - **Decisión pendiente — modo local o centralizado:** valorar primero la experiencia local y después un servicio autohospedado para acceso desde varios equipos, incluso fuera de la LAN mediante un canal seguro. Estudiar sincronización, conflictos, copias, modo sin conexión, disponibilidad del servidor y separación entre cifrado del lado del cliente y almacenamiento del servidor; no hay arquitectura de red ni proveedor seleccionado.
 - **Propuesta — experiencia multiplataforma:** acceso seguro desde Windows, Linux y móvil, con bloqueo, protección al revelar/copiar secretos y, si se justifica, integración con navegadores o autocompletado. No presuponer que una GUI servida localmente puede exponerse directamente a Internet sin autenticación, autorización y controles adicionales.
+- **Horizonte previsto — extensión de navegador y autocompletado seguro:** una extensión que, con la bóveda desbloqueada, ofrezca las credenciales de la página visitada y rellene usuario y contraseña, como hace Bitwarden. Llega después de la primera bóveda local y es independiente de la evolución empresarial: sirve también con una bóveda personal en el propio equipo.
+  - **Primera versión:** el usuario elige la credencial antes de rellenar; sin autocompletado automático. La extensión no guarda contraseñas descifradas de forma persistente.
+  - **Canal con la bóveda, sin decidir:** una API local autenticada en `127.0.0.1`, que exige emparejamiento y protección frente a sitios y procesos no autorizados, o Native Messaging, que exige registrar un componente auxiliar por navegador. Se decide con el modelo de amenazas. Ese componente auxiliar no supone recuperar la CLI eliminada.
+  - **Condiciones de seguridad:**
+    - no enviar credenciales con la bóveda bloqueada;
+    - comprobar el origen real de la página (esquema, dominio y puerto);
+    - evitar autocompletar en páginas de phishing, formularios no fiables o marcos de otros dominios;
+    - que ninguna página web pueda consultar la API local;
+    - pedir una acción explícita para usar credenciales de un dominio distinto del asociado.
+  - **Agrupar no es autorizar:** agrupar servicios no autoriza el autocompletado en todos ellos.
+  - **Navegadores:** primero Chrome y Brave (WebExtensions, Manifest V3); después Edge y Firefox; Safari, más adelante.
+  - **Fuera de la primera versión:** copiar TOTP, guardar o actualizar contraseñas nuevas y el autocompletado automático configurable. Passkeys/WebAuthn quedan como investigación futura.
+  - Su encaje en la bóveda se prepara en [vault-discovery](../odd/tasks/vault-discovery.md) (T1, T4 y T5).
 - **Restricción vigente — sin CLI:** la interfaz y la arquitectura de la bóveda son el camino actual. **No reintroducir la CLI eliminada**, ni comandos de extracción de secretos o de inyección/ejecución (`run`), como dependencia de estas ideas. Solo reconsiderarlo si el usuario cambia expresamente esta decisión.
 
 #### Preguntas a resolver antes de elaborar un plan

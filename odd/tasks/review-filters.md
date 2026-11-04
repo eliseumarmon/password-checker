@@ -17,6 +17,7 @@ Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m 
   - **Supuesto:** el selector fija el orden de partida; pulsar una cabecera de la tabla lo sustituye, como hoy.
 - **S3 — Continuidad.** `docs/pendiente.md`: «continuidad de filtros».
   - El tipo, el estado y el orden se recuerdan entre recargas en `localStorage`, con el mismo tratamiento de errores que la barra lateral contraída (`App.vue`).
+  - **Ampliado en L4:** también se recuerda la ordenación de columna de cada tabla, que `native-tables` (S8) ya conserva al cambiar de pantalla.
   - **Supuesto:** el texto de búsqueda no se guarda, porque puede contener usuarios y la guía (§7) pide: «No guardar credenciales en `localStorage`, `sessionStorage`, `IndexedDB` ni cachés del navegador».
 - **S4 — Sin cambios en el backend.** Todo se calcula con el estado que ya recibe el frontend (`records`, `groups`, `audit`).
 
@@ -32,3 +33,4 @@ Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m 
 - **L1 (2026-11-03).** Petición original: «Examina pendiente.md. Examina la base del código y evalúa su viabilidad. Genera planes para llevar a cabo las nuevas features de forma coherente.»
 - **L2 (2026-11-04).** «Necesito que documentes todos los planes y que marques las decisiones pendientes.» «No empieces ninguna implementación.» El plan viene del informe de viabilidad del 2026-11-03, recogido en `docs/hoja-de-ruta.md`.
 - **L3 (2026-11-04).** Análisis en `main`: los filtros viven en `App.vue` (`filterType`, `query`, `pendingOnly`) y se aplican con `matches()`; `audit` ya trae los ids de reutilizadas, poco seguras e incompletas. No depende de ninguna decisión pendiente. Ruta: inline.
+- **L4 (2026-11-04).** Anotaciones del usuario sobre una conversación externa, pegada en la sesión, para añadirlas a la hoja de ruta. S3 se amplía con la ordenación de columna de cada tabla. La conversación lo proponía así: «La continuidad después de recargar la página podría completarse en review-filters.md, que ya contempla guardar preferencias en localStorage.» T3 cubre también este caso.
