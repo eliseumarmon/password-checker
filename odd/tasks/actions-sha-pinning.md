@@ -2,7 +2,7 @@
 
 Objetivo: que la CI no ejecute otro código sin una decisión explícita. Cada acción se fija por el SHA de su commit, con la versión en un comentario, y Dependabot propone las actualizaciones. Corresponde al hallazgo H9 de la [auditoría de dependencias](../../docs/auditoria-dependencias.md#h9--acciones-de-github-referenciadas-por-etiqueta-mutable).
 Rama: `ci/pin-actions-sha`, encadenada sobre `docs/roadmap-horizons`. No se integra en `main` sin la aprobación del usuario. Entrega: `single-pr`, previsión de unas 40 líneas.
-Comprobaciones: cada SHA, contrastado con su etiqueta mediante `gh api`; YAML válido; y la CI en verde, que exige subir la rama. Estado: T1 hecha; falta la CI en verde, que exige subir la rama, y la revisión independiente.
+Comprobaciones: cada SHA, contrastado con su etiqueta mediante `gh api`; YAML válido; y la CI en verde, que exige subir la rama. Estado: T1 hecha y verificada (L4); falta la CI en verde, que exige subir la rama, y la revisión.
 
 ## Specs
 
@@ -34,5 +34,15 @@ Comprobaciones: cada SHA, contrastado con su etiqueta mediante `gh api`; YAML v�
 
   - **Aceptación de S1:** `gh api repos/actions/<acción>/git/ref/tags/<versión>` devuelve `commit` y el mismo SHA en los cuatro casos. Las 13 líneas `uses:` llevan un SHA de 40 caracteres y no queda ningún `@v7`.
   - **`.github/dependabot.yml`:** `version: 2`, una sola entrada `github-actions` en `/`, con frecuencia semanal. Dependabot actualiza el SHA y el comentario de versión.
-  - **Sin comprobar en local:** la validez del YAML. No hay ningún parser instalado (ni PyYAML en el `.venv` ni `yaml` en `frontend/node_modules`) y no se instala una herramienta nueva para esto. El cambio de los workflows solo añade un comentario tras cada valor. La CI valida los workflows al ejecutarlos. GitHub lee `dependabot.yml` desde la rama por defecto, así que su validación final llega al integrar.
+  - **Sin comprobar en local en este paso:** la validez del YAML. No hay parser ni en el `.venv` ni en `frontend/node_modules`, y no se instala una herramienta nueva para esto. **Corregido en L4:** el Python del sistema sí tiene PyYAML, y el verificador lo usó. El cambio de los workflows solo añade un comentario tras cada valor. La CI valida los workflows al ejecutarlos. GitHub lee `dependabot.yml` desde la rama por defecto, así que su validación final llega al integrar.
   - **Riesgo:** punto 5 (CI). Commit propio; verificación independiente y revisión pendientes.
+- **L4 (2026-11-04).** Verificación independiente de `6288161` frente a `1c31f31`: un agente de solo lectura que trabajó sobre objetos de git. Sin bloqueos.
+  - **S1:** las 13 líneas `uses:` llevan SHA de 40 caracteres y comentario `# vX.Y.Z`, y no queda ninguna etiqueta. Cada SHA coincide con su etiqueta según `gh api`, de tipo `commit`, y con `git ls-remote`. `v7` apunta al mismo commit en las cuatro acciones, y cada versión es la `releases/latest`.
+  - **Solo cambian los `uses:`:** al normalizar `@v7` y `@<sha> # vX` a un mismo valor, los dos workflows son idénticos a la base.
+  - **YAML:** PyYAML 6.0.3, el del Python del sistema y sin instalar nada, analiza los tres archivos. `dependabot.yml` cumple el esquema `dependabot-2.0.json` de SchemaStore, revisado a mano porque `jsonschema` no está instalado.
+  - **Sin verificar:** la CI en verde, porque la rama no está subida.
+  - **Avisos:**
+    - (1) L3 decía que no había ningún parser instalado; corregido arriba.
+    - (2) Se fijan las etiquetas de parche (v7.0.1…) y no `v7`. Es correcto y coincide con el formato de comentario que actualiza Dependabot.
+    - (3) No se configuran `cooldown`, grupos ni `open-pull-requests-limit`; son opcionales y quedan fuera de S1.
+  - El verificador dejó archivos temporales fuera del repositorio; ya se eliminaron.
