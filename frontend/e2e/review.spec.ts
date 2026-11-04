@@ -668,36 +668,45 @@ async function editCarol(page: Page): Promise<Locator> {
   return page.getByRole('dialog', { name: 'Editar credencial' });
 }
 
-test('opens only the origin of a web address in a new tab without referrer', async ({ page }) => {
+test('opens the origin and path of a web address, never its query or fragment, without referrer', async ({ page }) => {
   await recordOpenedTabs(page);
   const editor = await editCarol(page);
   const url = editor.getByLabel('URL o paquete Android');
   const open = editor.getByRole('button', { name: /Abrir sitio/ });
-  for (const address of [
-    'https://auth.example.invalid/cgi-bin/AuthServer',
-    'https://auth.example.invalid/reset?token=fictional-token#step-2',
-  ]) {
+  const addresses = [
+    ['https://auth.example.invalid/cgi-bin/AuthServer', 'https://auth.example.invalid/cgi-bin/AuthServer'],
+    ['https://auth.example.invalid/reset?token=fictional-token#step-2', 'https://auth.example.invalid/reset'],
+    ['https://example.invalid#/login', 'https://example.invalid/'],
+    ['HTTPS://Example.INVALID:443/Login', 'https://example.invalid/Login'],
+  ];
+  for (const [address] of addresses) {
     await url.fill(address);
     await open.click();
   }
-  expect(await openedTabs(page)).toEqual([
-    { url: 'https://auth.example.invalid', target: '_blank', features: 'noopener,noreferrer' },
-    { url: 'https://auth.example.invalid', target: '_blank', features: 'noopener,noreferrer' },
-  ]);
+  expect(await openedTabs(page)).toEqual(addresses.map(([, opened]) =>
+    ({ url: opened, target: '_blank', features: 'noopener,noreferrer' })));
+  // The stored address is never rewritten: only the navigation drops the query and fragment.
+  await expect(url).toHaveValue('HTTPS://Example.INVALID:443/Login');
 });
 
 test('does not offer to open unsupported schemes or addresses with embedded credentials', async ({ page }) => {
+  await recordOpenedTabs(page);
   const editor = await editCarol(page);
   const url = editor.getByLabel('URL o paquete Android');
+  const open = editor.getByRole('button', { name: /Abrir sitio/ });
   for (const address of [
     'ftp://files.example.invalid/',
     'javascript:alert(1)',
     'https://fictional-user:fictional-pass@example.invalid/login',
     'not a url',
   ]) {
+    // Show the button first, so every check sees it disappear rather than stay absent.
+    await url.fill('https://example.invalid/login');
+    await expect(open).toHaveCount(1);
     await url.fill(address);
-    await expect(editor.getByRole('button', { name: /Abrir sitio/ })).toHaveCount(0);
+    await expect(open).toHaveCount(0);
   }
+  expect(await openedTabs(page)).toEqual([]);
 });
 
 test('asks above the editor before opening a local address on Android', async ({ page }) => {
@@ -727,12 +736,12 @@ test('opens a local address on Android after confirming', async ({ page }) => {
   await page.locator('.desktop-table').getByRole('row', { name: /carol/ }).getByRole('button', { name: 'Editar' }).click();
   const editor = page.getByRole('dialog', { name: 'Editar credencial' });
   // The E2E server itself, so the new tab never reaches a real local service.
-  await editor.getByLabel('URL o paquete Android').fill('http://127.0.0.1:5173/fictional-path');
+  // A path must not hide that the address is local; the query and fragment never leave the editor.
+  await editor.getByLabel('URL o paquete Android').fill('http://127.0.0.1:5173/fictional-path?token=fictional#step');
   await editor.getByRole('button', { name: /Abrir sitio/ }).click();
   const opened = page.context().waitForEvent('page');
   await confirmWith(page, 'Abrir de todas formas');
-  // Only the origin is opened: no path, query or hash leaves the editor.
-  expect((await opened).url()).toBe('http://127.0.0.1:5173/');
+  expect((await opened).url()).toBe('http://127.0.0.1:5173/fictional-path');
   await expect(editor).toBeVisible();
 });
 

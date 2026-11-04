@@ -56,11 +56,13 @@ function download(blob: Blob, fileName: string): void {
     } finally { setTimeout(() => URL.revokeObjectURL(href), 1_000); }
 }
 
-/** Never navigate to non-web URI or leak credentials through the URL. */
+/** Never navigate to non-web URI or leak credentials, query or fragment through the URL. */
 export function safeWebUrl(raw: string): string | null {
   try {
     const url = new URL(raw);
     if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return null;
-    return url.origin; // No potentially sensitive path/query/hash in outbound navigation.
+    // Origin and path only (roadmap D9): the path reaches pages such as a login form,
+    // while the query and fragment, where tokens often travel, never leave the editor.
+    return url.origin + url.pathname;
   } catch { return null; }
 }

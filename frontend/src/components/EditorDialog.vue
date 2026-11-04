@@ -74,7 +74,8 @@ async function requestRestore(): Promise<void> {
 async function openSite(url: string): Promise<void> {
   const href = safeWebUrl(url);
   if (!href) return;
-  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(href) && /Android/i.test(navigator.userAgent)) {
+  // Check the host, not the whole address: a path must not hide that the address is local.
+  if (['localhost', '127.0.0.1'].includes(new URL(href).hostname) && /Android/i.test(navigator.userAgent)) {
     if (!await confirmAction('Esta dirección local apunta a este teléfono, no al ordenador. ¿Abrir de todas formas?', 'Abrir de todas formas')) return;
   }
   window.open(href, '_blank', 'noopener,noreferrer');
