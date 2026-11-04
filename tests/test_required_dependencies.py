@@ -25,12 +25,12 @@ class RequiredDependencyTests(unittest.TestCase):
         return json.loads(completed.stdout.strip().splitlines()[-1])
 
     def test_a_missing_mandatory_dependency_is_an_error_not_a_skip(self):
-        # Starlette's test client turns a missing httpx into a RuntimeError that asks for httpx2.
+        # Starlette's test client turns a missing httpx2 (with no httpx to fall back on) into a RuntimeError.
         for package, module, exception, named in [('cryptography', 'test_sessions', 'ModuleNotFoundError', 'cryptography'),
                                                   ('argon2', 'test_sessions', 'ModuleNotFoundError', 'argon2'),
                                                   ('cryptography', 'test_session_limits', 'ModuleNotFoundError', 'cryptography'),
                                                   ('fastapi', 'test_api', 'ModuleNotFoundError', 'fastapi'),
-                                                  ('httpx', 'test_api', 'RuntimeError', 'httpx2')]:
+                                                  ('httpx2', 'test_api', 'RuntimeError', 'httpx2')]:
             with self.subTest(package=package, module=module):
                 outcome = self.outcome_without(package, module)
                 self.assertEqual(outcome['skipped'], 0)

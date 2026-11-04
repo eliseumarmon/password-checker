@@ -21,6 +21,7 @@ Fase `fix/cryptography-50` (aprobada en L4):
 - **S9 — Actualizar `cryptography`.** «Actualiza a `cryptography` 50.0.2, previa comprobación de que sigue siendo una versión adecuada y corregida.» «Ajusta el rango permitido para excluir versiones vulnerables.» Rango final (L8): «Quita el techo `<51` y deja `cryptography>=50.0.2`.» «Comprueba compatibilidad con Python 3.12 y 3.14.» «Ejecuta las pruebas completas del backend y las E2E relevantes.»
 - **S10 — `pip-audit` en el `.venv`.** «Puedes instalar `pip-audit` directamente en el `.venv` existente.» «Ejecútalo sobre las dependencias efectivamente instaladas.» «Registra las versiones auditadas, los resultados y los posibles hallazgos pendientes.» «Distingue los problemas reales de los falsos positivos o vulnerabilidades que no afectan al uso actual.» «Valora si conviene incorporarlo a `requirements-dev.txt` en la tarea posterior de automatización, pero no amplíes ahora el alcance.»
 - **S12 — P8, auditoría automática (L19).** «Implementa un workflow independiente para:» «Ejecutar `pip-audit` sobre las dependencias Python fijadas en `backend/constraints.txt`.» «Ejecutar `npm audit` sobre las dependencias del frontend, distinguiendo producción y desarrollo.» «Utilizar versiones controladas de las herramientas de auditoría.» «Permitir ejecución manual y periódica.» «Presentar resultados comprensibles, con las vulnerabilidades y paquetes afectados.» «Evitar que los PR ajenos a dependencias queden bloqueados por nuevas vulnerabilidades detectadas externamente o problemas temporales de los servicios de auditoría.» «Comprueba que el workflow detecta realmente las vulnerabilidades y no devuelve falsos resultados satisfactorios cuando falla una herramienta o no se analizan dependencias.» «No añadas `pip-audit` a `requirements-dev.txt` ni modifiques las 24 restricciones de H4 para incluir sus dependencias.» «Mantén separada P7 (alertas de Dependabot)». «No amplíes el alcance a actualizaciones de dependencias, hashes ni otros pendientes.»
+- **S13 — P9 y P11 (L27).** «Me interesa tener ahora cerrado P9 y P11. Pytest se quitó y nos quedamos con unittest pip-audit se ha usado en el hardening, pero de momento ya no es necesario.» Decisión de P11: «3.12+3.14 y Node 24»: el job `python` de la CI prueba Python 3.12 (mínimo) y 3.14; Node 24 pasa a ser la única referencia mediante `frontend/.nvmrc`, que usan la CI y el README, y el mínimo sube de 22 a 24.
 - **S11 — Revisión y CI.** «Solicita una revisión independiente centrada en seguridad, compatibilidad con las versiones de Python utilizadas, cobertura de pruebas y posibles regresiones.» «Comprueba que Ruff no introduce avisos nuevos y que la CI termina correctamente.» Límites: «No implementes todavía H4 ni H5.» «Puedes subir y actualizar la rama remota para ejecutar CI, pero **no la integres en `main` sin mi aprobación**.»
 
 ## Tasks
@@ -100,7 +101,7 @@ Plan de endurecimiento (**aprobado en L4**; cada rama se integra solo con la apr
   - Pruebas: los runs de CI descritos.
   - Regresión: falsos positivos en los runs programados (gestionados con excepciones justificadas). `tests.yml` no cambia.
   - Revisión independiente: **sí** (CI: elemento 5).
-- [ ] P9 — Migrar las pruebas de API de `httpx` a `httpx2` (H6). Prioridad: baja; cuando Starlette anuncie la retirada o en la siguiente actualización programada. Depende de: P4. Rama propia.
+- [x] P9 — Migrar las pruebas de API de `httpx` a `httpx2` (H6). Commit `810db17` (L28). **Adelantada por el usuario (L27, S13).** Rama `chore/httpx2`, encadenada sobre `docs/close-dependency-hardening`. Depende de: P4.
   - Archivos: `backend/requirements-dev.txt`, `backend/constraints.txt` y, si cambia la importación, `tests/test_api.py`.
   - Aceptación: sin `StarletteDeprecationWarning` en la CI y con la suite en verde. Procedencia de `httpx2` revisada de nuevo (sus archivos no tenían atestación PEP 740 el 2026-11-03).
   - Pruebas: suite.
@@ -110,7 +111,9 @@ Plan de endurecimiento (**aprobado en L4**; cada rama se integra solo con la apr
 **Medidas opcionales** (cada una en su propia rama si se aprueba):
 
 - [ ] P10 — Acciones de GitHub fijadas por SHA con comentario de versión, y `dependabot.yml` solo para `github-actions` (H9). Prioridad: baja. Archivos: `.github/workflows/*.yml`, `.github/dependabot.yml`. Aceptación: cada `uses:` apunta a un SHA de 40 caracteres que coincide con su etiqueta (`gh api repos/<acción>/git/ref/tags/<v>`), y la CI está en verde. Si se aprueba, se puede imponer activando `sha_pinning_required` en los permisos de Actions del repositorio (hoy `false`). Regresión: ninguna funcional. Revisión: sí (CI).
-- [ ] P11 — Alinear los entornos: Python 3.12 disponible en local, o añadir 3.14 a una matriz de CI, y `engines` o `.nvmrc` para Node (H4). Prioridad: baja. Archivos: `.github/workflows/tests.yml`, `frontend/package.json`, `README.md`. Aceptación: la versión de referencia está documentada y la CI la prueba. Revisión: sí si toca la CI.
+- [ ] P11 — Alinear los entornos (H4). **Decidido en L27 (S13):** matriz de Python 3.12 y 3.14 en el job `python`; Node 24 como única referencia mediante `frontend/.nvmrc`. Rama `ci/align-runtimes`, encadenada sobre `chore/httpx2`.
+  - Archivos: `.github/workflows/tests.yml`, `.github/workflows/dependency-audit.yml`, `frontend/.nvmrc` (nuevo) y `README.md`.
+  - Aceptación: la CI prueba Python 3.12 y 3.14 (unitarias, Ruff y comprobación de restricciones) y usa Node 24 desde `.nvmrc` en todos los jobs. El README documenta las versiones de referencia. Revisión: sí, porque toca la CI.
 - [ ] P12 — Actualizaciones mayores del frontend (H10). **Vinculada a la Fase 1 del frontend (L26):**
   - `primevue` y `@primeuix/themes` no se actualizarán: la Fase 1 retira PrimeVue (decisión D1).
   - `vue-router`, que no se usa, también se retira en la Fase 1.
@@ -692,3 +695,21 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
     - `chore/ruff-clean-and-ci`, en local y en `origin`. La local iba por detrás de su remota y `git branch -d` se negó, así que se borró con `-D` después de comprobar que tanto la local como la remota estaban contenidas en `main`.
   - `docs/phase-1-plan` y su worktree no se tocan.
   - **Consolidación:** L23-L26, P7 y P8 cerradas, P12 vinculada a la Fase 1, y `docs/pendiente.md` y la auditoría con el estado final.
+- **L27 (2026-11-04):** P9 y P11, petición literal: «Me interesa tener ahora cerrado P9 y P11. Pytest se quitó y nos quedamos con unittest pip-audit se ha usado en el hardening, pero de momento ya no es necesario.»
+  - **Decisión de P11:** a la pregunta «¿Cómo los alineo?» (hoy: local con Python 3.14 y Node 24; CI con 3.12 y 22; el README pide 3.12+ y 22+), el usuario eligió «3.12+3.14 y Node 24».
+  - **`.venv` local:** se recrea limpio desde las restricciones, para retirar `pytest`, `pip-audit` y sus dependencias.
+  - **Procedencia de `httpx2`, comprobada de nuevo:**
+    - La última versión es 2.16.0 (2026-10-21; 22 versiones desde el 2026-05-11). La publicación `v2.16.0` de `pydantic/httpx2` la hizo `Kludex`, el mantenedor de Starlette que añadió `httpx2` a `TestClient`, el mismo día que la de PyPI. El repositorio tiene `publish.yml` y está activo.
+    - OSV no tiene avisos. Sus archivos en PyPI **siguen sin atestación PEP 740**; queda como riesgo residual.
+    - Dependencias nuevas: `httpcore2==2.16.0`, del mismo repositorio, que pide `h11>=0.16` y `truststore>=0.10`; y `truststore` 0.10.5, de Seth Larson, que usa los certificados del sistema en lugar de `certifi`.
+    - Starlette no ha anunciado ninguna fecha para retirar `httpx`.
+  - **Ramas:** `chore/httpx2` y `ci/align-runtimes`, encadenadas sobre `docs/close-dependency-hardening`, porque las tres tocan este plan.
+- **L28 (2026-11-04):** P9 en local (Windows, Python 3.14.7).
+  - **Prueba primero:** en `tests/test_required_dependencies.py`, el caso que bloqueaba `httpx` pasa a bloquear `httpx2`. RED con las dependencias anteriores: Starlette recurría a `httpx` instalado y `test_api` no fallaba («[] is not true»).
+  - **`810db17`:**
+    - `requirements-dev.txt` cambia `httpx>=0.27,<1` por `httpx2>=2.16,<3`.
+    - Para `constraints.txt`, las versiones se resolvieron en un entorno limpio manteniendo fijado todo lo demás. Salen `httpx==0.28.1`, `httpcore==1.0.9` y `certifi==2026.10.23`; entran `httpx2==2.16.0`, `httpcore2==2.16.0` y `truststore==0.10.5`. Siguen siendo 24 versiones y no cambia ninguna otra.
+    - `tests/test_api.py` no cambia: `fastapi.testclient` elige `httpx2`.
+  - **GREEN en el entorno limpio:** `pip check` sin problemas; suite 163 OK; Ruff sin avisos. `fastapi.testclient` se importa con los avisos convertidos en errores, sin `StarletteDeprecationWarning`.
+  - **`.venv` local:** se desinstalaron los 32 paquetes que no estaban en las restricciones (las familias de `pytest`, `pip-audit` y `httpx`) y se instaló con `-c`. Quedan exactamente 24 paquetes, idénticos a `constraints.txt`; `pip check` limpio, suite y Ruff en verde. No se borró la carpeta, porque había procesos de Python abiertos que podían bloquearla.
+  - **Riesgo residual:** los archivos de `httpx2` en PyPI no tienen atestación PEP 740 (L27).
