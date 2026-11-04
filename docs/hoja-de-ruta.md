@@ -6,7 +6,7 @@ Este documento reúne en un solo sitio las fases de trabajo de Password Checker,
 
 | Fase | Objetivo | Estado | Bloqueada por | Planes |
 |---|---|---|---|---|
-| 0 | Endurecer dependencias y cadena de suministro | **Cerrada** (2026-11-04); P10, antes de la Fase 1 | — | [dependency-hardening](../odd/done/dependency-hardening.md), [actions-sha-pinning](../odd/tasks/actions-sha-pinning.md) (P10) |
+| 0 | Endurecer dependencias y cadena de suministro | **Cerrada** (2026-11-04), con P10 integrada el mismo día | — | [dependency-hardening](../odd/done/dependency-hardening.md), [actions-sha-pinning](../odd/done/actions-sha-pinning.md) (P10) |
 | 1 | Cimientos del frontend: colores en variables, tablas nativas, accesibilidad, tamaño del bundle y actualizaciones mayores | Planificada | D2, solo para una tarea | [css-tokens](../odd/tasks/css-tokens.md), [native-tables](../odd/tasks/native-tables.md), [keyboard-accessibility](../odd/tasks/keyboard-accessibility.md), [frontend-bundle](../odd/tasks/frontend-bundle.md), [frontend-major-updates](../odd/tasks/frontend-major-updates.md) (P12) |
 | 2 | Revisión más ágil, sin cambiar el formato `.pwc` | Planificada | — | [review-filters](../odd/tasks/review-filters.md), [undo-ux](../odd/tasks/undo-ux.md), [secret-visibility](../odd/tasks/secret-visibility.md), [export-preview](../odd/tasks/export-preview.md), [compare-resolution](../odd/tasks/compare-resolution.md), [local-strength](../odd/tasks/local-strength.md), [mobile-record-detail](../odd/tasks/mobile-record-detail.md) |
 | 3 | Datos de revisión que se guardan en la sesión (`.pwc` v3) | **Bloqueada** | D8, D3 (y D5 para las asociaciones de servicio) | Sin plan detallado (véase [Fase 3](#fase-3--datos-de-revisión-en-la-sesión)) |
@@ -22,7 +22,7 @@ Fuera de la hoja de ruta, por no ser viable sin un modelo de amenazas: el acceso
 
 - **Las fases agrupan; las dependencias ordenan.** El orden real lo marca el apartado «Depende de» de cada plan, no una secuencia rígida. Por ejemplo, `local-strength` es casi todo backend y puede empezar en cualquier momento, y la validación con personas se hace en rondas a medida que avanzan las fases.
 - **Una decisión pendiente solo bloquea lo que la necesita.** Cada plan indica qué decisión lo bloquea, si alguna lo hace.
-- **Los pendientes que quedaban de la Fase 0 tienen ya su propio plan.** P10 se cierra antes de empezar la Fase 1; P12 es un paso de la Fase 1, y P13, de la Fase 6. Ninguno bloquea otra fase.
+- **Los pendientes que quedaban de la Fase 0 tienen ya su propio plan.** P10 ya está integrada; P12 es un paso de la Fase 1, y P13, de la Fase 6. Ninguno bloquea otra fase.
 - **Cada plan es un documento ODD** en `odd/tasks/`, con sus specs, tareas, pruebas y registro. Ningún plan está aprobado para implementarse hasta que el usuario lo diga.
 
 ## Decisiones
@@ -100,13 +100,13 @@ Cerrada el 2026-11-04: P2-P8 integradas en `main`, con las alertas de Dependabot
 
 | Medida | Plan | Cuándo |
 |---|---|---|
-| P10: acciones de GitHub fijadas por SHA y Dependabot para `github-actions` | [actions-sha-pinning](../odd/tasks/actions-sha-pinning.md) | Antes de la Fase 1 |
+| P10: acciones de GitHub fijadas por SHA y Dependabot para `github-actions` | [actions-sha-pinning](../odd/done/actions-sha-pinning.md) | Antes de la Fase 1 |
 | P12: actualizaciones mayores del frontend (`pinia` 4, `vite` 8, `typescript` 7) | [frontend-major-updates](../odd/tasks/frontend-major-updates.md) | Fase 1 |
 | P13: instalación de Python con hashes | [python-hash-locking](../odd/tasks/python-hash-locking.md) | Fase 6, si el diseño de la bóveda la confirma |
 
 ### Fase 1 — Cimientos del frontend
 
-**Antes de empezar** se cierran dos pendientes pequeños, cada uno en su rama, ninguno del frontend: P10 ([actions-sha-pinning](../odd/tasks/actions-sha-pinning.md)) y DT4, la línea que se informa cuando falla la cabecera de un CSV ([reliability-hardening](../odd/done/reliability-hardening.md)).
+**Antes de empezar** se cerraron dos pendientes pequeños, cada uno en su rama y ya integrados en `main` (2026-11-04), ninguno del frontend: P10 ([actions-sha-pinning](../odd/done/actions-sha-pinning.md)) y DT4, la línea que se informa cuando falla la cabecera de un CSV ([reliability-hardening](../odd/done/reliability-hardening.md)).
 
 | Plan | Depende de |
 |---|---|
@@ -168,3 +168,4 @@ Es un cambio de formato persistido: requerirá verificación independiente y un 
 | 2026-11-04 | Revisión externa de la hoja de ruta, aportada por el usuario. Se incorporan tres puntos: (1) resolver D2 durante la Fase 1, antes del trabajo de teclado en los diálogos; (2) definir la relación entre `.pwc` v3 y la bóveda antes de comprometer v3, que da lugar a D8 y a adelantar `vault-discovery` T2; (3) leer las fases como agrupaciones con dependencias, no como una secuencia rígida. |
 | 2026-11-04 | El multiusuario, la compartición y la sincronización pasan a figurar como horizontes futuros previstos, no como funcionalidades descartadas. `vault-discovery` T4-T6 estudian esa evolución. D7 recibe una orientación: bóveda personal, local y cifrada. |
 | 2026-11-04 | `dependency-hardening` pasa a `odd/done`. P10, P12 y P13 tienen su propio plan: P10 se cierra antes de la Fase 1, junto con DT4; P12 es un paso de la Fase 1, y P13, de la Fase 6. Se retira `vue-router` y se conserva Pinia. |
+| 2026-11-04 | DT4 y P10 integradas en `main`, con la CI en verde y la revisión aprobada: la cabecera CSV de varias líneas informa de la línea donde falla, y las acciones de GitHub van fijadas por SHA con Dependabot para `github-actions`. |
