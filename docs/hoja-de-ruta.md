@@ -168,7 +168,8 @@ Nada de esta fase cambia el formato `.pwc`.
 **Bloqueada por D8 y D3.** Sin plan detallado hasta resolverlas. Contenido previsto, todo persistido en `.pwc`:
 
 - «fecha local al confirmar manualmente» (de la ficha, en el trabajo pendiente);
-- las asociaciones de servicio, si D5 las aprueba.
+- las asociaciones de servicio, si D5 las aprueba;
+- la procedencia de cada importación: el formato detectado y una etiqueta tomada del nombre del archivo, en lugar de la lista cerrada de orígenes ([propuesta](pendiente.md#mejoras-de-la-interfaz-actual)).
 
 Es un cambio de formato persistido: requerirá verificación independiente y un solo salto de versión que reúna todos los campos nuevos.
 
@@ -204,3 +205,4 @@ Es un cambio de formato persistido: requerirá verificación independiente y un 
 | 2026-11-04 | DT4 y P10 integradas en `main`, con la CI en verde y la revisión aprobada: la cabecera CSV de varias líneas informa de la línea donde falla, y las acciones de GitHub van fijadas por SHA con Dependabot para `github-actions`. |
 | 2026-11-04 | Anotaciones del usuario sobre una conversación externa con capturas de otro gestor de contraseñas. Se añaden: <ul><li>correcciones independientes de «Abrir sitio» y de la normalización de URL (`site-link-navigation`, D9);</li><li>la ordenación conservada al cambiar de pantalla (`native-tables`) y al recargar (`review-filters`);</li><li>una Etapa A de comprensión en `compare-resolution`;</li><li>`audit-layout` en la Fase 2;</li><li>el modelo de servicios y la agrupación manual (D5, `vault-discovery` T4);</li><li>la extensión de navegador como horizonte futuro.</li></ul> Los datos reales de las capturas se sustituyen por otros ficticios. |
 | 2026-11-04 | Segunda revisión externa, aportada por el usuario. D9 pasa a recomendar B (origen y ruta, sin parámetros ni fragmento), una regla fija sin heurísticas. D8: `vault-discovery` T2 se contrasta con un esquema preliminar de T4, para no fijar el formato antes que el modelo. |
+| 2026-11-04 | Propuesta del usuario para la Fase 3: la procedencia de las importaciones pasa a ser el formato detectado (`chromium`, `firefox`, `safari` o `generic`) más una etiqueta tomada del nombre del archivo, en lugar de la lista cerrada de orígenes. |
