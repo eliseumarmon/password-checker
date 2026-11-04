@@ -214,10 +214,7 @@ def read_upload(file_name, content):
     if b"\x00" in content:
         raise ValueError("Archivo con bytes nulos; se rechaza la importación")
     text = content.decode("utf-8-sig", errors="strict")
-    try:
-        header = next(csv.reader(io.StringIO(text)), [])
-    except csv.Error:
-        raise ValueError(malformed_csv(1)) from None
+    header = next(checked_rows(csv.reader(io.StringIO(text))), [])
     fmt, origin = detect_format_and_origin(header, file_name)
     credentials, warnings = read_export(fmt, io.StringIO(text, newline=""), origin)
     return origin, credentials, warnings
