@@ -7,6 +7,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
 ## Specs
 
 - **S1 — Alcance.** `docs/pendiente.md`, «Trabajo pendiente»: «Una revisión más amplia de accesibilidad y teclado.» Decisión D1 (L2): «queremos mejorar la accesibilidad». Y en L2: «No hace falta resolver D2–D7 para planificar los bloques de la Fase 1 que no dependen de esas decisiones.» Por eso `Esc` (D2) queda fuera. Se conserva lo documentado en `docs/flujo-usuario.md`: «Los demás diálogos (comparación, ficha, sesión cifrada) no se cierran con `Esc`.»
+  - **Decisión pendiente D2** (opciones y recomendación en `docs/hoja-de-ruta.md`). Se recomienda resolverla antes de T2, que trabaja el teclado de esos mismos diálogos. Si se aprueba la opción A, `Esc` entra como requisito de T2 con su prueba E2E, y la ficha con cambios pide confirmación igual que con «✕».
 - **S2 — Revisión.** Criterios de `docs/guia-visual.md`:
   - §2.2: «Foco de teclado destacado (contorno sólido de 2 px, color contrastado). Componentes tabulares navegables con teclado.» «Iconos de **18–24 px**, siempre acompañados de etiqueta accesible.» «Controles táctiles: objetivo **44 × 44 px o mayor**, salvo controles de escritorio claramente diferenciados.» «Respetar `prefers-reduced-motion`.»
   - §4: «**Interacción teclado:** `Tab` recorre controles, `Enter` abre registro; confirmar de forma explícita las acciones destructivas.»
@@ -33,7 +34,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
 ## Tasks
 
 - [ ] T1 — S2: revisión con teclado, zoom al 200 % y pantalla de 360 px; hallazgos en el Log. Ruta: inline. Sin código.
-- [ ] T2 — S3: foco de los diálogos. Ruta: inline.
+- [ ] T2 — S3: foco de los diálogos. Depende de: D2 resuelta, o confirmado que `Esc` queda fuera. Ruta: inline.
   - RED primero: E2E de foco inicial, `Tab` que no sale del diálogo y retorno del foco, en cada uno de los tres diálogos.
   - Implementar la función compartida y migrar `ConfirmDialog` a ella.
   - Comprobación diferencial: las E2E de `ConfirmDialog` dan el mismo resultado antes y después.
@@ -53,3 +54,4 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - `NoticeBase.vue` ya asigna `role="alert"` o `role="status"` (con `:role`). La evaluación inicial lo dio por ausente porque la búsqueda no detectó el atributo enlazado; está corregido y se ha quitado del alcance.
   - `style.css` ya incluye `:focus-visible` (3 px) y `prefers-reduced-motion`.
   - Ruta: inline en todas las tareas; no aplica el disparador de escritor (las unidades comparten `App.vue`, `style.css` y los E2E).
+- **L4 (2026-11-04).** Petición: «Necesito que documentes todos los planes y que marques las decisiones pendientes.» Con ella, el usuario aporta una revisión externa que recomienda resolver D2 durante la Fase 1, antes del bloque de accesibilidad. Se marca D2 como decisión pendiente en S1 y como dependencia de T2; las opciones están en `docs/hoja-de-ruta.md`.

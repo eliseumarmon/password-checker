@@ -61,8 +61,8 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - Medición posterior y comparación con T1 en el Log; capturas finales (S5).
   - Riesgo: punto 5 (dependencias). Commit propio y verificación independiente.
 - [ ] T5 — Coherencia del plan de dependencias. Ruta: inline.
-  - En `odd/tasks/dependency-hardening.md`, P12 deja de incluir `primevue` 5 y `@primeuix/themes` 3; en `docs/auditoria-dependencias.md` se añade una nota de que ya no son dependencias.
-  - Depende de: integrar `ci/dependency-audit` (P8), que modifica esos dos archivos.
+  - P12 ya está vinculada a esta fase (L5). Al integrar T4, se anota en P12 de `odd/tasks/dependency-hardening.md` que `primevue` y `@primeuix/themes` ya se retiraron, y en `docs/auditoria-dependencias.md`, que ya no son dependencias.
+  - Depende de: integrar `docs/close-dependency-hardening`, que modifica esos dos archivos.
 
 ## Log
 
@@ -105,3 +105,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - Los E2E dependen de PrimeVue solo por `.p-paginator` y `.p-paginator-next` (`review.spec.ts:56-59`); todo lo demás usa `.desktop-table`, `getByRole('row', …)` y `.desktop-table tbody tr`, que la tabla nativa debe conservar.
   - `ui-basics.md` (L2 y L3) documenta por qué `style.css` tiene selectores `.p-datatable…`: igualar el padding y ocultar la tabla en móvil.
   - Ruta: inline en todas las tareas. No aplica el disparador de escritor: las unidades se suceden y comparten archivos (`style.css`, el módulo de lógica y los E2E).
+- **L5 (2026-11-04).** Fase 0 cerrada; actualiza L3:
+  - P8 está integrada en `main` (`cf3f089`) y P7 está activada (`vulnerability-alerts` devuelve 204).
+  - En la rama `docs/close-dependency-hardening`, sin integrar todavía, la otra sesión cerró la fase (L25 de `dependency-hardening.md`) y vinculó P12 a esta fase (L26): `primevue`, `@primeuix/themes` y `vue-router` se retiran en lugar de actualizarse. T5 queda reducida a anotar la retirada cuando ocurra.
+  - Hoja de ruta completa en `docs/hoja-de-ruta.md`.
