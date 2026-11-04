@@ -117,3 +117,4 @@ cd frontend && npm run build && npm run e2e
   - **Riesgo:** sin hallazgos.
   - **Fiabilidad:** una sugerencia no bloqueante, `R3-001`. La prueba nueva solo cubría LF; el caso CRLF solo se había comprobado en la comparación diferencial. Aplicada: `test_a_multiline_header_error_names_the_line_where_it_fails` comprueba ahora la línea 3 con LF y con CRLF, cada uno en su `subTest`. Pasa sin cambios de código, porque fija un comportamiento que ya era correcto.
   - **Resultados:** `tests.test_csv_upload` y la suite en verde; `ruff check .` sin avisos.
+- **L18 (2026-11-04):** CI en GitHub sobre `56dab02`: run `41821554128` (Tests) en verde, con `python (3.12)`, `python (3.14)`, `frontend` y `e2e`. Petición del usuario, literal: «Sube a origin, cuando pasen CI las integras en main». La rama se integra en `main` con un merge.
