@@ -100,7 +100,7 @@ Cerrada el 2026-11-04: P2-P8 integradas en `main`, con las alertas de Dependabot
 
 | Medida | Plan | Cuándo |
 |---|---|---|
-| P10: acciones de GitHub fijadas por SHA y Dependabot para `github-actions` | [actions-sha-pinning](../odd/done/actions-sha-pinning.md) | Integrada (2026-11-04), antes de la Fase 1 |
+| P10: acciones de GitHub fijadas por SHA y Dependabot para `github-actions` | [actions-sha-pinning](../odd/done/actions-sha-pinning.md) | Antes de la Fase 1 |
 | P12: actualizaciones mayores del frontend (`pinia` 4, `vite` 8, `typescript` 7) | [frontend-major-updates](../odd/tasks/frontend-major-updates.md) | Fase 1 |
 | P13: instalación de Python con hashes | [python-hash-locking](../odd/tasks/python-hash-locking.md) | Fase 6, si el diseño de la bóveda la confirma |
 
