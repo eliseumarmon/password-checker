@@ -20,7 +20,7 @@ Fuera de la hoja de ruta, por no ser viables sin un modelo de amenazas: multiusu
 
 - **Las fases agrupan; las dependencias ordenan.** El orden real lo marca el apartado «Depende de» de cada plan, no una secuencia rígida. Por ejemplo, `local-strength` es casi todo backend y puede empezar en cualquier momento, y la validación con personas se hace en rondas a medida que avanzan las fases.
 - **Una decisión pendiente solo bloquea lo que la necesita.** Cada plan indica qué decisión lo bloquea, si alguna lo hace.
-- **Los pendientes de baja prioridad de la Fase 0 (P9-P13) no bloquean ninguna fase.**
+- **Los pendientes opcionales de la Fase 0 (P10 y P13) no bloquean ninguna fase.** P12 queda absorbida en parte por la Fase 1.
 - **Cada plan es un documento ODD** en `odd/tasks/`, con sus specs, tareas, pruebas y registro. Ningún plan está aprobado para implementarse hasta que el usuario lo diga.
 
 ## Decisiones
@@ -92,7 +92,7 @@ Recomendación: hacer primero `vault-discovery` T2 y decidir entre A y B con ese
 
 ### Fase 0 — Endurecimiento de dependencias
 
-Cerrada el 2026-11-04: P2-P8 integradas en `main`, con las alertas de Dependabot (P7) activadas y la auditoría automática (P8) en marcha. Quedan P9 (prioridad baja) y las opcionales P10-P13, que no bloquean nada. P12 queda absorbida en parte por la Fase 1: `primevue`, `@primeuix/themes` y `vue-router` se retiran en lugar de actualizarse. Detalle en [dependency-hardening](../odd/tasks/dependency-hardening.md).
+Cerrada el 2026-11-04: P2-P8 integradas en `main`, con las alertas de Dependabot (P7) activadas y la auditoría automática (P8) en marcha. También están completadas e integradas P9 (pruebas de la API con `httpx2`) y P11 (CI con Python 3.12 y 3.14, y Node 24 fijado en `frontend/.nvmrc`). Quedan solo las opcionales P10 y P13, que no bloquean nada, y P12, absorbida en parte por la Fase 1: `primevue`, `@primeuix/themes` y `vue-router` se retiran en lugar de actualizarse; `pinia` 4, `vite` 8 y `typescript` 7 siguen siendo opcionales. Detalle en [dependency-hardening](../odd/tasks/dependency-hardening.md).
 
 ### Fase 1 — Cimientos del frontend
 
@@ -149,5 +149,5 @@ Es un cambio de formato persistido: requerirá verificación independiente y un 
 |---|---|
 | 2026-11-03 | Informe de viabilidad de `pendiente.md` con las Fases 0-6 y las decisiones D1-D7. Hasta este documento solo existía en la conversación y, resumido, en la memoria del agente. |
 | 2026-11-03 | D1 aprobada; planes de la Fase 1 en `odd/tasks/`. |
-| 2026-11-04 | Fase 0 cerrada (P7 y P8). |
+| 2026-11-04 | Fase 0 cerrada (P7 y P8). Después, P9 y P11 completadas e integradas en `main`. |
 | 2026-11-04 | Revisión externa de la hoja de ruta, aportada por el usuario. Se incorporan tres puntos: (1) resolver D2 durante la Fase 1, antes del trabajo de teclado en los diálogos; (2) definir la relación entre `.pwc` v3 y la bóveda antes de comprometer v3, que da lugar a D8 y a adelantar `vault-discovery` T2; (3) leer las fases como agrupaciones con dependencias, no como una secuencia rígida. |

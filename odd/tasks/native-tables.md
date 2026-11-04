@@ -62,7 +62,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - Riesgo: punto 5 (dependencias). Commit propio y verificación independiente.
 - [ ] T5 — Coherencia del plan de dependencias. Ruta: inline.
   - P12 ya está vinculada a esta fase (L5). Al integrar T4, se anota en P12 de `odd/tasks/dependency-hardening.md` que `primevue` y `@primeuix/themes` ya se retiraron, y en `docs/auditoria-dependencias.md`, que ya no son dependencias.
-  - Depende de: integrar `docs/close-dependency-hardening`, que modifica esos dos archivos.
+  - Depende de: T4. `docs/close-dependency-hardening`, que modificaba esos dos archivos, ya está integrada en `main` (L6).
 
 ## Log
 
@@ -109,3 +109,8 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - P8 está integrada en `main` (`cf3f089`) y P7 está activada (`vulnerability-alerts` devuelve 204).
   - En la rama `docs/close-dependency-hardening`, sin integrar todavía, la otra sesión cerró la fase (L25 de `dependency-hardening.md`) y vinculó P12 a esta fase (L26): `primevue`, `@primeuix/themes` y `vue-router` se retiran en lugar de actualizarse. T5 queda reducida a anotar la retirada cuando ocurra.
   - Hoja de ruta completa en `docs/hoja-de-ruta.md`.
+- **L6 (2026-11-04).** Petición: «Se ha actualizado la documentación en el otro worktree echa un vistazo y traete los cambios y soluciona los conflictos.» Se integra `origin/main` (`eb719fe`) en `docs/roadmap` sin conflictos de texto. Cambia el estado de L3 y L5:
+  - `docs/close-dependency-hardening` está integrada (`883cab3`).
+  - P9 (`httpx2`, `ea9dde3`) y P11 (Python 3.12 y 3.14, Node 24 en `frontend/.nvmrc`, `eb719fe`) están completadas.
+  - Del plan de dependencias quedan las opcionales P10 y P13, y P12 vinculada a esta fase.
+  - T5 ya no espera a otra rama, solo a T4.

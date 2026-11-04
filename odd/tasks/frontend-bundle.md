@@ -26,7 +26,7 @@ Entrega: `ask-on-risk`, previsión ~10 líneas en T1 (sin contar `package-lock.j
   - Riesgo: punto 5 (dependencias). Commit propio y verificación independiente.
 - [ ] T2 — S1, S3: medición tras `native-tables` y decisión, registradas en el Log. Ruta: inline. Sin código si no hay aviso.
 - [ ] T3 — S4: carga diferida, solo si T2 la justifica y el usuario la aprueba. Ruta: inline.
-- [ ] T4 — S5: P12 ya prevé retirar `vue-router` (L26 de `dependency-hardening.md`, en `docs/close-dependency-hardening`); al integrar T1, se anota que se retiró. Si coincide en el tiempo, se hace junto con `native-tables` T5. Ruta: inline.
+- [ ] T4 — S5: P12 ya prevé retirar `vue-router` (L26 de `dependency-hardening.md`, ya en `main`); al integrar T1, se anota que se retiró. Si coincide en el tiempo, se hace junto con `native-tables` T5. Ruta: inline.
 
 ## Log
 
@@ -37,3 +37,4 @@ Entrega: `ask-on-risk`, previsión ~10 líneas en T1 (sin contar `package-lock.j
   - `vue-router` 4.6.4 tiene 0 imports.
   - La mayor parte del peso probablemente venga de PrimeVue y del tema Aura, que se carga entero en `main.ts`, pero no se ha medido; por eso T2 espera a `native-tables`.
   - Ruta: inline.
+- **L4 (2026-11-04).** Integrado `origin/main` (`eb719fe`): `docs/close-dependency-hardening`, con la vinculación de P12, ya está en `main`. P11 fija Node 24 en `frontend/.nvmrc`; las mediciones de S3 se hacen con esa versión.
