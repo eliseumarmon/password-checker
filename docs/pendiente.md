@@ -92,6 +92,8 @@ La evolución planteada conserva la revisión y auditoría de credenciales que y
 #### Dispositivos, sincronización e integraciones
 
 - **Decisión pendiente — modo local o centralizado:** valorar primero la experiencia local y después un servicio autohospedado para acceso desde varios equipos, incluso fuera de la LAN mediante un canal seguro. Estudiar sincronización, conflictos, copias, modo sin conexión, disponibilidad del servidor y separación entre cifrado del lado del cliente y almacenamiento del servidor; no hay arquitectura de red ni proveedor seleccionado.
+  - **Conexión al servidor autoalojado**, del usuario: «La app permitiría acceder mediante "nombre del servidor" url o cualquier identificador más usuario y contraseña». Los clientes (web, escritorio y las apps móviles) eligen el servidor y se identifican en él, como en los gestores con servidor propio.
+  - **Condición de seguridad:** la contraseña de acceso no debe permitir al servidor descifrar la bóveda. El cliente deriva de la contraseña maestra una prueba para iniciar sesión y, por separado, la clave de cifrado. El servidor solo recibe la prueba y guarda la bóveda cifrada, de modo que quien controle el servidor o robe su base de datos no pueda leer los secretos. La arquitectura de claves se estudia en [vault-discovery](../odd/tasks/vault-discovery.md) (T5).
 - **Propuesta — experiencia multiplataforma:** acceso seguro desde Windows, Linux y móvil, con bloqueo, protección al revelar/copiar secretos y, si se justifica, integración con navegadores o autocompletado. No presuponer que una GUI servida localmente puede exponerse directamente a Internet sin autenticación, autorización y controles adicionales.
 - **Horizonte previsto — extensión de navegador y autocompletado seguro:** una extensión que, con la bóveda desbloqueada, ofrezca las credenciales de la página visitada y rellene usuario y contraseña, como hace Bitwarden. Llega después de la primera bóveda local y es independiente de la evolución empresarial: sirve también con una bóveda personal en el propio equipo.
   - **Primera versión:** el usuario elige la credencial antes de rellenar; sin autocompletado automático. La extensión no guarda contraseñas descifradas de forma persistente.
@@ -106,6 +108,10 @@ La evolución planteada conserva la revisión y auditoría de credenciales que y
   - **Navegadores:** primero Chrome y Brave (WebExtensions, Manifest V3); después Edge y Firefox; Safari, más adelante.
   - **Fuera de la primera versión:** copiar TOTP, guardar o actualizar contraseñas nuevas y el autocompletado automático configurable. Passkeys/WebAuthn quedan como investigación futura.
   - Su encaje en la bóveda se prepara en [vault-discovery](../odd/tasks/vault-discovery.md) (T1, T4 y T5).
+- **Propuesta — apps para Android e iOS:** del usuario: «Añade como pendiente crear app para android e ios.» Sin diseñar ni planificar.
+  - Hoy el uso desde el móvil depende de `adb reverse`, que solo existe en Android, y el backend solo escucha en `127.0.0.1`. En iPhone no hay forma de usarlo.
+  - Una app necesita acceder a la bóveda: una bóveda propia en el teléfono o sincronización con la del ordenador. Depende de la primera bóveda (Fase 6) y de la decisión sobre modo local o centralizado; con un servidor autoalojado, la app se conectaría a él con su identificador, usuario y contraseña.
+  - Podría sustituir el acceso móvil con ADB y, más adelante, ofrecer el autocompletado del sistema operativo, con las mismas condiciones de seguridad que la extensión de navegador.
 - **Restricción vigente — sin CLI:** la interfaz y la arquitectura de la bóveda son el camino actual. **No reintroducir la CLI eliminada**, ni comandos de extracción de secretos o de inyección/ejecución (`run`), como dependencia de estas ideas. Solo reconsiderarlo si el usuario cambia expresamente esta decisión.
 
 #### Preguntas a resolver antes de elaborar un plan
