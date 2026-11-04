@@ -111,7 +111,7 @@ Plan de endurecimiento (**aprobado en L4**; cada rama se integra solo con la apr
 **Medidas opcionales** (cada una en su propia rama si se aprueba):
 
 - [ ] P10 — Acciones de GitHub fijadas por SHA con comentario de versión, y `dependabot.yml` solo para `github-actions` (H9). Prioridad: baja. Archivos: `.github/workflows/*.yml`, `.github/dependabot.yml`. Aceptación: cada `uses:` apunta a un SHA de 40 caracteres que coincide con su etiqueta (`gh api repos/<acción>/git/ref/tags/<v>`), y la CI está en verde. Si se aprueba, se puede imponer activando `sha_pinning_required` en los permisos de Actions del repositorio (hoy `false`). Regresión: ninguna funcional. Revisión: sí (CI).
-- [ ] P11 — Alinear los entornos (H4). **Decidido en L27 (S13):** matriz de Python 3.12 y 3.14 en el job `python`; Node 24 como única referencia mediante `frontend/.nvmrc`. Rama `ci/align-runtimes`, encadenada sobre `chore/httpx2`.
+- [x] P11 — Alinear los entornos (H4). Commit `07e786d` (L29). **Decidido en L27 (S13):** matriz de Python 3.12 y 3.14 en el job `python`; Node 24 como única referencia mediante `frontend/.nvmrc`. Rama `ci/align-runtimes`, encadenada sobre `chore/httpx2`.
   - Archivos: `.github/workflows/tests.yml`, `.github/workflows/dependency-audit.yml`, `frontend/.nvmrc` (nuevo) y `README.md`.
   - Aceptación: la CI prueba Python 3.12 y 3.14 (unitarias, Ruff y comprobación de restricciones) y usa Node 24 desde `.nvmrc` en todos los jobs. El README documenta las versiones de referencia. Revisión: sí, porque toca la CI.
 - [ ] P12 — Actualizaciones mayores del frontend (H10). **Vinculada a la Fase 1 del frontend (L26):**
@@ -713,3 +713,19 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
   - **GREEN en el entorno limpio:** `pip check` sin problemas; suite 163 OK; Ruff sin avisos. `fastapi.testclient` se importa con los avisos convertidos en errores, sin `StarletteDeprecationWarning`.
   - **`.venv` local:** se desinstalaron los 32 paquetes que no estaban en las restricciones (las familias de `pytest`, `pip-audit` y `httpx`) y se instaló con `-c`. Quedan exactamente 24 paquetes, idénticos a `constraints.txt`; `pip check` limpio, suite y Ruff en verde. No se borró la carpeta, porque había procesos de Python abiertos que podían bloquearla.
   - **Riesgo residual:** los archivos de `httpx2` en PyPI no tienen atestación PEP 740 (L27).
+- **L29 (2026-11-04):** CI de P9 y P11.
+  - **P9 en GitHub** (rama `chore/httpx2`, `f9c6d21`): `Tests` (run `41801704242`) y `Dependency audit` (run `41801704251`) en verde. Con Python 3.12 se instala `httpx2` 2.16.0 y coinciden las 24 versiones fijadas; 163 pruebas y 88 E2E. **0** apariciones de `StarletteDeprecationWarning`, que salía en cada run anterior.
+  - **P11 (`07e786d`, rama `ci/align-runtimes`):**
+    - `frontend/.nvmrc` con `24`.
+    - En `tests.yml`, el job `python` usa una matriz `['3.12', '3.14']` con `fail-fast: false`; `frontend` y `e2e` toman Node de `node-version-file: frontend/.nvmrc`.
+    - En `dependency-audit.yml`, el job `npm` usa el mismo `.nvmrc`, y `frontend/.nvmrc` se añade a las rutas que lanzan la auditoría, porque fija la versión de npm que audita.
+    - README: Python 3.12 o posterior (la CI prueba 3.12 y 3.14), Node.js 24 desde `.nvmrc`; el procedimiento de renovación menciona las dos versiones de Python.
+    - El job `e2e` y el job `python` de la auditoría siguen con Python 3.12.
+  - **En local, Node 24.21.0:** `npm ci` (119 paquetes) no modifica `package-lock.json` y el build es correcto.
+  - **En GitHub** (run `41802123655`): `python (3.12)`, `python (3.14)`, `frontend` y `e2e` en verde.
+    - Cada job de Python ejecuta 163 pruebas, Ruff, y la comprobación de las 24 versiones fijadas, que también coinciden con 3.14.
+    - Versiones de los runners: Python 3.12.16 y 3.14.9; Node 24.22.1.
+    - E2E: 88.
+    - `Dependency audit` (run `41802123756`) en verde, con Node 24.22.2: 24 paquetes de Python y 119 de npm sin vulnerabilidades.
+  - **Observación:** las versiones de parche de Python y Node varían entre runners (en un mismo día, Python 3.12.15 y 3.12.16; Node 24.22.1 y 24.22.2). Es lo esperado al fijar solo `3.12` y `24`; las versiones de parche no se fijan.
+  - **Riesgo residual que se cierra:** Python 3.14 ya se prueba en la CI. Windows sigue sin probarse en la CI.
