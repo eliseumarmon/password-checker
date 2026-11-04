@@ -715,7 +715,7 @@ test('asks above the editor before opening a local address on Android', async ({
   await page.getByRole('button', { name: 'Todas (6)' }).click();
   await page.locator('.desktop-table').getByRole('row', { name: /carol/ }).getByRole('button', { name: 'Editar' }).click();
   const editor = page.getByRole('dialog', { name: 'Editar credencial' });
-  await editor.getByLabel('URL o paquete Android').fill('http://localhost:8000');
+  await editor.getByLabel('URL o paquete Android').fill('http://localhost:8000/fictional-path');
   const popups: unknown[] = [];
   page.on('popup', popup => popups.push(popup));
   await editor.getByRole('button', { name: /Abrir sitio/ }).click();

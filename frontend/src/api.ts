@@ -63,6 +63,7 @@ export function safeWebUrl(raw: string): string | null {
     if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return null;
     // Origin and path only (roadmap D9): the path reaches pages such as a login form,
     // while the query and fragment, where tokens often travel, never leave the editor.
+    // Known limit: a token inside the path (some reset or magic links) does leave it.
     return url.origin + url.pathname;
   } catch { return null; }
 }
