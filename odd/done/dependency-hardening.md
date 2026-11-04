@@ -1,7 +1,7 @@
 # Dependencias y cadena de suministro: auditoría y plan de endurecimiento
 
 Objetivo: diagnosticar riesgos de dependencias, reproducibilidad y CI, y proponer un plan proporcionado. Diagnóstico completo en [auditoria-dependencias](../../docs/auditoria-dependencias.md).
-Rama de la auditoría: `docs/dependency-audit` desde `main` (solo documentación). **Estado: completado (L33).** P2-P8 integradas en `main`. P9 y P11 completadas (L28-L29). Las medidas que quedaban salieron de este plan, cada una a un plan propio (L33): P10 a [actions-sha-pinning](../tasks/actions-sha-pinning.md), P12 a [frontend-major-updates](../tasks/frontend-major-updates.md) (Fase 1) y P13 a [python-hash-locking](../tasks/python-hash-locking.md) (Fase 6). Nada se integra en `main` sin aprobación del usuario. Pruebas de cada tarea: `python -m unittest discover -s tests`, `ruff check .`, `npm run build`, `npm run e2e`.
+Rama de la auditoría: `docs/dependency-audit` desde `main` (solo documentación). **Estado: completado (L33).** P2-P8 integradas en `main`. P9 y P11 completadas (L28-L29). Las medidas que quedaban salieron de este plan, cada una a un plan propio (L33): P10 a [actions-sha-pinning](actions-sha-pinning.md), P12 a [frontend-major-updates](../tasks/frontend-major-updates.md) (Fase 1) y P13 a [python-hash-locking](../tasks/python-hash-locking.md) (Fase 6). Nada se integra en `main` sin aprobación del usuario. Pruebas de cada tarea: `python -m unittest discover -s tests`, `ruff check .`, `npm run build`, `npm run e2e`.
 
 ## Specs
 
@@ -108,7 +108,7 @@ Plan de endurecimiento (**aprobado en L4**; cada rama se integra solo con la apr
   - Regresión: diferencias de comportamiento del cliente en `TestClient`.
   - Revisión independiente: no.
 
-**Medidas opcionales** (cada una en su propia rama si se aprueba). P10, P12 y P13 salieron de este plan (L33); su texto original se conserva como S1 de [actions-sha-pinning](../tasks/actions-sha-pinning.md), [frontend-major-updates](../tasks/frontend-major-updates.md) y [python-hash-locking](../tasks/python-hash-locking.md).
+**Medidas opcionales** (cada una en su propia rama si se aprueba). P10, P12 y P13 salieron de este plan (L33); su texto original se conserva como S1 de [actions-sha-pinning](actions-sha-pinning.md), [frontend-major-updates](../tasks/frontend-major-updates.md) y [python-hash-locking](../tasks/python-hash-locking.md).
 
 - [x] P11 — Alinear los entornos (H4). Commit `07e786d` (L29). **Decidido en L27 (S13):** matriz de Python 3.12 y 3.14 en el job `python`; Node 24 como única referencia mediante `frontend/.nvmrc`. Rama `ci/align-runtimes`, encadenada sobre `chore/httpx2`.
   - Archivos: `.github/workflows/tests.yml`, `.github/workflows/dependency-audit.yml`, `frontend/.nvmrc` (nuevo) y `README.md`.
