@@ -26,6 +26,11 @@ class RequiredDependencyTests(unittest.TestCase):
                                    capture_output=True, text=True, timeout=120, check=True)
         return json.loads(completed.stdout.strip().splitlines()[-1])
 
+    def test_the_api_test_client_uses_httpx2(self):
+        # Starlette silently falls back to the deprecated httpx client if httpx2 is not installed.
+        import starlette.testclient
+        self.assertEqual(starlette.testclient.httpx.__name__, 'httpx2')
+
     def test_a_missing_mandatory_dependency_is_an_error_not_a_skip(self):
         # Starlette's test client falls back to a leftover httpx when httpx2 is missing, so both are blocked;
         # with neither available it raises a RuntimeError asking for httpx2.
