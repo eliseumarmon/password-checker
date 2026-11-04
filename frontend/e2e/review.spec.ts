@@ -643,6 +643,63 @@ test('keeps keyboard focus inside the confirmation dialog', async ({ page }) => 
   await expect(confirm).toBeFocused();
 });
 
+type OpenedTab = { url: string; target?: string; features?: string };
+
+/** Replace window.open so a test sees what would open without loading fictional domains. */
+async function recordOpenedTabs(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const opened: OpenedTab[] = [];
+    Object.assign(window, { openedTabs: opened });
+    window.open = ((url?: string | URL, target?: string, features?: string) => {
+      opened.push({ url: String(url), target, features });
+      return null;
+    }) as typeof window.open;
+  });
+  await page.reload();
+}
+
+async function openedTabs(page: Page): Promise<OpenedTab[]> {
+  return page.evaluate(() => (window as unknown as { openedTabs: OpenedTab[] }).openedTabs);
+}
+
+async function editCarol(page: Page): Promise<Locator> {
+  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.locator('.desktop-table').getByRole('row', { name: /carol/ }).getByRole('button', { name: 'Editar' }).click();
+  return page.getByRole('dialog', { name: 'Editar credencial' });
+}
+
+test('opens only the origin of a web address in a new tab without referrer', async ({ page }) => {
+  await recordOpenedTabs(page);
+  const editor = await editCarol(page);
+  const url = editor.getByLabel('URL o paquete Android');
+  const open = editor.getByRole('button', { name: /Abrir sitio/ });
+  for (const address of [
+    'https://auth.example.invalid/cgi-bin/AuthServer',
+    'https://auth.example.invalid/reset?token=fictional-token#step-2',
+  ]) {
+    await url.fill(address);
+    await open.click();
+  }
+  expect(await openedTabs(page)).toEqual([
+    { url: 'https://auth.example.invalid', target: '_blank', features: 'noopener,noreferrer' },
+    { url: 'https://auth.example.invalid', target: '_blank', features: 'noopener,noreferrer' },
+  ]);
+});
+
+test('does not offer to open unsupported schemes or addresses with embedded credentials', async ({ page }) => {
+  const editor = await editCarol(page);
+  const url = editor.getByLabel('URL o paquete Android');
+  for (const address of [
+    'ftp://files.example.invalid/',
+    'javascript:alert(1)',
+    'https://fictional-user:fictional-pass@example.invalid/login',
+    'not a url',
+  ]) {
+    await url.fill(address);
+    await expect(editor.getByRole('button', { name: /Abrir sitio/ })).toHaveCount(0);
+  }
+});
+
 test('asks above the editor before opening a local address on Android', async ({ page }) => {
   await page.addInitScript(() => Object.defineProperty(navigator, 'userAgent', { get: () => 'Mozilla/5.0 (Linux; Android 14) Mobile' }));
   await page.reload();
