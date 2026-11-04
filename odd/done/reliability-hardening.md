@@ -113,3 +113,7 @@ cd frontend && npm run build && npm run e2e
   - **Comparación diferencial** de `read_upload`, con el código base copiado fuera del repositorio frente al cambio. 12 entradas: vacía, solo BOM, Chromium válido, nota multilínea, CRLF, cabecera multilínea válida, comillas mal cerradas en cabecera y en fila, campo enorme en una cabecera de una línea, cabecera multilínea con LF y con CRLF, y Firefox. Solo cambian las dos cabeceras multilínea, de la línea 1 a la 3.
   - **Resultados:** `tests.test_csv_upload` 41; suite 165; `ruff check .` sin avisos. `docs/flujo-usuario.md` ya decía que el rechazo indica la línea, así que no cambia.
   - **Cierre:** sin deuda abierta, el plan pasa a `odd/done`.
+- **L17 (2026-11-04):** revisión de DT4 (`9e69868`), lentes de riesgo y fiabilidad, con el consentimiento del usuario. `review-50e3b3b25bb4175a`, aprobada y reconocida (`authority: burned`).
+  - **Riesgo:** sin hallazgos.
+  - **Fiabilidad:** una sugerencia no bloqueante, `R3-001`. La prueba nueva solo cubría LF; el caso CRLF solo se había comprobado en la comparación diferencial. Aplicada: `test_a_multiline_header_error_names_the_line_where_it_fails` comprueba ahora la línea 3 con LF y con CRLF, cada uno en su `subTest`. Pasa sin cambios de código, porque fija un comportamiento que ya era correcto.
+  - **Resultados:** `tests.test_csv_upload` y la suite en verde; `ruff check .` sin avisos.
