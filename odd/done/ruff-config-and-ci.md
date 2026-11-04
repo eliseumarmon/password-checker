@@ -1,6 +1,6 @@
 # Ruff: configuración explícita, limpieza y CI
 
-Objetivo: que `ruff` compruebe en local y en CI exactamente las mismas reglas, sin avisos, y que la CI impida que vuelvan a acumularse (DT3 de [reliability-hardening](../tasks/reliability-hardening.md#deuda-técnica-registrada)).
+Objetivo: que `ruff` compruebe en local y en CI exactamente las mismas reglas, sin avisos, y que la CI impida que vuelvan a acumularse (DT3 de [reliability-hardening](reliability-hardening.md#deuda-técnica-registrada)).
 Rama: `chore/ruff-clean-and-ci` desde `main`. Entrega: una rama, un commit por tarea; T4 (CI) en su propio commit por tocar la entrega. Pruebas: `python -m unittest discover -s tests`, `ruff check .`.
 
 ## Specs
