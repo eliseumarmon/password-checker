@@ -7,7 +7,7 @@ Este documento reúne en un solo sitio las fases de trabajo de Password Checker,
 | Fase | Objetivo | Estado | Bloqueada por | Planes |
 |---|---|---|---|---|
 | 0 | Endurecer dependencias y cadena de suministro | **Cerrada** (2026-11-04), con P10 integrada el mismo día | — | [dependency-hardening](../odd/done/dependency-hardening.md), [actions-sha-pinning](../odd/done/actions-sha-pinning.md) (P10) |
-| — | Correcciones independientes: «Abrir sitio» y normalización de URL | Planificada | D9, solo para una tarea | [site-link-navigation](../odd/tasks/site-link-navigation.md) |
+| — | Correcciones independientes: «Abrir sitio» y normalización de URL | En curso | — | [site-link-navigation](../odd/tasks/site-link-navigation.md) |
 | 1 | Cimientos del frontend: colores en variables, tablas nativas, accesibilidad, tamaño del bundle y actualizaciones mayores | Planificada | D2, solo para una tarea | [css-tokens](../odd/tasks/css-tokens.md), [native-tables](../odd/tasks/native-tables.md), [keyboard-accessibility](../odd/tasks/keyboard-accessibility.md), [frontend-bundle](../odd/tasks/frontend-bundle.md), [frontend-major-updates](../odd/tasks/frontend-major-updates.md) (P12) |
 | 2 | Revisión más ágil, sin cambiar el formato `.pwc` | Planificada | — | [review-filters](../odd/tasks/review-filters.md), [undo-ux](../odd/tasks/undo-ux.md), [secret-visibility](../odd/tasks/secret-visibility.md), [export-preview](../odd/tasks/export-preview.md), [compare-resolution](../odd/tasks/compare-resolution.md), [local-strength](../odd/tasks/local-strength.md), [mobile-record-detail](../odd/tasks/mobile-record-detail.md), [audit-layout](../odd/tasks/audit-layout.md) |
 | 3 | Datos de revisión que se guardan en la sesión (`.pwc` v3) | **Bloqueada** | D8, D3 (y D5 para las asociaciones de servicio) | Sin plan detallado (véase [Fase 3](#fase-3--datos-de-revisión-en-la-sesión)) |
@@ -41,7 +41,7 @@ Fuera de la hoja de ruta, por no ser viable sin un modelo de amenazas: el acceso
 | D6 | ¿Se traduce la interfaz a otros idiomas? | **Pendiente** | Ajuste de idioma (Fase 4) | Aplazar hasta la validación con personas |
 | D7 | ¿Cuál es el alcance de la primera versión de la bóveda? | **Pendiente**, con una orientación (2026-11-04): bóveda personal, local y cifrada | Implementación de la Fase 6 | Decidir el resto con los documentos de `vault-discovery` |
 | D8 | ¿Cómo encaja `.pwc` v3 con la futura bóveda? | **Pendiente** (nueva, 2026-11-04) | Fase 3 | Definir antes el contrato de persistencia y exportación |
-| D9 | ¿Qué URL abre «Abrir sitio»? | **Pendiente** (nueva, 2026-11-04) | `site-link-navigation` T2 | Opción B |
+| D9 | ¿Qué URL abre «Abrir sitio»? | **Aprobada** (2026-11-04): opción B, origen y ruta sin parámetros ni fragmento | — | — |
 
 ### D2 — `Esc` en los diálogos
 
@@ -107,13 +107,15 @@ Recomendación: hacer primero `vault-discovery` T2, contrastado con un esquema p
 
 ### D9 — ¿Qué URL abre «Abrir sitio»?
 
-**Hoy:** `safeWebUrl()` abre solo el origen de la URL guardada, a propósito, para no enviar la ruta, los parámetros ni el fragmento. Una página de acceso con una ruta propia, como `https://auth.example.edu/cgi-bin/AuthServer`, se abre como `https://auth.example.edu`, que puede no llevar al mismo sitio.
+**Antes de D9:** `safeWebUrl()` abría solo el origen de la URL guardada, a propósito, para no enviar la ruta, los parámetros ni el fragmento. Una página de acceso con una ruta propia, como `https://auth.example.edu/cgi-bin/AuthServer`, se abría como `https://auth.example.edu`, que podía no llevar al mismo sitio.
 
 | Opción | Efecto | Ventaja | Inconveniente |
 |---|---|---|---|
 | A. Mantener el origen | Como hoy | Nunca envía la ruta ni los parámetros | Puede no llevar al recurso guardado |
 | B. Origen y ruta, sin parámetros ni fragmento | Abre `https://auth.example.edu/cgi-bin/AuthServer` | Resuelve las páginas de acceso con ruta propia. Es una regla fija, sin heurísticas, y los parámetros y el fragmento, donde a menudo viajan los tokens, no llegan al historial del navegador | Una ruta también puede contener secretos, y los accesos que necesitan parámetros siguen sin funcionar |
 | C. URL completa validada, con confirmación cuando tenga parámetros, fragmento o datos que parezcan sensibles | Abre la dirección guardada | Lleva siempre al recurso guardado | Detectar lo sensible es heurístico, y añade una confirmación. Los parámetros guardados pueden pertenecer a un intento de acceso anterior y no servir ya |
+
+**Decisión del usuario (2026-11-04): B.**
 
 Recomendación (revisada el 2026-11-04): B como comportamiento predeterminado. Resuelve el caso que dio origen a D9 con una regla fija. La URL original se conserva sin cambios y sigue visible completa en la ficha, de donde se puede copiar. C queda como posible acción aparte y explícita, siempre con confirmación, si aparece un acceso que necesite sus parámetros.
 
@@ -133,7 +135,7 @@ Cerrada el 2026-11-04: P2-P8 integradas en `main`, con las alertas de Dependabot
 
 ### Correcciones independientes
 
-[site-link-navigation](../odd/tasks/site-link-navigation.md): «Abrir sitio» abre solo el origen de la URL (D9) y hay un caso anómalo de normalización pendiente de reproducir. Son posibles errores funcionales, con prioridad sobre el rediseño visual, y no esperan a la Fase 2.
+[site-link-navigation](../odd/tasks/site-link-navigation.md): «Abrir sitio» abría solo el origen de la URL; con D9 abre el origen y la ruta, sin parámetros ni fragmento. Queda un caso anómalo de normalización pendiente de reproducir (T3). Son posibles errores funcionales, con prioridad sobre el rediseño visual, y no esperan a la Fase 2.
 
 ### Fase 1 — Cimientos del frontend
 

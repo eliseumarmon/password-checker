@@ -1,7 +1,7 @@
 # «Abrir sitio» y normalización de URL
 
 Objetivo: que «Abrir sitio» lleve al recurso guardado (por ejemplo, la página de acceso) sin exponer datos sensibles de la URL, e investigar un caso anómalo de normalización. Son posibles errores funcionales, no mejoras visuales, así que no esperan a la Fase 2.
-Rama: `fix/site-link-navigation` desde `main`, cuando se apruebe. Entrega: `ask-on-risk`. Comprobaciones: `python -m unittest discover -s tests`, `ruff check .`, `npm run build` y `npm run e2e`. Estado: planificado, sin empezar; no está aprobado para implementarse. T2 espera a la decisión D9 de la [hoja de ruta](../../docs/hoja-de-ruta.md#d9--qué-url-abre-abrir-sitio).
+Rama: `fix/site-link-navigation` desde `main`, cuando se apruebe. Entrega: `ask-on-risk`. Comprobaciones: `python -m unittest discover -s tests`, `ruff check .`, `npm run build` y `npm run e2e`. Estado: en curso, aprobado el 2026-11-04 (L4). D9 está decidida: opción B de la [hoja de ruta](../../docs/hoja-de-ruta.md#d9--qué-url-abre-abrir-sitio). T3 espera un caso ficticio equivalente. Previsión: unas 100 líneas.
 
 ## Specs
 
@@ -20,15 +20,17 @@ Rama: `fix/site-link-navigation` desde `main`, cuando se apruebe. Entrega: `ask-
 - **S2 — Normalización anómala.** Del usuario: «He encontrado un caso extraño en la normalización […] no lo puedo mostrar aquí.»
   - Se registra como incidencia pendiente de reproducir, sin afirmar todavía que sea un fallo del normalizador.
   - No hace falta la dirección real: se construye un caso ficticio equivalente y se compara la URL original, la identidad normalizada y el enlace que se abre.
+  - **Pistas del usuario (L5):** un servicio con subdominio `auth`, importado desde tres CSV de Brave, Chrome y Firefox. «Resolvía bien auth en dos credenciales, pero en otra ignoraba el auth. no sabria decirte cual.»
+  - **Hipótesis, sin confirmar:** el normalizador (`domain/urls.py`) conserva los subdominios, así que el `auth` faltaría ya en uno de los CSV. Firefox exporta `url` (la página del formulario) y `formActionOrigin` (adonde se envían los datos), y el importador solo lee `url`.
 - **S3 — Pruebas.** Solo con URL ficticias: URL normales, rutas de acceso, parámetros sensibles (tokens), fragmentos, esquemas no admitidos y credenciales incrustadas.
 
 ## Tasks
 
-- [ ] T1 — S1, S3: caracterizar el comportamiento actual con pruebas sobre `safeWebUrl()` y el botón de la ficha, y preparar las opciones de D9 con esos casos. Ruta: inline.
-- [ ] T2 — S1, S3: aplicar la regla que se decida en D9. RED primero con los casos de S3. Ruta: inline. Riesgo: punto 2 (decide qué datos de una URL salen hacia otro sitio). Commit propio y verificación independiente.
+- [x] T1 — S1, S3: caracterizar el comportamiento actual con pruebas sobre `safeWebUrl()` y el botón de la ficha, y preparar las opciones de D9 con esos casos. Ruta: inline. Commit `7d3eadc`; revisión aprobada (L6).
+- [x] T2 — S1, S3: aplicar la regla que se decida en D9. RED primero con los casos de S3. Ruta: inline. Riesgo: punto 2 (decide qué datos de una URL salen hacia otro sitio). Commit propio y verificación independiente. Commits `b5ec92f` y `9e2ed01`; revisión aprobada (L6).
   - Incluye el aviso de Android para direcciones locales, que hoy supone que solo se abre el origen (L3).
 - [ ] T3 — S2: con un caso ficticio equivalente que aporte el usuario, prueba RED en el normalizador. Si no es un fallo, se cierra con la explicación en el Log. Ruta: inline.
-- [ ] T4 — Documentación del comportamiento en `docs/flujo-usuario.md`. Ruta: inline.
+- [x] T4 — Documentación del comportamiento en `docs/flujo-usuario.md`. Ruta: inline. También `docs/pendiente.md` y la hoja de ruta. Commit de cierre de esta rama.
 
 ## Log
 
@@ -39,3 +41,15 @@ Rama: `fix/site-link-navigation` desde `main`, cuando se apruebe. Entrega: `ask-
   - La recomendación de D9 pasa de C a B. La decisión sigue pendiente.
   - Comprobado en `main`: la ficha muestra la URL completa en su campo (`EditorDialog.vue`), y `window.open` abre con `noopener,noreferrer`.
   - **Nota para T2:** `openSite()` avisa en Android antes de abrir una dirección local, y lo detecta comparando `href` con `^https?://(localhost|127.0.0.1)(:puerto)?$`. Eso supone que `href` es solo el origen. Con B o C, `href` acaba al menos en `/` y el aviso dejaría de aparecer, así que debe comprobar el host.
+- **L4 (2026-11-04).** El usuario aprueba D9 con la opción B y el comienzo del plan. Pregunta: «¿Apruebas D9 con la opción B (abrir la dirección y la ruta, sin lo que va tras `?` ni tras `#`) y empiezo por `site-link-navigation`?» Respuesta: «Sí y sí».
+  - Comprobado en `main` (`a64e07f`): `frontend/e2e/review.spec.ts` ya cubre el aviso de Android para direcciones locales. Una de esas pruebas abre `http://127.0.0.1:5173/fictional-path` y espera `http://127.0.0.1:5173/`, así que la regla actual ya está fijada ahí.
+  - No hay pruebas unitarias en el frontend: T1 y T2 se prueban con Playwright, sustituyendo `window.open` para registrar la dirección sin abrir dominios ficticios.
+- **L5 (2026-11-04).** Pistas del usuario para T3, recogidas en S2: «No te puedo proporcionar el ejemplo concreto porque ha pasado con una prueba de mis credenciales reales que no tengo aquí ahora mismo y no sé por qué ocurre.» El servicio real se sustituye por una descripción genérica.
+  - Comprobado: Brave no tiene tratamiento propio; Brave y Chrome se leen igual, y solo cambia la etiqueta de procedencia, tomada del nombre del archivo.
+  - Para confirmar la hipótesis sin compartir datos, el usuario puede listar solo las columnas de dirección de esas entradas en sus tres CSV.
+- **L6 (2026-11-04).** T1, T2 y T4 hechas en `fix/site-link-navigation`.
+  - **T1** (`7d3eadc`): pruebas e2e que fijan la regla anterior (solo el origen, pestaña nueva con `noopener,noreferrer`, sin botón para esquemas no web, credenciales incrustadas ni texto que no es URL). Pasaron con el código anterior. Revisión de fiabilidad aprobada; sus dos sugerencias endurecen la prueba de rechazo en T2.
+  - **T2** (`b5ec92f`): RED observado, con 2 pruebas fallando como se esperaba («Received: "http://127.0.0.1:5173/"»). Después, GREEN: `safeWebUrl()` devuelve `url.origin + url.pathname`, y el aviso de Android compara el host. Riesgo elevado a alto (punto 2) a mano; revisión de seguridad y fiabilidad aprobada.
+  - **Sugerencias de la revisión de T2** (`9e2ed01`): prueba con `localhost` y ruta, y nota de que un token dentro de la ruta sí sale (límite conocido de D9, documentado en `docs/flujo-usuario.md`).
+  - **Comprobaciones:** `npm run build`, `npm run e2e` (90 de 90), `python -m unittest discover -s tests` (OK) y `ruff check .` (sin avisos), las dos últimas con `.venv`. Con el Python del sistema, las pruebas de Python fallan por dependencias que faltan (`fastapi`, `argon2`); no es un fallo del código.
+  - **Pendiente:** T3, a la espera del caso ficticio equivalente.
