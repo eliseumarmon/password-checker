@@ -107,7 +107,7 @@ Recomendación: hacer primero `vault-discovery` T2, contrastado con un esquema p
 
 ### D9 — ¿Qué URL abre «Abrir sitio»?
 
-**Hoy:** `safeWebUrl()` abre solo el origen de la URL guardada, a propósito, para no enviar la ruta, los parámetros ni el fragmento. Una página de acceso con una ruta propia, como `https://auth.example.edu/cgi-bin/AuthServer`, se abre como `https://auth.example.edu`, que puede no llevar al mismo sitio.
+**Antes de D9:** `safeWebUrl()` abría solo el origen de la URL guardada, a propósito, para no enviar la ruta, los parámetros ni el fragmento. Una página de acceso con una ruta propia, como `https://auth.example.edu/cgi-bin/AuthServer`, se abría como `https://auth.example.edu`, que podía no llevar al mismo sitio.
 
 | Opción | Efecto | Ventaja | Inconveniente |
 |---|---|---|---|
@@ -135,7 +135,7 @@ Cerrada el 2026-11-04: P2-P8 integradas en `main`, con las alertas de Dependabot
 
 ### Correcciones independientes
 
-[site-link-navigation](../odd/tasks/site-link-navigation.md): «Abrir sitio» abre solo el origen de la URL (D9) y hay un caso anómalo de normalización pendiente de reproducir. Son posibles errores funcionales, con prioridad sobre el rediseño visual, y no esperan a la Fase 2.
+[site-link-navigation](../odd/tasks/site-link-navigation.md): «Abrir sitio» abría solo el origen de la URL; con D9 abre el origen y la ruta, sin parámetros ni fragmento. Queda un caso anómalo de normalización pendiente de reproducir (T3). Son posibles errores funcionales, con prioridad sobre el rediseño visual, y no esperan a la Fase 2.
 
 ### Fase 1 — Cimientos del frontend
 

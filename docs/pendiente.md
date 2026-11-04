@@ -7,7 +7,7 @@ Este documento reúne lo que la aplicación todavía no hace: limitaciones conoc
 - El progreso solo se conserva mientras el backend está activo o si se descarga una sesión cifrada. No hay guardado automático, bloqueo por inactividad ni recuperación de contraseña.
 - El comparador muestra coincidencias y procedencia, pero no ofrece una comparación completa de contraseñas y notas originales. Cada registro se abre por separado para editarlo. No hay una vista previa detallada de la exportación.
 - El identificador de paquete Android no garantiza un enlace para abrir la aplicación. El acceso desde móvil mediante ADB requiere configuración adicional.
-- «Abrir sitio» abre solo el origen de la URL guardada (esquema, dominio y puerto), a propósito, para no enviar datos sensibles de la ruta o los parámetros. Así, una página de acceso con una ruta propia, como `https://auth.example.edu/cgi-bin/AuthServer`, se abre como `https://auth.example.edu`, que puede no llevar al mismo sitio. Hay además un caso anómalo de normalización de URL pendiente de reproducir. Las dos cosas se planifican en [site-link-navigation](../odd/tasks/site-link-navigation.md).
+- «Abrir sitio» abre el origen y la ruta de la URL guardada, sin parámetros ni fragmento (D9). Una página de acceso con parámetros imprescindibles, como algunos inicios de sesión centralizados, puede no abrirse igual; la URL completa sigue visible en la ficha para copiarla. Hay además un caso anómalo de normalización de URL pendiente de reproducir con un ejemplo ficticio equivalente ([site-link-navigation](../odd/tasks/site-link-navigation.md), T3).
 
 ## Trabajo pendiente
 

@@ -26,11 +26,11 @@ Rama: `fix/site-link-navigation` desde `main`, cuando se apruebe. Entrega: `ask-
 
 ## Tasks
 
-- [ ] T1 — S1, S3: caracterizar el comportamiento actual con pruebas sobre `safeWebUrl()` y el botón de la ficha, y preparar las opciones de D9 con esos casos. Ruta: inline.
-- [ ] T2 — S1, S3: aplicar la regla que se decida en D9. RED primero con los casos de S3. Ruta: inline. Riesgo: punto 2 (decide qué datos de una URL salen hacia otro sitio). Commit propio y verificación independiente.
+- [x] T1 — S1, S3: caracterizar el comportamiento actual con pruebas sobre `safeWebUrl()` y el botón de la ficha, y preparar las opciones de D9 con esos casos. Ruta: inline. Commit `7d3eadc`; revisión aprobada (L6).
+- [x] T2 — S1, S3: aplicar la regla que se decida en D9. RED primero con los casos de S3. Ruta: inline. Riesgo: punto 2 (decide qué datos de una URL salen hacia otro sitio). Commit propio y verificación independiente. Commits `b5ec92f` y `9e2ed01`; revisión aprobada (L6).
   - Incluye el aviso de Android para direcciones locales, que hoy supone que solo se abre el origen (L3).
 - [ ] T3 — S2: con un caso ficticio equivalente que aporte el usuario, prueba RED en el normalizador. Si no es un fallo, se cierra con la explicación en el Log. Ruta: inline.
-- [ ] T4 — Documentación del comportamiento en `docs/flujo-usuario.md`. Ruta: inline.
+- [x] T4 — Documentación del comportamiento en `docs/flujo-usuario.md`. Ruta: inline. También `docs/pendiente.md` y la hoja de ruta. Commit de cierre de esta rama.
 
 ## Log
 
@@ -47,3 +47,9 @@ Rama: `fix/site-link-navigation` desde `main`, cuando se apruebe. Entrega: `ask-
 - **L5 (2026-11-04).** Pistas del usuario para T3, recogidas en S2: «No te puedo proporcionar el ejemplo concreto porque ha pasado con una prueba de mis credenciales reales que no tengo aquí ahora mismo y no sé por qué ocurre.» El servicio real se sustituye por una descripción genérica.
   - Comprobado: Brave no tiene tratamiento propio; Brave y Chrome se leen igual, y solo cambia la etiqueta de procedencia, tomada del nombre del archivo.
   - Para confirmar la hipótesis sin compartir datos, el usuario puede listar solo las columnas de dirección de esas entradas en sus tres CSV.
+- **L6 (2026-11-04).** T1, T2 y T4 hechas en `fix/site-link-navigation`.
+  - **T1** (`7d3eadc`): pruebas e2e que fijan la regla anterior (solo el origen, pestaña nueva con `noopener,noreferrer`, sin botón para esquemas no web, credenciales incrustadas ni texto que no es URL). Pasaron con el código anterior. Revisión de fiabilidad aprobada; sus dos sugerencias endurecen la prueba de rechazo en T2.
+  - **T2** (`b5ec92f`): RED observado, con 2 pruebas fallando como se esperaba («Received: "http://127.0.0.1:5173/"»). Después, GREEN: `safeWebUrl()` devuelve `url.origin + url.pathname`, y el aviso de Android compara el host. Riesgo elevado a alto (punto 2) a mano; revisión de seguridad y fiabilidad aprobada.
+  - **Sugerencias de la revisión de T2** (`9e2ed01`): prueba con `localhost` y ruta, y nota de que un token dentro de la ruta sí sale (límite conocido de D9, documentado en `docs/flujo-usuario.md`).
+  - **Comprobaciones:** `npm run build`, `npm run e2e` (90 de 90), `python -m unittest discover -s tests` (OK) y `ruff check .` (sin avisos), las dos últimas con `.venv`. Con el Python del sistema, las pruebas de Python fallan por dependencias que faltan (`fastapi`, `argon2`); no es un fallo del código.
+  - **Pendiente:** T3, a la espera del caso ficticio equivalente.
