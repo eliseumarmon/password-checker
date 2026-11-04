@@ -12,7 +12,7 @@ Este documento reúne lo que la aplicación todavía no hace: limitaciones conoc
 
 - Validación con usuarios: no se han realizado entrevistas ni pruebas observadas con personas ni con contraseñas reales (véase [Validación con personas](#validación-con-personas)).
 - Una revisión más amplia de accesibilidad y teclado.
-- El endurecimiento de dependencias: diagnóstico en la [auditoría de dependencias](auditoria-dependencias.md) y plan aprobado, en curso, en [dependency-hardening](../odd/tasks/dependency-hardening.md).
+- Dependencias: la fase prioritaria de endurecimiento está cerrada ([auditoría de dependencias](auditoria-dependencias.md)). Quedan la migración a `httpx2` y medidas opcionales, descritas en [dependency-hardening](../odd/tasks/dependency-hardening.md).
 - Una evaluación local de fortaleza más completa.
 - Optimización del bundle frontend: analizar el aviso de Vite por un chunk superior a 500 kB; valorar división de código y carga diferida sin ocultar el aviso aumentando únicamente el umbral.
 - Identidad de servicios y duplicados: definir si las credenciales se identifican por la URL/URI encontrada al importar o si se vinculan a un servicio lógico común (web, Android, iOS). Conservar las asociaciones originales y evaluar las consecuencias para la detección de duplicados; pertenecer al mismo servicio no implica fusionarlas automáticamente.

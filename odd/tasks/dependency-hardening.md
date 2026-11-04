@@ -1,7 +1,7 @@
 # Dependencias y cadena de suministro: auditoría y plan de endurecimiento
 
 Objetivo: diagnosticar riesgos de dependencias, reproducibilidad y CI, y proponer un plan proporcionado. Diagnóstico completo en [auditoria-dependencias](../../docs/auditoria-dependencias.md).
-Rama de la auditoría: `docs/dependency-audit` desde `main` (solo documentación). **Estado del plan: aprobado (L4)**, empezando por `fix/cryptography-50`, encadenada sobre `docs/dependency-audit` (que debe integrarse antes). H4 y H5 siguen pendientes; nada se integra en `main` sin aprobación del usuario. Pruebas de cada tarea: `python -m unittest discover -s tests`, `ruff check .`, `npm run build`, `npm run e2e`.
+Rama de la auditoría: `docs/dependency-audit` desde `main` (solo documentación). **Estado: fase prioritaria cerrada (L25).** P2-P8 integradas en `main`. Siguen abiertas P9 (prioridad baja) y las opcionales P10-P13; P12 queda vinculada a la Fase 1 del frontend (L26). Nada se integra en `main` sin aprobación del usuario. Pruebas de cada tarea: `python -m unittest discover -s tests`, `ruff check .`, `npm run build`, `npm run e2e`.
 
 ## Specs
 
@@ -79,13 +79,13 @@ Plan de endurecimiento (**aprobado en L4**; cada rama se integra solo con la apr
 
 **Mantenimiento: detección, rama `ci/dependency-audit`.**
 
-- [ ] P7 — Activar las alertas de Dependabot (H5). Prioridad: alta e inmediata. Depende de: nada.
+- [x] P7 — Activar las alertas de Dependabot (H5). Activadas por el usuario; `vulnerability-alerts` devuelve 204 desde el 2026-11-03 (L23). Prioridad: alta e inmediata. Depende de: nada.
   - Archivos: ninguno. Es un ajuste del repositorio que **solo puede activar el propietario** (Settings → Advanced Security → Dependabot alerts).
   - Aceptación: `gh api repos/eliseumarmon/password-checker/vulnerability-alerts -i` devuelve 204.
   - No verificado: que GitHub detecte `cryptography` con requisitos que solo tienen rangos. Para Python, las alertas probablemente solo cubran dependencias directas, así que la red real es P8.
   - Pruebas y regresión: ninguna.
   - Revisión independiente: no.
-- [x] P8 — Workflow de auditoría separado (H5). Commits `26b1553`, `334b631`, `28c138e`, `48a3b85` (L20), `2686219` (L21) y el de L22. Prioridad: media. Depende de: P3 y P4. **Ajustado en L19 (S12):**
+- [x] P8 — Workflow de auditoría separado (H5). Commits `26b1553`, `334b631`, `28c138e`, `48a3b85` (L20), `2686219` (L21) y el de L22. Integrada en `cf3f089`; run manual en verde en `main` (L24). Prioridad: media. Depende de: P3 y P4. **Ajustado en L19 (S12):**
   - Además de `schedule`, `workflow_dispatch` y `pull_request`, se dispara con `push` limitado a los mismos `paths`, para poder verificarlo antes de integrar.
   - `pip-audit` y sus dependencias van fijados en `.github/audit-requirements.txt`.
   - Un script versionado (`.github/scripts/dependency_audit.py`), con pruebas unitarias, interpreta los JSON. Falla ante vulnerabilidades, ante un error de la herramienta y cuando se analizan menos paquetes de los fijados.
@@ -111,7 +111,10 @@ Plan de endurecimiento (**aprobado en L4**; cada rama se integra solo con la apr
 
 - [ ] P10 — Acciones de GitHub fijadas por SHA con comentario de versión, y `dependabot.yml` solo para `github-actions` (H9). Prioridad: baja. Archivos: `.github/workflows/*.yml`, `.github/dependabot.yml`. Aceptación: cada `uses:` apunta a un SHA de 40 caracteres que coincide con su etiqueta (`gh api repos/<acción>/git/ref/tags/<v>`), y la CI está en verde. Si se aprueba, se puede imponer activando `sha_pinning_required` en los permisos de Actions del repositorio (hoy `false`). Regresión: ninguna funcional. Revisión: sí (CI).
 - [ ] P11 — Alinear los entornos: Python 3.12 disponible en local, o añadir 3.14 a una matriz de CI, y `engines` o `.nvmrc` para Node (H4). Prioridad: baja. Archivos: `.github/workflows/tests.yml`, `frontend/package.json`, `README.md`. Aceptación: la versión de referencia está documentada y la CI la prueba. Revisión: sí si toca la CI.
-- [ ] P12 — Actualizaciones mayores del frontend (H10): `primevue` 5 con `@primeuix/themes` 3 primero (llevan más tiempo sin publicar y van en el bundle), después `pinia` 4, `vue-router` 5, `vite` 8 y `typescript` 7. **Fuera de este plan:** cada una es una funcionalidad con su propio documento ODD y sus pruebas E2E.
+- [ ] P12 — Actualizaciones mayores del frontend (H10). **Vinculada a la Fase 1 del frontend (L26):**
+  - `primevue` y `@primeuix/themes` no se actualizarán: la Fase 1 retira PrimeVue (decisión D1).
+  - `vue-router`, que no se usa, también se retira en la Fase 1.
+  - Quedan `pinia` 4, `vite` 8 y `typescript` 7. Siguen siendo opcionales y fuera de este plan: cada una, si se aborda, es una funcionalidad con su propio documento ODD y sus pruebas E2E.
 - [ ] P13 — Bloqueo con hashes (uv con `--universal --generate-hashes`) si el modelo de amenazas crece con la bóveda persistente. Fuera de alcance por ahora.
 
 Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 → resto según la política de actualización. Previsión: P2-P3 unas 100 líneas, P4-P6 unas 80 más el archivo generado y P8 unas 60; cada rama por debajo de las ~400 líneas, con un PR por rama.
@@ -642,3 +645,50 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
     - **`R3-npm-version-floats`:** npm es el de Node 22. Si cambia el formato o el recuento, el run falla, nunca pasa; ya se decidió en L20.
     - **`R1-001`:** fijar las acciones por SHA; ya existe como P10 opcional.
   - **Verificación local:** suite 163 OK; Ruff sin avisos; las salidas reales de Python (limpia y vulnerable) dan 0 y 1.
+- **L23 (2026-11-03):** última revisión de P8 y P7.
+  - **Revisión** `review-56aef8cc8f478f49`: rama completa respecto a `main`, 4 lentes, consentimiento del usuario. Aprobada y reconocida (`authority: burned`). Riesgo y resiliencia: sin hallazgos.
+  - **Sugerencias opcionales, sin aplicar:**
+    - el recuento de paquetes del lockfile se calcula dos veces en `dependency_audit.py` (en `npm_findings` y en `main`);
+    - la condición anidada que construye `fix` en `npm_findings`;
+    - las listas de `paths` de `push` y `pull_request` están duplicadas en `dependency-audit.yml` y deben mantenerse iguales;
+    - no se comprueba que falte en el informe una versión fijada con marcador; hoy `constraints.txt` no tiene ninguna.
+  - **P7 cumplida:** el usuario activó las alertas de Dependabot y `gh api repos/eliseumarmon/password-checker/vulnerability-alerts -i` devuelve 204.
+- **L24 (2026-11-03):** hallazgos de otra sesión e integración de P8.
+  - **Revisión de otra sesión:** el usuario aportó el resumen de `review-10cf5f…`. No es ninguna de las revisiones de esta rama: sus números de línea corresponden a la versión del script anterior a `48a3b85`.
+    - **Ya corregidos en la rama:** el ámbito de Python fijado en el código (es `n/a` desde L22) y la falta de prueba para una versión que no coincide (existen las dos pruebas).
+    - **Comprobado que no es un fallo:** el total de npm en producción. npm 11.3 con `--omit=dev` informa el mismo `total` que el lockfile (119); si cambiara, el run fallaría, nunca pasaría.
+    - **Decisiones ya registradas:** la versión de npm sin fijar, `--require-hashes` (P13), la ausencia de reintentos, y que las pruebas del script las ejecute `tests.yml`.
+    - **Siguen como opcionales:** el recuento duplicado y la condición anidada (L23).
+  - **Integración**, petición literal: «Integra».
+    - Antes: `main` seguía en `27734ba`, la base de la rama, y el diff solo tocaba los 7 archivos de P8, sin código de producción, `tests.yml` ni dependencias.
+    - **`cf3f089` — Merge `ci/dependency-audit`** (`--no-ff`): suite 163 OK y Ruff sin avisos en local.
+    - **En `main`:**
+      - `Tests` (push, run `41669167281`): en verde, 163 pruebas, 24 versiones fijadas que coinciden y 88 E2E.
+      - `Dependency audit` (push, run `41669167294`): en verde.
+      - **Run manual** (`workflow_dispatch`, run `41669217453`): en verde, 24 paquetes de Python y 119 de npm sin vulnerabilidades y 70 firmas verificadas. Cumple el criterio de aceptación de P8 que solo se podía comprobar tras integrar.
+    - Tras activar P7 aparece también un run automático «Dependency Graph» (`update-pip-graph`), en verde.
+- **L25 (2026-11-04):** cierre de la fase, petición literal:
+
+  > Puedes eliminar `ci/dependency-audit` tanto en local como en `origin`.
+  >
+  > Antes, confirma que todos sus commits están incluidos en `main` y que no contiene cambios exclusivos.
+  >
+  > Comprueba después que `main` está sincronizada con `origin/main` y que el árbol de trabajo queda limpio.
+  >
+  > Con P7 y P8 completadas, damos por cerrada la fase prioritaria de auditoría y endurecimiento de dependencias.
+  >
+  > Conserva L23 y L24 pendientes de registrar en `dependency-hardening.md` durante la próxima tarea documental, sin realizar un commit directo en `main`.
+  >
+  > No comiences P9 ni los opcionales P10–P13 todavía.
+
+  - **Rama borrada:** la local y la remota de `ci/dependency-audit` eran ancestros de `main`, sin commits ni diferencias exclusivas. Se borraron las dos.
+  - **Estado final:** `main` y `origin/main` en `cf3f089`, sin commits de diferencia; árbol de trabajo limpio.
+  - **Fase prioritaria cerrada.** Abiertas: P9 (baja) y las opcionales P10-P13, sin empezar.
+- **L26 (2026-11-04):** limpieza de ramas y consolidación documental.
+  - **Petición:** primero «Haz limpieza de ramas. Haz 1 y 2. Pero no empezamos aun la nueva fase. A excepcion de p12 que parece quedarse vinculada directamente a la fase 1 con quitar prime vue y vue router.» Después la acotó: «Haz solo limpieza de ramas. y consolidación documental de la fase 0 sin mirar aun la fase 1».
+  - **Ramas borradas, todas integradas** (comprobado que eran ancestros de `main`, en local y en remoto):
+    - `docs/expand-future-vault-backlog` y `fix/session-limit-rejections`, en local y en `origin`;
+    - `docs/ruff-new-default-rules`, solo en local;
+    - `chore/ruff-clean-and-ci`, en local y en `origin`. La local iba por detrás de su remota y `git branch -d` se negó, así que se borró con `-D` después de comprobar que tanto la local como la remota estaban contenidas en `main`.
+  - `docs/phase-1-plan` y su worktree no se tocan.
+  - **Consolidación:** L23-L26, P7 y P8 cerradas, P12 vinculada a la Fase 1, y `docs/pendiente.md` y la auditoría con el estado final.
