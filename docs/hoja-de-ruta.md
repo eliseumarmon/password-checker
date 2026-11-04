@@ -41,7 +41,7 @@ Fuera de la hoja de ruta, por no ser viable sin un modelo de amenazas: el acceso
 | D6 | ¿Se traduce la interfaz a otros idiomas? | **Pendiente** | Ajuste de idioma (Fase 4) | Aplazar hasta la validación con personas |
 | D7 | ¿Cuál es el alcance de la primera versión de la bóveda? | **Pendiente**, con una orientación (2026-11-04): bóveda personal, local y cifrada | Implementación de la Fase 6 | Decidir el resto con los documentos de `vault-discovery` |
 | D8 | ¿Cómo encaja `.pwc` v3 con la futura bóveda? | **Pendiente** (nueva, 2026-11-04) | Fase 3 | Definir antes el contrato de persistencia y exportación |
-| D9 | ¿Qué URL abre «Abrir sitio»? | **Pendiente** (nueva, 2026-11-04) | `site-link-navigation` T2 | Opción C |
+| D9 | ¿Qué URL abre «Abrir sitio»? | **Pendiente** (nueva, 2026-11-04) | `site-link-navigation` T2 | Opción B |
 
 ### D2 — `Esc` en los diálogos
 
@@ -103,7 +103,7 @@ La Fase 3 cambiaría el formato `.pwc` para guardar datos de revisión antes de 
 | A. Definir antes el contrato de persistencia y exportación (`vault-discovery` T2) y hacer v3 conforme a él | Los datos de revisión llegan pronto sin rehacer el formato después | Adelanta parte del diseño de la bóveda |
 | B. Aplazar la Fase 3 hasta la bóveda | Un solo cambio de formato | La fecha de confirmación y las asociaciones de servicio esperan a la Fase 6 |
 
-Recomendación: hacer primero `vault-discovery` T2 y decidir entre A y B con ese documento.
+Recomendación: hacer primero `vault-discovery` T2, contrastado con un esquema preliminar del modelo de elementos (T4), y decidir entre A y B con ese documento. Así el formato no se fija antes de saber qué datos tendrá que representar.
 
 ### D9 — ¿Qué URL abre «Abrir sitio»?
 
@@ -112,10 +112,12 @@ Recomendación: hacer primero `vault-discovery` T2 y decidir entre A y B con ese
 | Opción | Efecto | Ventaja | Inconveniente |
 |---|---|---|---|
 | A. Mantener el origen | Como hoy | Nunca envía la ruta ni los parámetros | Puede no llevar al recurso guardado |
-| B. Origen y ruta, sin parámetros ni fragmento | Abre `https://auth.example.edu/cgi-bin/AuthServer` | Resuelve las páginas de acceso con ruta propia | Una ruta también puede contener secretos, y los accesos que necesitan parámetros siguen sin funcionar |
-| C. URL completa validada, con confirmación cuando tenga parámetros, fragmento o datos que parezcan sensibles | Abre la dirección guardada | Lleva siempre al recurso guardado | Detectar lo sensible es heurístico, y añade una confirmación |
+| B. Origen y ruta, sin parámetros ni fragmento | Abre `https://auth.example.edu/cgi-bin/AuthServer` | Resuelve las páginas de acceso con ruta propia. Es una regla fija, sin heurísticas, y los parámetros y el fragmento, donde a menudo viajan los tokens, no llegan al historial del navegador | Una ruta también puede contener secretos, y los accesos que necesitan parámetros siguen sin funcionar |
+| C. URL completa validada, con confirmación cuando tenga parámetros, fragmento o datos que parezcan sensibles | Abre la dirección guardada | Lleva siempre al recurso guardado | Detectar lo sensible es heurístico, y añade una confirmación. Los parámetros guardados pueden pertenecer a un intento de acceso anterior y no servir ya |
 
-Recomendación: C, como proponía la conversación del usuario: «validar el protocolo y la URL, detectar posibles datos sensibles y, cuando sea necesario, pedir confirmación antes de abrir la dirección original. No sustituir automáticamente una URL funcional por la raíz del dominio.» `site-link-navigation` T1 prepara los casos de prueba para decidir.
+Recomendación (revisada el 2026-11-04): B como comportamiento predeterminado. Resuelve el caso que dio origen a D9 con una regla fija. La URL original se conserva sin cambios y sigue visible completa en la ficha, de donde se puede copiar. C queda como posible acción aparte y explícita, siempre con confirmación, si aparece un acceso que necesite sus parámetros.
+
+Antes se recomendaba C, como proponía la conversación del usuario: «validar el protocolo y la URL, detectar posibles datos sensibles y, cuando sea necesario, pedir confirmación antes de abrir la dirección original. No sustituir automáticamente una URL funcional por la raíz del dominio.» B también cumple la última condición. Cambia tras una segunda revisión externa, que señala que detectar lo sensible con heurísticas no da garantías suficientes. `site-link-navigation` T1 prepara los casos de prueba para decidir.
 
 ## Fases
 
@@ -185,7 +187,7 @@ Es un cambio de formato persistido: requerirá verificación independiente y un 
 
 ### Fase 6 — Bóveda persistente
 
-[vault-discovery](../odd/tasks/vault-discovery.md): modelo de amenazas y documentos de decisión, sin código. Su T2 (contrato de persistencia y exportación) se adelanta porque D8 lo necesita. La implementación queda **bloqueada por D7**, que se decide con esos documentos. La primera versión es una bóveda personal, local y cifrada. Además, T4-T6 estudian cómo evolucionaría hacia varias bóvedas y propietarios, y hacia una arquitectura de claves multiusuario, sin implementarlo. T4 también estudia el modelo de servicios (varias URI por credencial y agrupación manual), y T1, T4 y T5 preparan la futura extensión de navegador.
+[vault-discovery](../odd/tasks/vault-discovery.md): modelo de amenazas y documentos de decisión, sin código. Su T2 (contrato de persistencia y exportación) se adelanta porque D8 lo necesita, contrastado con un esquema preliminar del modelo de elementos (T4). La implementación queda **bloqueada por D7**, que se decide con esos documentos. La primera versión es una bóveda personal, local y cifrada. Además, T4-T6 estudian cómo evolucionaría hacia varias bóvedas y propietarios, y hacia una arquitectura de claves multiusuario, sin implementarlo. T4 también estudia el modelo de servicios (varias URI por credencial y agrupación manual), y T1, T4 y T5 preparan la futura extensión de navegador.
 
 [python-hash-locking](../odd/tasks/python-hash-locking.md): P13, instalación de Python con hashes. Se reevalúa durante el diseño (`vault-discovery` T6) y, si se confirma, se implementa junto con la bóveda.
 
@@ -201,3 +203,4 @@ Es un cambio de formato persistido: requerirá verificación independiente y un 
 | 2026-11-04 | `dependency-hardening` pasa a `odd/done`. P10, P12 y P13 tienen su propio plan: P10 se cierra antes de la Fase 1, junto con DT4; P12 es un paso de la Fase 1, y P13, de la Fase 6. Se retira `vue-router` y se conserva Pinia. |
 | 2026-11-04 | DT4 y P10 integradas en `main`, con la CI en verde y la revisión aprobada: la cabecera CSV de varias líneas informa de la línea donde falla, y las acciones de GitHub van fijadas por SHA con Dependabot para `github-actions`. |
 | 2026-11-04 | Anotaciones del usuario sobre una conversación externa con capturas de otro gestor de contraseñas. Se añaden: <ul><li>correcciones independientes de «Abrir sitio» y de la normalización de URL (`site-link-navigation`, D9);</li><li>la ordenación conservada al cambiar de pantalla (`native-tables`) y al recargar (`review-filters`);</li><li>una Etapa A de comprensión en `compare-resolution`;</li><li>`audit-layout` en la Fase 2;</li><li>el modelo de servicios y la agrupación manual (D5, `vault-discovery` T4);</li><li>la extensión de navegador como horizonte futuro.</li></ul> Los datos reales de las capturas se sustituyen por otros ficticios. |
+| 2026-11-04 | Segunda revisión externa, aportada por el usuario. D9 pasa a recomendar B (origen y ruta, sin parámetros ni fragmento), una regla fija sin heurísticas. D8: `vault-discovery` T2 se contrasta con un esquema preliminar de T4, para no fijar el formato antes que el modelo. |

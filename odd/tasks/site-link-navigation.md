@@ -26,6 +26,7 @@ Rama: `fix/site-link-navigation` desde `main`, cuando se apruebe. Entrega: `ask-
 
 - [ ] T1 — S1, S3: caracterizar el comportamiento actual con pruebas sobre `safeWebUrl()` y el botón de la ficha, y preparar las opciones de D9 con esos casos. Ruta: inline.
 - [ ] T2 — S1, S3: aplicar la regla que se decida en D9. RED primero con los casos de S3. Ruta: inline. Riesgo: punto 2 (decide qué datos de una URL salen hacia otro sitio). Commit propio y verificación independiente.
+  - Incluye el aviso de Android para direcciones locales, que hoy supone que solo se abre el origen (L3).
 - [ ] T3 — S2: con un caso ficticio equivalente que aporte el usuario, prueba RED en el normalizador. Si no es un fallo, se cierra con la explicación en el Log. Ruta: inline.
 - [ ] T4 — Documentación del comportamiento en `docs/flujo-usuario.md`. Ruta: inline.
 
@@ -33,3 +34,8 @@ Rama: `fix/site-link-navigation` desde `main`, cuando se apruebe. Entrega: `ask-
 
 - **L1 (2026-11-04).** Origen: anotaciones del usuario sobre una conversación externa, pegada en la sesión, con capturas de otro gestor de contraseñas. Se distribuyen en la hoja de ruta. Fragmentos que afectan a este plan en S1 y S2. La conversación recomendaba priorizar esta corrección antes del rediseño visual («No hay motivo para esperar hasta la Fase 2 para estudiarlo»).
 - **L2 (2026-11-04).** Comprobado en `main` (`ec8d167`): `safeWebUrl()` devuelve `url.origin`, con el comentario citado en S1, y solo la usa `EditorDialog.vue`. Los dominios reales de las capturas se sustituyen por otros ficticios, porque el repositorio es público.
+- **L3 (2026-11-04).** Segunda revisión externa de la hoja de ruta, aportada por el usuario. Pregunta del usuario: «No se podría desechar todo lo que va tras un ? que suele indicar una query y mantener el resto?» Es la opción B de D9.
+  - La revisión señala que detectar datos sensibles con heurísticas «no ofrece garantías suficientes» y propone B por defecto, con la URL completa como alternativa explícita tras confirmar.
+  - La recomendación de D9 pasa de C a B. La decisión sigue pendiente.
+  - Comprobado en `main`: la ficha muestra la URL completa en su campo (`EditorDialog.vue`), y `window.open` abre con `noopener,noreferrer`.
+  - **Nota para T2:** `openSite()` avisa en Android antes de abrir una dirección local, y lo detecta comparando `href` con `^https?://(localhost|127.0.0.1)(:puerto)?$`. Eso supone que `href` es solo el origen. Con B o C, `href` acaba al menos en `/` y el aviso dejaría de aparecer, así que debe comprobar el host.

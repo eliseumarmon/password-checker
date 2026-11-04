@@ -1,7 +1,7 @@
 # Bóveda persistente: diseño previo
 
 Objetivo: resolver por escrito, sin código, las preguntas que el trabajo pendiente exige responder antes de planificar la bóveda, y preparar las decisiones D4, D5, D7 y D8. La primera versión es una bóveda personal, local y cifrada, pero su diseño tiene en cuenta la evolución futura hacia el multiusuario (S4), sin incluirla.
-Rama: `docs/vault-discovery` desde `main`. Fase 6, que es solo de documentación hasta que se decida D7. T2 se adelanta porque D8 (Fase 3) lo necesita. Entrega: un documento por tarea, cada uno revisable por separado.
+Rama: `docs/vault-discovery` desde `main`. Fase 6, que es solo de documentación hasta que se decida D7. T2 se adelanta porque D8 (Fase 3) lo necesita, contrastado con un esquema preliminar de T4. Entrega: un documento por tarea, cada uno revisable por separado.
 Comprobaciones: revisión del usuario de cada documento; no hay código ni pruebas. Estado: planificado, sin empezar.
 
 ## Specs
@@ -46,7 +46,8 @@ Comprobaciones: revisión del usuario de cada documento; no hay código ni prueb
 - [ ] T2 — S1, S2: contrato de persistencia y exportación. Ruta: inline.
   - Cubre el `.pwc` como respaldo portable, la política de versiones y migraciones y cómo se tratan los campos desconocidos.
   - Prepara **D8** y, con ella, **D3**.
-  - Se adelanta a las demás tareas de esta fase para no comprometer `.pwc` v3 sin este diseño.
+  - Se adelanta a T3, T5 y T6 para no comprometer `.pwc` v3 sin este diseño. Parte del modelo de amenazas de T1, que es la base de todas (L6).
+  - **Con T4 (L6):** T2 no fija el modelo de elementos. Define el envoltorio del formato y cómo se amplía, a partir de los datos que tendrá que representar: los de la Fase 3 y los de S5 (servicios, varias URI por credencial y agrupaciones manuales). Antes de recomendar la opción A de D8, se contrasta con un esquema preliminar de T4.
 - [ ] T3 — S1, S2: almacenamiento. SQLite y otras opciones; cifrado en reposo; qué metadatos pueden quedar visibles sin desbloquear; esquema e índices. Ruta: inline.
 - [ ] T4 — S1, S4, S5, S6: modelo de elementos (`VaultItem`) y relación entre servicio, cuenta y acceso. Prepara **D5**. Ruta: inline.
   - **Servicios y URI (S5):** los principios y los dos casos de S5, y la agrupación manual de servicios como capacidad explícita del modelo.
@@ -86,3 +87,6 @@ Comprobaciones: revisión del usuario de cada documento; no hay código ni prueb
   - Para la extensión dejaba abierta la elección del canal de comunicación (API local autenticada o Native Messaging) hasta tener el modelo de amenazas. Un componente auxiliar de Native Messaging no supondría recuperar la CLI eliminada.
   - Las capturas mostraban identificadores reales y los dominios de una institución: se sustituyen por otros ficticios. Solo se conservan los dominios públicos de Firefox.
   - Ninguna tarea estaba empezada, así que no se reabre nada.
+- **L6 (2026-11-04).** Segunda revisión externa de la hoja de ruta, aportada por el usuario, sobre D8: «Comprobaría que se estudia junto con el modelo de elementos de T4, para no fijar el formato antes de definir los datos que deberá representar.»
+  - **Cambio:** T2 se contrasta con un esquema preliminar de T4 antes de recomendar la opción A de D8.
+  - **Contradicción corregida:** T2 decía adelantarse a todas las tareas de la fase, pero T1 es «base de todos los demás» y cubre las copias `.pwc`. Ahora T2 se adelanta a T3, T5 y T6 y parte de T1.
