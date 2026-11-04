@@ -8,10 +8,12 @@ from pathlib import Path
 
 TESTS = Path(__file__).resolve().parent
 
-# Discovers one test module, as CI does, in a fresh interpreter where a mandatory package cannot be imported.
+# Discovers one test module, as CI does, in a fresh interpreter where the given comma-separated packages cannot be
+# imported.
 PROBE = '''
 import io, json, sys, unittest
-sys.modules[sys.argv[1]] = None
+for package in sys.argv[1].split(','):
+    sys.modules[package] = None
 suite = unittest.defaultTestLoader.discover(sys.argv[3], pattern=sys.argv[2] + '.py')
 result = unittest.TextTestRunner(stream=io.StringIO()).run(suite)
 print(json.dumps({'errors': [text for _, text in result.errors], 'skipped': len(result.skipped)}))
@@ -25,12 +27,13 @@ class RequiredDependencyTests(unittest.TestCase):
         return json.loads(completed.stdout.strip().splitlines()[-1])
 
     def test_a_missing_mandatory_dependency_is_an_error_not_a_skip(self):
-        # Starlette's test client turns a missing httpx2 (with no httpx to fall back on) into a RuntimeError.
+        # Starlette's test client falls back to a leftover httpx when httpx2 is missing, so both are blocked;
+        # with neither available it raises a RuntimeError asking for httpx2.
         for package, module, exception, named in [('cryptography', 'test_sessions', 'ModuleNotFoundError', 'cryptography'),
                                                   ('argon2', 'test_sessions', 'ModuleNotFoundError', 'argon2'),
                                                   ('cryptography', 'test_session_limits', 'ModuleNotFoundError', 'cryptography'),
                                                   ('fastapi', 'test_api', 'ModuleNotFoundError', 'fastapi'),
-                                                  ('httpx2', 'test_api', 'RuntimeError', 'httpx2')]:
+                                                  ('httpx2,httpx', 'test_api', 'RuntimeError', 'httpx2')]:
             with self.subTest(package=package, module=module):
                 outcome = self.outcome_without(package, module)
                 self.assertEqual(outcome['skipped'], 0)
