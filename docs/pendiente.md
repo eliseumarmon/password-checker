@@ -19,7 +19,7 @@ Este documento reúne lo que la aplicación todavía no hace: limitaciones conoc
 
 ## Funcionalidades planificadas
 
-No hay ninguna en curso. La última, el [soporte de Safari](../odd/tasks/safari-support.md) (exportación de Safari o de la app Contraseñas con sus códigos 2FA hasta Bitwarden y contenido de sesión `.pwc` v2), se completó con T8.
+No hay ninguna en curso. Las fases, los planes de cada funcionalidad y las decisiones pendientes están en la [hoja de ruta](hoja-de-ruta.md); solo la planificación de la Fase 1 está aprobada. La última funcionalidad completada, el [soporte de Safari](../odd/tasks/safari-support.md) (exportación de Safari o de la app Contraseñas con sus códigos 2FA hasta Bitwarden y contenido de sesión `.pwc` v2), se completó con T8.
 
 ## Ideas de diseño sin implementar
 
