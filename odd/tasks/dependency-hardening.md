@@ -1,7 +1,7 @@
 # Dependencias y cadena de suministro: auditoría y plan de endurecimiento
 
 Objetivo: diagnosticar riesgos de dependencias, reproducibilidad y CI, y proponer un plan proporcionado. Diagnóstico completo en [auditoria-dependencias](../../docs/auditoria-dependencias.md).
-Rama de la auditoría: `docs/dependency-audit` desde `main` (solo documentación). **Estado del plan: aprobado (L4)**, empezando por `fix/cryptography-50`, encadenada sobre `docs/dependency-audit` (que debe integrarse antes). H4 y H5 siguen pendientes; nada se integra en `main` sin aprobación del usuario. Pruebas de cada tarea: `python -m unittest discover -s tests`, `ruff check .`, `npm run build`, `npm run e2e`.
+Rama de la auditoría: `docs/dependency-audit` desde `main` (solo documentación). **Estado: fase prioritaria cerrada (L25).** P2-P8 integradas en `main`. P9 y P11 completadas (L28-L29). Quedan solo las opcionales P10 y P13, y P12, vinculada a la Fase 1 del frontend (L26). Nada se integra en `main` sin aprobación del usuario. Pruebas de cada tarea: `python -m unittest discover -s tests`, `ruff check .`, `npm run build`, `npm run e2e`.
 
 ## Specs
 
@@ -21,6 +21,7 @@ Fase `fix/cryptography-50` (aprobada en L4):
 - **S9 — Actualizar `cryptography`.** «Actualiza a `cryptography` 50.0.2, previa comprobación de que sigue siendo una versión adecuada y corregida.» «Ajusta el rango permitido para excluir versiones vulnerables.» Rango final (L8): «Quita el techo `<51` y deja `cryptography>=50.0.2`.» «Comprueba compatibilidad con Python 3.12 y 3.14.» «Ejecuta las pruebas completas del backend y las E2E relevantes.»
 - **S10 — `pip-audit` en el `.venv`.** «Puedes instalar `pip-audit` directamente en el `.venv` existente.» «Ejecútalo sobre las dependencias efectivamente instaladas.» «Registra las versiones auditadas, los resultados y los posibles hallazgos pendientes.» «Distingue los problemas reales de los falsos positivos o vulnerabilidades que no afectan al uso actual.» «Valora si conviene incorporarlo a `requirements-dev.txt` en la tarea posterior de automatización, pero no amplíes ahora el alcance.»
 - **S12 — P8, auditoría automática (L19).** «Implementa un workflow independiente para:» «Ejecutar `pip-audit` sobre las dependencias Python fijadas en `backend/constraints.txt`.» «Ejecutar `npm audit` sobre las dependencias del frontend, distinguiendo producción y desarrollo.» «Utilizar versiones controladas de las herramientas de auditoría.» «Permitir ejecución manual y periódica.» «Presentar resultados comprensibles, con las vulnerabilidades y paquetes afectados.» «Evitar que los PR ajenos a dependencias queden bloqueados por nuevas vulnerabilidades detectadas externamente o problemas temporales de los servicios de auditoría.» «Comprueba que el workflow detecta realmente las vulnerabilidades y no devuelve falsos resultados satisfactorios cuando falla una herramienta o no se analizan dependencias.» «No añadas `pip-audit` a `requirements-dev.txt` ni modifiques las 24 restricciones de H4 para incluir sus dependencias.» «Mantén separada P7 (alertas de Dependabot)». «No amplíes el alcance a actualizaciones de dependencias, hashes ni otros pendientes.»
+- **S13 — P9 y P11 (L27).** «Me interesa tener ahora cerrado P9 y P11. Pytest se quitó y nos quedamos con unittest pip-audit se ha usado en el hardening, pero de momento ya no es necesario.» Decisión de P11: «3.12+3.14 y Node 24»: el job `python` de la CI prueba Python 3.12 (mínimo) y 3.14; Node 24 pasa a ser la única referencia mediante `frontend/.nvmrc`, que usan la CI y el README, y el mínimo sube de 22 a 24.
 - **S11 — Revisión y CI.** «Solicita una revisión independiente centrada en seguridad, compatibilidad con las versiones de Python utilizadas, cobertura de pruebas y posibles regresiones.» «Comprueba que Ruff no introduce avisos nuevos y que la CI termina correctamente.» Límites: «No implementes todavía H4 ni H5.» «Puedes subir y actualizar la rama remota para ejecutar CI, pero **no la integres en `main` sin mi aprobación**.»
 
 ## Tasks
@@ -79,13 +80,13 @@ Plan de endurecimiento (**aprobado en L4**; cada rama se integra solo con la apr
 
 **Mantenimiento: detección, rama `ci/dependency-audit`.**
 
-- [ ] P7 — Activar las alertas de Dependabot (H5). Prioridad: alta e inmediata. Depende de: nada.
+- [x] P7 — Activar las alertas de Dependabot (H5). Activadas por el usuario; `vulnerability-alerts` devuelve 204 desde el 2026-11-03 (L23). Prioridad: alta e inmediata. Depende de: nada.
   - Archivos: ninguno. Es un ajuste del repositorio que **solo puede activar el propietario** (Settings → Advanced Security → Dependabot alerts).
   - Aceptación: `gh api repos/eliseumarmon/password-checker/vulnerability-alerts -i` devuelve 204.
   - No verificado: que GitHub detecte `cryptography` con requisitos que solo tienen rangos. Para Python, las alertas probablemente solo cubran dependencias directas, así que la red real es P8.
   - Pruebas y regresión: ninguna.
   - Revisión independiente: no.
-- [x] P8 — Workflow de auditoría separado (H5). Commits `26b1553`, `334b631`, `28c138e`, `48a3b85` (L20), `2686219` (L21) y el de L22. Prioridad: media. Depende de: P3 y P4. **Ajustado en L19 (S12):**
+- [x] P8 — Workflow de auditoría separado (H5). Commits `26b1553`, `334b631`, `28c138e`, `48a3b85` (L20), `2686219` (L21) y el de L22. Integrada en `cf3f089`; run manual en verde en `main` (L24). Prioridad: media. Depende de: P3 y P4. **Ajustado en L19 (S12):**
   - Además de `schedule`, `workflow_dispatch` y `pull_request`, se dispara con `push` limitado a los mismos `paths`, para poder verificarlo antes de integrar.
   - `pip-audit` y sus dependencias van fijados en `.github/audit-requirements.txt`.
   - Un script versionado (`.github/scripts/dependency_audit.py`), con pruebas unitarias, interpreta los JSON. Falla ante vulnerabilidades, ante un error de la herramienta y cuando se analizan menos paquetes de los fijados.
@@ -100,7 +101,7 @@ Plan de endurecimiento (**aprobado en L4**; cada rama se integra solo con la apr
   - Pruebas: los runs de CI descritos.
   - Regresión: falsos positivos en los runs programados (gestionados con excepciones justificadas). `tests.yml` no cambia.
   - Revisión independiente: **sí** (CI: elemento 5).
-- [ ] P9 — Migrar las pruebas de API de `httpx` a `httpx2` (H6). Prioridad: baja; cuando Starlette anuncie la retirada o en la siguiente actualización programada. Depende de: P4. Rama propia.
+- [x] P9 — Migrar las pruebas de API de `httpx` a `httpx2` (H6). Commit `810db17` (L28). **Adelantada por el usuario (L27, S13).** Rama `chore/httpx2`, encadenada sobre `docs/close-dependency-hardening`. Depende de: P4.
   - Archivos: `backend/requirements-dev.txt`, `backend/constraints.txt` y, si cambia la importación, `tests/test_api.py`.
   - Aceptación: sin `StarletteDeprecationWarning` en la CI y con la suite en verde. Procedencia de `httpx2` revisada de nuevo (sus archivos no tenían atestación PEP 740 el 2026-11-03).
   - Pruebas: suite.
@@ -110,8 +111,13 @@ Plan de endurecimiento (**aprobado en L4**; cada rama se integra solo con la apr
 **Medidas opcionales** (cada una en su propia rama si se aprueba):
 
 - [ ] P10 — Acciones de GitHub fijadas por SHA con comentario de versión, y `dependabot.yml` solo para `github-actions` (H9). Prioridad: baja. Archivos: `.github/workflows/*.yml`, `.github/dependabot.yml`. Aceptación: cada `uses:` apunta a un SHA de 40 caracteres que coincide con su etiqueta (`gh api repos/<acción>/git/ref/tags/<v>`), y la CI está en verde. Si se aprueba, se puede imponer activando `sha_pinning_required` en los permisos de Actions del repositorio (hoy `false`). Regresión: ninguna funcional. Revisión: sí (CI).
-- [ ] P11 — Alinear los entornos: Python 3.12 disponible en local, o añadir 3.14 a una matriz de CI, y `engines` o `.nvmrc` para Node (H4). Prioridad: baja. Archivos: `.github/workflows/tests.yml`, `frontend/package.json`, `README.md`. Aceptación: la versión de referencia está documentada y la CI la prueba. Revisión: sí si toca la CI.
-- [ ] P12 — Actualizaciones mayores del frontend (H10): `primevue` 5 con `@primeuix/themes` 3 primero (llevan más tiempo sin publicar y van en el bundle), después `pinia` 4, `vue-router` 5, `vite` 8 y `typescript` 7. **Fuera de este plan:** cada una es una funcionalidad con su propio documento ODD y sus pruebas E2E.
+- [x] P11 — Alinear los entornos (H4). Commit `07e786d` (L29). **Decidido en L27 (S13):** matriz de Python 3.12 y 3.14 en el job `python`; Node 24 como única referencia mediante `frontend/.nvmrc`. Rama `ci/align-runtimes`, encadenada sobre `chore/httpx2`.
+  - Archivos: `.github/workflows/tests.yml`, `.github/workflows/dependency-audit.yml`, `frontend/.nvmrc` (nuevo) y `README.md`.
+  - Aceptación: la CI prueba Python 3.12 y 3.14 (unitarias, Ruff y comprobación de restricciones) y usa Node 24 desde `.nvmrc` en todos los jobs. El README documenta las versiones de referencia. Revisión: sí, porque toca la CI.
+- [ ] P12 — Actualizaciones mayores del frontend (H10). **Vinculada a la Fase 1 del frontend (L26):**
+  - `primevue` y `@primeuix/themes` no se actualizarán: la Fase 1 retira PrimeVue (decisión D1).
+  - `vue-router`, que no se usa, también se retira en la Fase 1.
+  - Quedan `pinia` 4, `vite` 8 y `typescript` 7. Siguen siendo opcionales y fuera de este plan: cada una, si se aborda, es una funcionalidad con su propio documento ODD y sus pruebas E2E.
 - [ ] P13 — Bloqueo con hashes (uv con `--universal --generate-hashes`) si el modelo de amenazas crece con la bóveda persistente. Fuera de alcance por ahora.
 
 Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 → resto según la política de actualización. Previsión: P2-P3 unas 100 líneas, P4-P6 unas 80 más el archivo generado y P8 unas 60; cada rama por debajo de las ~400 líneas, con un PR por rama.
@@ -642,3 +648,109 @@ Orden recomendado: P7 (inmediata, sin código) → P2 → P3 → P4, P5 → P8 �
     - **`R3-npm-version-floats`:** npm es el de Node 22. Si cambia el formato o el recuento, el run falla, nunca pasa; ya se decidió en L20.
     - **`R1-001`:** fijar las acciones por SHA; ya existe como P10 opcional.
   - **Verificación local:** suite 163 OK; Ruff sin avisos; las salidas reales de Python (limpia y vulnerable) dan 0 y 1.
+- **L23 (2026-11-03):** última revisión de P8 y P7.
+  - **Revisión** `review-56aef8cc8f478f49`: rama completa respecto a `main`, 4 lentes, consentimiento del usuario. Aprobada y reconocida (`authority: burned`). Riesgo y resiliencia: sin hallazgos.
+  - **Sugerencias opcionales, sin aplicar:**
+    - el recuento de paquetes del lockfile se calcula dos veces en `dependency_audit.py` (en `npm_findings` y en `main`);
+    - la condición anidada que construye `fix` en `npm_findings`;
+    - las listas de `paths` de `push` y `pull_request` están duplicadas en `dependency-audit.yml` y deben mantenerse iguales;
+    - no se comprueba que falte en el informe una versión fijada con marcador; hoy `constraints.txt` no tiene ninguna.
+  - **P7 cumplida:** el usuario activó las alertas de Dependabot y `gh api repos/eliseumarmon/password-checker/vulnerability-alerts -i` devuelve 204.
+- **L24 (2026-11-03):** hallazgos de otra sesión e integración de P8.
+  - **Revisión de otra sesión:** el usuario aportó el resumen de `review-10cf5f…`. No es ninguna de las revisiones de esta rama: sus números de línea corresponden a la versión del script anterior a `48a3b85`.
+    - **Ya corregidos en la rama:** el ámbito de Python fijado en el código (es `n/a` desde L22) y la falta de prueba para una versión que no coincide (existen las dos pruebas).
+    - **Comprobado que no es un fallo:** el total de npm en producción. npm 11.3 con `--omit=dev` informa el mismo `total` que el lockfile (119); si cambiara, el run fallaría, nunca pasaría.
+    - **Decisiones ya registradas:** la versión de npm sin fijar, `--require-hashes` (P13), la ausencia de reintentos, y que las pruebas del script las ejecute `tests.yml`.
+    - **Siguen como opcionales:** el recuento duplicado y la condición anidada (L23).
+  - **Integración**, petición literal: «Integra».
+    - Antes: `main` seguía en `27734ba`, la base de la rama, y el diff solo tocaba los 7 archivos de P8, sin código de producción, `tests.yml` ni dependencias.
+    - **`cf3f089` — Merge `ci/dependency-audit`** (`--no-ff`): suite 163 OK y Ruff sin avisos en local.
+    - **En `main`:**
+      - `Tests` (push, run `41669167281`): en verde, 163 pruebas, 24 versiones fijadas que coinciden y 88 E2E.
+      - `Dependency audit` (push, run `41669167294`): en verde.
+      - **Run manual** (`workflow_dispatch`, run `41669217453`): en verde, 24 paquetes de Python y 119 de npm sin vulnerabilidades y 70 firmas verificadas. Cumple el criterio de aceptación de P8 que solo se podía comprobar tras integrar.
+    - Tras activar P7 aparece también un run automático «Dependency Graph» (`update-pip-graph`), en verde.
+- **L25 (2026-11-04):** cierre de la fase, petición literal:
+
+  > Puedes eliminar `ci/dependency-audit` tanto en local como en `origin`.
+  >
+  > Antes, confirma que todos sus commits están incluidos en `main` y que no contiene cambios exclusivos.
+  >
+  > Comprueba después que `main` está sincronizada con `origin/main` y que el árbol de trabajo queda limpio.
+  >
+  > Con P7 y P8 completadas, damos por cerrada la fase prioritaria de auditoría y endurecimiento de dependencias.
+  >
+  > Conserva L23 y L24 pendientes de registrar en `dependency-hardening.md` durante la próxima tarea documental, sin realizar un commit directo en `main`.
+  >
+  > No comiences P9 ni los opcionales P10–P13 todavía.
+
+  - **Rama borrada:** la local y la remota de `ci/dependency-audit` eran ancestros de `main`, sin commits ni diferencias exclusivas. Se borraron las dos.
+  - **Estado final:** `main` y `origin/main` en `cf3f089`, sin commits de diferencia; árbol de trabajo limpio.
+  - **Fase prioritaria cerrada.** Abiertas: P9 (baja) y las opcionales P10-P13, sin empezar.
+- **L26 (2026-11-04):** limpieza de ramas y consolidación documental.
+  - **Petición:** primero «Haz limpieza de ramas. Haz 1 y 2. Pero no empezamos aun la nueva fase. A excepcion de p12 que parece quedarse vinculada directamente a la fase 1 con quitar prime vue y vue router.» Después la acotó: «Haz solo limpieza de ramas. y consolidación documental de la fase 0 sin mirar aun la fase 1».
+  - **Ramas borradas, todas integradas** (comprobado que eran ancestros de `main`, en local y en remoto):
+    - `docs/expand-future-vault-backlog` y `fix/session-limit-rejections`, en local y en `origin`;
+    - `docs/ruff-new-default-rules`, solo en local;
+    - `chore/ruff-clean-and-ci`, en local y en `origin`. La local iba por detrás de su remota y `git branch -d` se negó, así que se borró con `-D` después de comprobar que tanto la local como la remota estaban contenidas en `main`.
+  - `docs/phase-1-plan` y su worktree no se tocan.
+  - **Consolidación:** L23-L26, P7 y P8 cerradas, P12 vinculada a la Fase 1, y `docs/pendiente.md` y la auditoría con el estado final.
+- **L27 (2026-11-04):** P9 y P11, petición literal: «Me interesa tener ahora cerrado P9 y P11. Pytest se quitó y nos quedamos con unittest pip-audit se ha usado en el hardening, pero de momento ya no es necesario.»
+  - **Decisión de P11:** a la pregunta «¿Cómo los alineo?» (hoy: local con Python 3.14 y Node 24; CI con 3.12 y 22; el README pide 3.12+ y 22+), el usuario eligió «3.12+3.14 y Node 24».
+  - **`.venv` local:** se recrea limpio desde las restricciones, para retirar `pytest`, `pip-audit` y sus dependencias.
+  - **Procedencia de `httpx2`, comprobada de nuevo:**
+    - La última versión es 2.16.0 (2026-10-21; 22 versiones desde el 2026-05-11). La publicación `v2.16.0` de `pydantic/httpx2` la hizo `Kludex`, el mantenedor de Starlette que añadió `httpx2` a `TestClient`, el mismo día que la de PyPI. El repositorio tiene `publish.yml` y está activo.
+    - OSV no tiene avisos. Sus archivos en PyPI **siguen sin atestación PEP 740**; queda como riesgo residual.
+    - Dependencias nuevas: `httpcore2==2.16.0`, del mismo repositorio, que pide `h11>=0.16` y `truststore>=0.10`; y `truststore` 0.10.5, de Seth Larson, que usa los certificados del sistema en lugar de `certifi`.
+    - Starlette no ha anunciado ninguna fecha para retirar `httpx`.
+  - **Ramas:** `chore/httpx2` y `ci/align-runtimes`, encadenadas sobre `docs/close-dependency-hardening`, porque las tres tocan este plan.
+- **L28 (2026-11-04):** P9 en local (Windows, Python 3.14.7).
+  - **Prueba primero:** en `tests/test_required_dependencies.py`, el caso que bloqueaba `httpx` pasa a bloquear `httpx2`. RED con las dependencias anteriores: Starlette recurría a `httpx` instalado y `test_api` no fallaba («[] is not true»).
+  - **`810db17`:**
+    - `requirements-dev.txt` cambia `httpx>=0.27,<1` por `httpx2>=2.16,<3`.
+    - Para `constraints.txt`, las versiones se resolvieron en un entorno limpio manteniendo fijado todo lo demás. Salen `httpx==0.28.1`, `httpcore==1.0.9` y `certifi==2026.10.23`; entran `httpx2==2.16.0`, `httpcore2==2.16.0` y `truststore==0.10.5`. Siguen siendo 24 versiones y no cambia ninguna otra.
+    - `tests/test_api.py` no cambia: `fastapi.testclient` elige `httpx2`.
+  - **GREEN en el entorno limpio:** `pip check` sin problemas; suite 163 OK; Ruff sin avisos. `fastapi.testclient` se importa con los avisos convertidos en errores, sin `StarletteDeprecationWarning`.
+  - **`.venv` local:** se desinstalaron los 32 paquetes que no estaban en las restricciones (las familias de `pytest`, `pip-audit` y `httpx`) y se instaló con `-c`. Quedan exactamente 24 paquetes, idénticos a `constraints.txt`; `pip check` limpio, suite y Ruff en verde. No se borró la carpeta, porque había procesos de Python abiertos que podían bloquearla.
+  - **Riesgo residual:** los archivos de `httpx2` en PyPI no tienen atestación PEP 740 (L27).
+- **L29 (2026-11-04):** CI de P9 y P11.
+  - **P9 en GitHub** (rama `chore/httpx2`, `f9c6d21`): `Tests` (run `41801704242`) y `Dependency audit` (run `41801704251`) en verde. Con Python 3.12 se instala `httpx2` 2.16.0 y coinciden las 24 versiones fijadas; 163 pruebas y 88 E2E. **0** apariciones de `StarletteDeprecationWarning`, que salía en cada run anterior.
+  - **P11 (`07e786d`, rama `ci/align-runtimes`):**
+    - `frontend/.nvmrc` con `24`.
+    - En `tests.yml`, el job `python` usa una matriz `['3.12', '3.14']` con `fail-fast: false`; `frontend` y `e2e` toman Node de `node-version-file: frontend/.nvmrc`.
+    - En `dependency-audit.yml`, el job `npm` usa el mismo `.nvmrc`, y `frontend/.nvmrc` se añade a las rutas que lanzan la auditoría, porque fija la versión de npm que audita.
+    - README: Python 3.12 o posterior (la CI prueba 3.12 y 3.14), Node.js 24 desde `.nvmrc`; el procedimiento de renovación menciona las dos versiones de Python.
+    - El job `e2e` y el job `python` de la auditoría siguen con Python 3.12.
+  - **En local, Node 24.21.0:** `npm ci` (119 paquetes) no modifica `package-lock.json` y el build es correcto.
+  - **En GitHub** (run `41802123655`): `python (3.12)`, `python (3.14)`, `frontend` y `e2e` en verde.
+    - Cada job de Python ejecuta 163 pruebas, Ruff, y la comprobación de las 24 versiones fijadas, que también coinciden con 3.14.
+    - Versiones de los runners: Python 3.12.16 y 3.14.9; Node 24.22.1.
+    - E2E: 88.
+    - `Dependency audit` (run `41802123756`) en verde, con Node 24.22.2: 24 paquetes de Python y 119 de npm sin vulnerabilidades.
+  - **Observación:** las versiones de parche de Python y Node varían entre runners (en un mismo día, Python 3.12.15 y 3.12.16; Node 24.22.1 y 24.22.2). Es lo esperado al fijar solo `3.12` y `24`; las versiones de parche no se fijan.
+  - **Riesgo residual que se cierra:** Python 3.14 ya se prueba en la CI. Windows sigue sin probarse en la CI.
+- **L30 (2026-11-04):** revisión de los cambios encadenados (cierre documental, P9 y P11) respecto a `main`.
+  - **Revisión** `review-6b89bc513d330891`: riesgo escalado a alto por el elemento 5; lentes de riesgo y fiabilidad; consentimiento del usuario. Aprobada y reconocida (`authority: burned`).
+  - **Riesgo:** una sugerencia, `R1-001`: volver a comprobar la procedencia de `httpx2` en cada renovación, porque sigue sin atestaciones PEP 740. Ya figura como riesgo residual (L27) y queda como regla para las renovaciones.
+  - **Fiabilidad:** tres avisos válidos, aplicados.
+    - **`R3-httpx2-test-env-dependent`:** si el entorno conserva `httpx`, Starlette recurre a él y el subcaso que bloqueaba solo `httpx2` fallaba aunque no faltara nada.
+      - RED reproducido en un entorno limpio al que se añadió `httpx==0.28.1`.
+      - El subproceso de la prueba ahora acepta varios paquetes separados por comas, y el caso bloquea `httpx2,httpx`.
+      - GREEN tanto con `httpx` sobrante como en el `.venv` limpio (163 pruebas). Ruff sin avisos.
+    - **`R3-pendiente-stale-httpx2`:** `docs/pendiente.md` decía que la migración a `httpx2` seguía pendiente; ahora solo quedan medidas opcionales.
+    - **`R3-plan-header-p9-open`:** la cabecera del plan decía que P9 seguía abierta; ahora indica P9 y P11 completadas, y abiertas solo P10, P13 y P12 (vinculada a la Fase 1).
+- **L31 (2026-11-04):** revisión del estado final de P9 y P11.
+  - **Revisión** `review-65075d38c78d3b39`: 4 lentes, consentimiento del usuario. Aprobada y reconocida (`authority: burned`). Riesgo y resiliencia: sin hallazgos.
+  - **Aplicado:**
+    - **`R2-audit-status-p11-stale` (aviso):** la línea de estado de la auditoría decía que la alineación de versiones seguía pendiente como P11; ahora la da por resuelta (matriz 3.12/3.14 y Node 24 desde `.nvmrc`).
+    - **`R3-no-httpx2-selection-assertion`:** ninguna prueba comprobaba el criterio de P9 (que el cliente de pruebas sea `httpx2`). Nueva prueba, `test_the_api_test_client_uses_httpx2`:
+      - comprueba que `starlette.testclient` usa `httpx2`;
+      - en un entorno con `httpx` y sin `httpx2` falla («'httpx' != 'httpx2'»);
+      - en el `.venv` real pasa: suite 164 OK y Ruff sin avisos.
+  - **Descartado:** `R2-probe-package-name-plural`, renombrar el parámetro `package`, por ser cosmético.
+- **L32 (2026-11-04):** revisión `review-ac7d3d6c309e38fa`, aprobada y reconocida (`authority: burned`). Riesgo y resiliencia: sin nuevos hallazgos.
+  - **Aplicado `R2-audit-status-h4-sentence-conflated` (aviso):** la línea de estado de la auditoría (editada en L31) mezclaba dos frases, como si P11 se hubiera hecho en `chore/reproducible-installs`. Ahora indica que la parte de Python de H4 (con R1, H7 y H8) se resolvió en `chore/reproducible-installs`, P11 en `ci/align-runtimes` y H6 en `chore/httpx2`.
+  - **Opcionales, sin aplicar:**
+    - **`R1-001`:** volver a comprobar la procedencia de `httpx2` en cada renovación; ya es la regla de L30.
+    - **`R2-probe-package-list-name`:** renombrar el parámetro; ya se descartó en L31.
+    - **`R3-httpx2-assertion-internal-attr`:** la prueba lee el nombre interno `httpx` de `starlette.testclient`. Si Starlette lo cambia, la prueba falla con `AttributeError` en vez de con una aserción, pero nunca da un falso éxito.
