@@ -2,7 +2,7 @@
 
 Objetivo: sustituir `DataTable` y `Column` de PrimeVue por tablas HTML nativas con Vue en `RecordsTable`, `GroupsTable` y `TrashView`. Deben conservar su comportamiento, ser accesibles desde el principio y permitir retirar PrimeVue (`primevue`, `@primeuix/themes` y su configuración).
 Rama: `refactor/native-tables` desde `main`, después de integrar `css-tokens`, porque los estilos de la tabla usan sus variables. Entrega: `ask-on-risk`. La previsión es de ~550 líneas cambiadas sin contar `package-lock.json`, por encima de ~400, así que antes del commit que lo supere se pregunta la estrategia de encadenado. T4 (dependencias) va en un commit propio.
-Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso desde el 2026-11-06 (L9); T1 hecha (L10).
+Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso desde el 2026-11-06 (L9); tramo 1 (T1) integrado en `main` (`abf8c3a`); T2 hecha (L16).
 
 ## Specs
 
@@ -56,7 +56,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - E2E de caracterización en verde sobre `main`: orden inicial; ciclo de orden en una columna de texto y en `count`; comparación con mayúsculas, acentos y números («a2» frente a «a10»); paginador solo con más de 30 filas; cada control de paginación; página actual al filtrar, al ordenar y al vaciar la última página.
   - Los selectores de tabla y paginador se agrupan en un helper de E2E, para que en T2 solo cambie el helper.
   - Excepción a RED: estas pruebas fijan un comportamiento que ya existe; se documenta.
-- [ ] T2 — S2-S5: módulo de lógica, cabecera ordenable, paginador y `RecordsTable` nativa, con su CSS basado en las variables de `css-tokens`. Ruta: inline.
+- [x] T2 — S2-S5: módulo de lógica, cabecera ordenable, paginador y `RecordsTable` nativa, con su CSS basado en las variables de `css-tokens`. Ruta: inline. Evidencia en L16.
   - RED primero en las pruebas nuevas de teclado y accesibilidad: `aria-sort` solo en la columna ordenada, nombres del paginador en español, foco tras ordenar y tras paginar, y el supuesto de S3.
   - La caracterización de T1 sigue en verde.
 - [ ] T3 — S2-S5: `GroupsTable` y `TrashView` nativas, reutilizando lo de T2, con sus pruebas de teclado. Ruta: inline.
@@ -153,3 +153,15 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   Cada tramo siguiente parte de `main` con el anterior ya integrado.
 - **L15 (2026-11-06).** Tercera revisión de T1 (`review-reliability`, con el consentimiento del usuario), sobre el tramo hasta `267d79b`: aprobada y confirmada. Su sugerencia, que no bloqueaba nada: fijar que la ordenación es estable. Se añade una prueba con dos filas empatadas. En el descendente conservan su orden de llegada, así que un orden nativo que invirtiera el ascendente fallaría.
   - Comprobaciones: `npm run build` correcto. La primera ejecución completa de `npm run e2e` dio 100 de 102, con dos fallos ajenos a este cambio: un servidor aislado que no llegó a arrancar y un cierre del editor. Duró 5,2 minutos en lugar de unos 2, así que parece lentitud de la máquina. Las dos pasaron al repetirlas, y una segunda ejecución completa pasó 102 de 102 (3,0 minutos). `tables.spec.ts` tiene 12 pruebas.
+- **L16 (2026-11-06).** Tramo 1 integrado en `main` (`abf8c3a`, `--no-ff`; el contenido es idéntico al de `5f14d22`), con la CI en verde en la rama y en `main`. La rama sigue desde `abf8c3a` para el tramo 2. T2:
+  - **RED:** cinco pruebas nuevas en `tables.spec.ts` (`accessible records table`): `aria-sort` solo en la columna ordenada; ordenar con `Enter` y `Espacio` sin perder el foco; el paginador como `<nav>` «Paginación», con sus botones en español y `aria-current="page"`; el foco se queda en el paginador cuando el control usado queda deshabilitado; y el foco tras mover una fila a la papelera, según S3 (L13). Las cinco fallaban con PrimeVue.
+  - **GREEN:**
+    - `src/tableState.ts`: comparación, orden estable, ciclo de orden, ventana de cinco páginas, el composable `useTable` y `useRemovalFocus`.
+    - `SortHeader.vue` y `TablePaginator.vue`.
+    - `RecordsTable.vue` con tabla nativa, dentro de un `div.desktop-table`, como antes.
+    - `style.css`: estilos de la tabla nativa con las variables de `css-tokens`. El relleno general de las celdas pasa de 7 px a 6 px, el que ya imponía PrimeVue.
+  - **Selectores de las pruebas:** `e2e/tables.ts` acepta durante T2 la tabla nativa y la de PrimeVue, porque `GroupsTable` y `TrashView` siguen con PrimeVue. T3 quita la parte de PrimeVue.
+  - **Diferencia con PrimeVue, sin prueba que la cubra:** si un filtro deja 30 filas o menos y después se quita, PrimeVue volvía a la página anterior. La tabla nativa ajusta la página a la última que existe, la 1, y se queda ahí. Las pruebas de T1 siguen pasando.
+  - **Filas alternas (S2):** con PrimeVue no se veían, porque `style.css` fija el fondo de todas las celdas. La tabla nativa conserva ese aspecto y tampoco las muestra.
+  - **Capturas** frente a la línea base: la misma disposición, sin desplazamiento horizontal y con la tabla oculta en 390 px. Cambian los iconos de orden (flechas de texto) y el paginador: botones con borde, y la página actual con fondo `--surface-selected` y borde `--accent`, en lugar del verde de Aura.
+  - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 107 de 107.
