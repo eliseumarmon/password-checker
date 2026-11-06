@@ -47,25 +47,28 @@ export function pageWindow(page: number, pages: number, size = 5): number[] {
 
 export function useTable<T, F extends keyof T & string = keyof T & string>(rows: MaybeRefOrGetter<readonly T[]>, initial: SortState<NoInfer<F>>) {
   const sort = ref(initial) as Ref<SortState<F>>;
-  const page = ref(1);
+  // The page asked for is kept apart from the page shown: while a filter hides the paginator, the page
+  // asked for survives and comes back when the filter is cleared, as it did with PrimeVue.
+  const requested = ref(1);
   const sorted = computed(() => sortRows(toValue(rows), sort.value));
   const pages = computed(() => pageCount(sorted.value.length));
   const paginated = computed(() => sorted.value.length > PAGE_SIZE);
+  const page = computed(() => Math.min(requested.value, pages.value));
   const visible = computed(() => paginated.value
     ? sorted.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE)
     : sorted.value);
-  // When the rows shrink below the current page (a filter, an emptied last page), show the last page left.
-  watch(pages, count => { if (page.value > count) page.value = count; });
+  // With the paginator on screen, fewer pages than the current one move to the last page left.
+  watch(pages, count => { if (paginated.value && requested.value > count) requested.value = count; });
 
   function sortBy(field: F): void {
     sort.value = nextSort(sort.value, field);
-    page.value = 1;
+    requested.value = 1;
   }
   function direction(field: F): SortDirection | null {
     return sort.value.field === field ? sort.value.direction : null;
   }
   function goTo(target: number): void {
-    page.value = Math.min(Math.max(1, target), pages.value);
+    requested.value = Math.min(Math.max(1, target), pages.value);
   }
   return { sort, page, pages, paginated, sorted, visible, sortBy, direction, goTo };
 }
@@ -81,9 +84,15 @@ export function useRemovalFocus<T extends { id: string }>(
 ) {
   let pending: PendingRemoval | null = null;
 
-  function remember(row: T, action: string): void {
+  /** Runs a row action; the row is remembered only while the action runs, so a cancelled or failed one is forgotten. */
+  async function run(row: T, action: string, perform: () => unknown): Promise<void> {
     const heading = root.value?.closest('section')?.querySelector<HTMLElement>('h2') ?? null;
     pending = { id: row.id, action, index: sorted.value.findIndex(item => item.id === row.id), heading };
+    try {
+      await perform();
+    } finally {
+      if (pending?.id === row.id) pending = null;
+    }
   }
 
   watch(sorted, async rows => {
@@ -105,5 +114,5 @@ export function useRemovalFocus<T extends { id: string }>(
     }
   });
 
-  return { remember };
+  return { run };
 }

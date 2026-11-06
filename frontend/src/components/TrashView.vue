@@ -6,15 +6,14 @@ import { labelOrigin } from '../labels';
 import { useRemovalFocus, useTable } from '../tableState';
 import type { CredentialSummary } from '../types';
 
-const props = defineProps<{ rows: CredentialSummary[]; busy: boolean }>();
-const emit = defineEmits<{ restore: [id: string] }>();
+// onRestore is a prop, not an emit, so the table can wait for the action and know when it ends.
+const props = defineProps<{ rows: CredentialSummary[]; busy: boolean; onRestore: (id: string) => unknown }>();
 const { page, pages, paginated, sorted, visible, sortBy, direction, goTo } = useTable(() => props.rows, { field: 'name', direction: 'ascending' });
 const root = ref<HTMLElement>();
 const removal = useRemovalFocus(root, sorted, goTo);
 
-function restore(row: CredentialSummary): void {
-  removal.remember(row, 'restore');
-  emit('restore', row.id);
+function restore(row: CredentialSummary): Promise<void> {
+  return removal.run(row, 'restore', () => props.onRestore(row.id));
 }
 </script>
 
@@ -42,7 +41,7 @@ function restore(row: CredentialSummary): void {
         </table>
         <TablePaginator v-if="paginated" :page="page" :pages="pages" @go="goTo" />
       </div>
-      <div class="mobile-cards"><article v-for="r in rows" :key="r.id" class="record-card"><strong>{{r.name}}</strong><p>{{r.username}}</p><p class="muted">{{labelOrigin(r.source)}}</p><button :disabled="busy" @click="$emit('restore', r.id)">Restaurar</button></article></div>
+      <div class="mobile-cards"><article v-for="r in rows" :key="r.id" class="record-card"><strong>{{r.name}}</strong><p>{{r.username}}</p><p class="muted">{{labelOrigin(r.source)}}</p><button :disabled="busy" @click="onRestore(r.id)">Restaurar</button></article></div>
     </template>
   </section>
 </template>

@@ -214,6 +214,30 @@ test('shows at most five page numbers around the current page', async ({ page })
   await expect(pageButtons(table)).toHaveText(['2', '3', '4', '5', '6']);
 });
 
+test('sorts when any part of the header cell is clicked', async ({ page }) => {
+  await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, chromiumRow('Bravo', 'bob'), chromiumRow('Alpha', 'carol')] }]);
+  await showAllRecords(page, 2);
+  const table = desktopTable(page);
+  const header = columnHeader(table, 'Usuario');
+  const box = (await header.boundingBox())!;
+  await header.click({ position: { x: box.width - 3, y: 3 } });
+  await expect(column(table, 2)).toHaveText(['bob', 'carol']);
+});
+
+test('returns to the earlier page when a filter that hid the paginator is cleared', async ({ page }) => {
+  await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, ...numberedRows('Alpha', 95)] }]);
+  await showAllRecords(page, 95);
+  const table = desktopTable(page);
+  const search = page.getByRole('textbox', { name: 'Buscar credenciales' });
+  await goToPage(table, 3);
+  await expect(currentPage(table)).toHaveText('3');
+  await search.fill('Alpha 0');
+  await expect(bodyRows(table)).toHaveCount(10);
+  await search.fill('');
+  await expect(currentPage(table)).toHaveText('3');
+  await expect(column(table, 1).first()).toHaveText('Alpha 60');
+});
+
 test('moves to the previous page when the last one empties', async ({ page }) => {
   await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, ...numberedRows('Alpha', 61)] }]);
   await showAllRecords(page, 61);
@@ -294,6 +318,19 @@ test.describe('accessible records table', () => {
     await control('Primera página').focus();
     await page.keyboard.press('Enter');
     await expect(control('Página 1')).toBeFocused();
+  });
+
+  test('moves focus to the previous row when moving the only row of the last page to the trash', async ({ page }) => {
+    await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, ...numberedRows('Alpha', 31)] }]);
+    await showAllRecords(page, 31);
+    const table = desktopTable(page);
+    await goToPage(table, 'last');
+    const trashOf = (name: string) => table.getByRole('row', { name: new RegExp(name) }).getByRole('button', { name: 'Mover a la papelera' });
+    await trashOf('Alpha 30').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('button', { name: 'Todas (30)' })).toBeVisible();
+    await expect(bodyRows(table)).toHaveCount(30);
+    await expect(trashOf('Alpha 29')).toBeFocused();
   });
 
   test('moves focus to a neighbouring row, or to the section title, after moving a row to the trash', async ({ page }) => {

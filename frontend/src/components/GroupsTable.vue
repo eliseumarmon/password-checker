@@ -7,15 +7,15 @@ import { labelGroup, labelType } from '../labels';
 import { useRemovalFocus, useTable } from '../tableState';
 import type { DuplicateGroup } from '../types';
 
-const props = defineProps<{ groups: DuplicateGroup[]; busy: boolean }>();
-const emit = defineEmits<{ open: [group: DuplicateGroup]; trash: [group: DuplicateGroup] }>();
+// onTrash is a prop, not an emit, so the table can wait for the action and know when it ends.
+const props = defineProps<{ groups: DuplicateGroup[]; busy: boolean; onTrash: (group: DuplicateGroup) => unknown }>();
+const emit = defineEmits<{ open: [group: DuplicateGroup] }>();
 const { page, pages, paginated, sorted, visible, sortBy, direction, goTo } = useTable(() => props.groups, { field: 'name', direction: 'ascending' });
 const root = ref<HTMLElement>();
 const removal = useRemovalFocus(root, sorted, goTo);
 
-function trash(group: DuplicateGroup): void {
-  removal.remember(group, 'trash');
-  emit('trash', group);
+function trash(group: DuplicateGroup): Promise<void> {
+  return removal.run(group, 'trash', () => props.onTrash(group));
 }
 </script>
 
@@ -44,5 +44,5 @@ function trash(group: DuplicateGroup): void {
     </table>
     <TablePaginator v-if="paginated" :page="page" :pages="pages" @go="goTo" />
   </div>
-  <div class="mobile-cards"><article v-for="g in groups" :key="g.id" class="record-card" @click="$emit('open', g)"><div class="row-between"><strong>{{g.name}}</strong><span class="status" :class="g.kind">{{labelGroup(g.kind)}}</span></div><p>{{g.username}}</p><p class="muted">{{g.count}} registros · {{labelType(g.type)}}</p><div class="row-actions"><button @click.stop="$emit('open', g)">Comparar →</button><button class="icon-button danger" aria-label="Mover grupo a la papelera" :disabled="busy" @click.stop="$emit('trash', g)"><TrashIcon /></button></div></article></div>
+  <div class="mobile-cards"><article v-for="g in groups" :key="g.id" class="record-card" @click="$emit('open', g)"><div class="row-between"><strong>{{g.name}}</strong><span class="status" :class="g.kind">{{labelGroup(g.kind)}}</span></div><p>{{g.username}}</p><p class="muted">{{g.count}} registros · {{labelType(g.type)}}</p><div class="row-actions"><button @click.stop="$emit('open', g)">Comparar →</button><button class="icon-button danger" aria-label="Mover grupo a la papelera" :disabled="busy" @click.stop="onTrash(g)"><TrashIcon /></button></div></article></div>
 </template>

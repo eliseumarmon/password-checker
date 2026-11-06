@@ -7,15 +7,15 @@ import { labelOrigin, labelReview, labelType } from '../labels';
 import { useRemovalFocus, useTable } from '../tableState';
 import type { CredentialSummary } from '../types';
 
-const props = defineProps<{ rows: CredentialSummary[]; busy: boolean }>();
-const emit = defineEmits<{ edit: [id: string]; trash: [id: string] }>();
+// onTrash is a prop, not an emit, so the table can wait for the action and know when it ends.
+const props = defineProps<{ rows: CredentialSummary[]; busy: boolean; onTrash: (id: string) => unknown }>();
+const emit = defineEmits<{ edit: [id: string] }>();
 const { page, pages, paginated, sorted, visible, sortBy, direction, goTo } = useTable(() => props.rows, { field: 'name', direction: 'ascending' });
 const root = ref<HTMLElement>();
 const removal = useRemovalFocus(root, sorted, goTo);
 
-function trash(row: CredentialSummary): void {
-  removal.remember(row, 'trash');
-  emit('trash', row.id);
+function trash(row: CredentialSummary): Promise<void> {
+  return removal.run(row, 'trash', () => props.onTrash(row.id));
 }
 </script>
 
@@ -43,5 +43,5 @@ function trash(row: CredentialSummary): void {
     </table>
     <TablePaginator v-if="paginated" :page="page" :pages="pages" @go="goTo" />
   </div>
-  <div class="mobile-cards"><article v-for="r in rows" :key="r.id" class="record-card"><div class="row-between"><strong>{{r.name}}</strong><span class="status" :class="r.review">{{labelReview(r.review)}}</span></div><p>{{r.username}}</p><p class="muted">{{labelType(r.type)}} · {{labelOrigin(r.source)}}</p><div class="row-actions"><button @click="$emit('edit', r.id)">Editar →</button><button class="icon-button danger" aria-label="Mover a la papelera" :disabled="busy" @click="$emit('trash', r.id)"><TrashIcon /></button></div></article></div>
+  <div class="mobile-cards"><article v-for="r in rows" :key="r.id" class="record-card"><div class="row-between"><strong>{{r.name}}</strong><span class="status" :class="r.review">{{labelReview(r.review)}}</span></div><p>{{r.username}}</p><p class="muted">{{labelType(r.type)}} · {{labelOrigin(r.source)}}</p><div class="row-actions"><button @click="$emit('edit', r.id)">Editar →</button><button class="icon-button danger" aria-label="Mover a la papelera" :disabled="busy" @click="onTrash(r.id)"><TrashIcon /></button></div></article></div>
 </template>
