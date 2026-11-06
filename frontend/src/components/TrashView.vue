@@ -1,12 +1,21 @@
 <script setup lang="ts">
-import DataTable from 'primevue/datatable';
-import Column from 'primevue/column';
+import { ref } from 'vue';
+import SortHeader from './SortHeader.vue';
+import TablePaginator from './TablePaginator.vue';
 import { labelOrigin } from '../labels';
-import { PAGE_SIZE } from '../limits';
+import { useRemovalFocus, useTable } from '../tableState';
 import type { CredentialSummary } from '../types';
 
-defineProps<{ rows: CredentialSummary[]; busy: boolean }>();
-defineEmits<{ restore: [id: string] }>();
+const props = defineProps<{ rows: CredentialSummary[]; busy: boolean }>();
+const emit = defineEmits<{ restore: [id: string] }>();
+const { page, pages, paginated, sorted, visible, sortBy, direction, goTo } = useTable(() => props.rows, { field: 'name', direction: 'ascending' });
+const root = ref<HTMLElement>();
+const removal = useRemovalFocus(root, sorted, goTo);
+
+function restore(row: CredentialSummary): void {
+  removal.remember(row, 'restore');
+  emit('restore', row.id);
+}
 </script>
 
 <template>
@@ -14,12 +23,25 @@ defineEmits<{ restore: [id: string] }>();
     <h2>Credenciales descartadas</h2><p>No se exportan. Restaura las que quieras recuperar.</p>
     <p v-if="!rows.length" class="empty">La papelera está vacía.</p>
     <template v-else>
-      <DataTable :value="rows" dataKey="id" sortField="name" :sortOrder="1" stripedRows removableSort class="desktop-table" :paginator="rows.length>PAGE_SIZE" :rows="PAGE_SIZE">
-        <Column field="name" header="Sitio / App" sortable><template #body="{data:r}"><strong>{{r.name}}</strong><small class="url-truncate">{{r.url}}</small></template></Column>
-        <Column field="username" header="Usuario" sortable/>
-        <Column field="source" header="Origen" sortable><template #body="{data:r}">{{labelOrigin(r.source)}}</template></Column>
-        <Column header="Acciones"><template #body="{data:r}"><button :disabled="busy" @click="$emit('restore', r.id)">Restaurar</button></template></Column>
-      </DataTable>
+      <div ref="root" class="desktop-table">
+        <table aria-label="Credenciales descartadas">
+          <thead><tr>
+            <SortHeader label="Sitio / App" :direction="direction('name')" @sort="sortBy('name')" />
+            <SortHeader label="Usuario" :direction="direction('username')" @sort="sortBy('username')" />
+            <SortHeader label="Origen" :direction="direction('source')" @sort="sortBy('source')" />
+            <th scope="col">Acciones</th>
+          </tr></thead>
+          <tbody>
+            <tr v-for="r in visible" :key="r.id" :data-row-id="r.id">
+              <td><strong>{{r.name}}</strong><small class="url-truncate">{{r.url}}</small></td>
+              <td>{{r.username}}</td>
+              <td>{{labelOrigin(r.source)}}</td>
+              <td><button data-action="restore" :disabled="busy" @click="restore(r)">Restaurar</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <TablePaginator v-if="paginated" :page="page" :pages="pages" @go="goTo" />
+      </div>
       <div class="mobile-cards"><article v-for="r in rows" :key="r.id" class="record-card"><strong>{{r.name}}</strong><p>{{r.username}}</p><p class="muted">{{labelOrigin(r.source)}}</p><button :disabled="busy" @click="$emit('restore', r.id)">Restaurar</button></article></div>
     </template>
   </section>

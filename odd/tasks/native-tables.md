@@ -2,7 +2,7 @@
 
 Objetivo: sustituir `DataTable` y `Column` de PrimeVue por tablas HTML nativas con Vue en `RecordsTable`, `GroupsTable` y `TrashView`. Deben conservar su comportamiento, ser accesibles desde el principio y permitir retirar PrimeVue (`primevue`, `@primeuix/themes` y su configuración).
 Rama: `refactor/native-tables` desde `main`, después de integrar `css-tokens`, porque los estilos de la tabla usan sus variables. Entrega: `ask-on-risk`. La previsión es de ~550 líneas cambiadas sin contar `package-lock.json`, por encima de ~400, así que antes del commit que lo supere se pregunta la estrategia de encadenado. T4 (dependencias) va en un commit propio.
-Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso desde el 2026-11-06 (L9); tramo 1 (T1) integrado en `main` (`abf8c3a`); T2 hecha (L16).
+Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso desde el 2026-11-06 (L9); tramo 1 (T1) integrado en `main` (`abf8c3a`); T2 (`23aead4`) y T3 hechas (L16-L17); tramo 2 pendiente de revisión e integración.
 
 ## Specs
 
@@ -59,7 +59,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
 - [x] T2 — S2-S5: módulo de lógica, cabecera ordenable, paginador y `RecordsTable` nativa, con su CSS basado en las variables de `css-tokens`. Ruta: inline. Evidencia en L16.
   - RED primero en las pruebas nuevas de teclado y accesibilidad: `aria-sort` solo en la columna ordenada, nombres del paginador en español, foco tras ordenar y tras paginar, y el supuesto de S3.
   - La caracterización de T1 sigue en verde.
-- [ ] T3 — S2-S5: `GroupsTable` y `TrashView` nativas, reutilizando lo de T2, con sus pruebas de teclado. Ruta: inline.
+- [x] T3 — S2-S5: `GroupsTable` y `TrashView` nativas, reutilizando lo de T2, con sus pruebas de teclado. Ruta: inline. Evidencia en L17.
 - [ ] T4 — S6: retirada de PrimeVue. Ruta: inline.
   - Cambios en `main.ts`, `package.json` y `package-lock.json` (con `npm uninstall`); se quitan los selectores `.p-*` y la clase `app-dark` si queda sin uso.
   - Medición posterior y comparación con T1 en el Log; capturas finales (S5).
@@ -165,3 +165,11 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - **Filas alternas (S2):** con PrimeVue no se veían, porque `style.css` fija el fondo de todas las celdas. La tabla nativa conserva ese aspecto y tampoco las muestra.
   - **Capturas** frente a la línea base: la misma disposición, sin desplazamiento horizontal y con la tabla oculta en 390 px. Cambian los iconos de orden (flechas de texto) y el paginador: botones con borde, y la página actual con fondo `--surface-selected` y borde `--accent`, en lugar del verde de Aura.
   - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 107 de 107.
+- **L17 (2026-11-06).** T3:
+  - **RED:** dos pruebas nuevas en `tables.spec.ts` (`accessible groups and trash tables`), que fallaban con PrimeVue:
+    - ordenar los grupos por `Copias` con el teclado, y que el foco pase al grupo vecino tras moverlo a la papelera, confirmando el diálogo;
+    - restaurar con el teclado, con el foco en la fila vecina y, al vaciarse la papelera, en su título.
+  - **GREEN:** `GroupsTable.vue` y `TrashView.vue` con tabla nativa, que reutilizan `useTable`, `useRemovalFocus`, `SortHeader` y `TablePaginator`. Las tablas se llaman «Grupos de duplicados» y «Credenciales descartadas». `e2e/tables.ts` ya solo selecciona por rol y nombre: no queda ninguna clase `.p-*` en las E2E.
+  - **PrimeVue** solo queda en `main.ts`, `package.json` y los selectores `.p-*` de `style.css`; se retira en T4 (tramo 3).
+  - **Capturas** de las tres tablas en 1440 × 900, 1280 × 720 y 390 × 844: la misma disposición, sin desplazamiento horizontal y con las tarjetas en 390 px. Las únicas diferencias son las de L16: iconos de orden y paginador.
+  - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 109 de 109.

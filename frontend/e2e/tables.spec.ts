@@ -306,3 +306,44 @@ test.describe('accessible records table', () => {
     await expect(page.getByRole('heading', { name: 'Explorar y consolidar' })).toBeFocused();
   });
 });
+
+test.describe('accessible groups and trash tables', () => {
+  test('sorts groups from the keyboard and moves focus after moving a group to the trash', async ({ page }) => {
+    const copies = (name: string, count: number) => Array.from({ length: count }, () => chromiumRow(name, 'alice'));
+    await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, ...copies('Alpha', 2), ...copies('Bravo', 3), ...copies('Charlie', 2)] }]);
+    const table = desktopTable(page);
+    await expect(columnHeader(table, 'Sitio')).toHaveAttribute('aria-sort', 'ascending');
+    const copiesButton = columnHeader(table, 'Copias').getByRole('button', { name: 'Copias', exact: true });
+    await copiesButton.focus();
+    await page.keyboard.press('Enter');
+    await expect(columnHeader(table, 'Copias')).toHaveAttribute('aria-sort', 'ascending');
+    await expect(copiesButton).toBeFocused();
+    await expect(column(table, 1)).toHaveText(['Alpha', 'Charlie', 'Bravo']);
+
+    const trashOf = (name: string) => table.getByRole('row', { name: new RegExp(name) })
+      .getByRole('button', { name: 'Mover grupo a la papelera' });
+    await trashOf('Charlie').focus();
+    await page.keyboard.press('Enter');
+    await page.getByRole('alertdialog', { name: 'Confirmar acción' }).getByRole('button', { name: 'Mover a la papelera', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Duplicados (2)' })).toBeVisible();
+    await expect(trashOf('Bravo')).toBeFocused();
+  });
+
+  test('restores from the keyboard and moves focus to a neighbouring row or to the trash title', async ({ page }) => {
+    await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, chromiumRow('Alpha', 'alice'), chromiumRow('Bravo', 'bob')] }]);
+    const ids = (await (await page.request.get('/api/workspace')).json()).records.map((record: { id: string }) => record.id);
+    expect((await page.request.post('/api/records/trash', { data: { ids } })).ok()).toBe(true);
+    await page.reload();
+    await page.getByRole('button', { name: 'Papelera (2)' }).first().click();
+    const table = desktopTable(page);
+    await expect(table.getByRole('table', { name: 'Credenciales descartadas' })).toBeVisible();
+    const restoreOf = (name: string) => table.getByRole('row', { name: new RegExp(name) }).getByRole('button', { name: 'Restaurar' });
+    await restoreOf('Alpha').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('button', { name: 'Papelera (1)' }).first()).toBeVisible();
+    await expect(restoreOf('Bravo')).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.getByText('La papelera está vacía.')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Credenciales descartadas' })).toBeFocused();
+  });
+});
