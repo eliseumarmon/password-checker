@@ -9,9 +9,13 @@ import {
 
 const CHROMIUM_HEADER = 'name,url,username,password,note';
 
+// The tables compare text with the browser's locale, so the expected orders hold for this one.
+test.use({ locale: 'es-ES' });
+
 interface CsvFile { name: string; lines: string[] }
 
-/** Replaces the shared E2E workspace with these files and opens the app. */
+/** Replaces the shared E2E workspace with these files and opens the app.
+ * Safe only because the E2E tests run serially against one backend (playwright.config.ts). */
 async function seed(page: Page, files: CsvFile[]): Promise<void> {
   const form = new FormData();
   for (const file of files) form.append('files', new Blob([file.lines.join('\n')], { type: 'text/csv' }), file.name);

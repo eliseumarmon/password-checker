@@ -51,7 +51,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
 
 ## Tasks
 
-- [x] T1 — S2, S5, S6: línea base y caracterización sobre PrimeVue. Ruta: inline. Evidencia en L10.
+- [x] T1 — S2, S5, S6: línea base y caracterización sobre PrimeVue. Ruta: inline. Evidencia en L10 y L11. Commits `79cd412` y el de L11.
   - Medición del bundle y capturas de referencia.
   - E2E de caracterización en verde sobre `main`: orden inicial; ciclo de orden en una columna de texto y en `count`; comparación con mayúsculas, acentos y números («a2» frente a «a10»); paginador solo con más de 30 filas; cada control de paginación; página actual al filtrar, al ordenar y al vaciar la última página.
   - Los selectores de tabla y paginador se agrupan en un helper de E2E, para que en T2 solo cambie el helper.
@@ -135,3 +135,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - **Bundle** (`npm run build`, gzip de nivel 9 con `zlib` de Node): `index-*.js`, 751 412 bytes (172 592 con gzip); `index-*.css`, 15 670 bytes (4006 con gzip). Vite avisa de un chunk de más de 500 kB.
   - **Capturas de referencia** fuera del repositorio, en 1440 × 900, 1280 × 720 y 390 × 844: Duplicados, Todas (con paginador), Todas ordenada por usuario y Papelera. En ninguna hay desplazamiento horizontal. La tabla de escritorio se ve en 1440 y 1280, y no en 390, donde se muestran las tarjetas. Detalles de PrimeVue que no se conservarán tal cual: el botón de la página actual usa el verde del tema Aura, y los iconos de orden son los de PrimeVue.
   - Comprobaciones: `npm run build` correcto; `npm run e2e`, 99 de 99.
+- **L11 (2026-11-06).** Revisión de T1 (`review-reliability`, con el consentimiento del usuario): aprobada y confirmada. Se aplican sus tres sugerencias, que no bloqueaban nada:
+  - `tables.spec.ts` fija el idioma del navegador en `es-ES`, porque el orden del texto depende de él (`Intl.Collator` sin idioma explícito). Con él, las pruebas definen también lo que debe igualar el comparador nativo de T2.
+  - El helper `seed` documenta que solo es seguro porque las E2E se ejecutan en serie contra un único backend.
+  - Fechas de `css-tokens`: la integración fue el 2026-11-04 y el cierre del plan, el 2026-11-06. Se aclara en su L8 y en la hoja de ruta.
