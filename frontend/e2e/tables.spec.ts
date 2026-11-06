@@ -226,6 +226,15 @@ test('moves to the previous page when the last one empties', async ({ page }) =>
   await expect(column(table, 1).first()).toHaveText('Alpha 30');
 });
 
+test('scrolls a wide table inside itself instead of widening the page', async ({ page }) => {
+  await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, chromiumRow('Alpha', `user-${'x'.repeat(120)}`)] }]);
+  await page.setViewportSize({ width: 900, height: 720 });
+  await showAllRecords(page, 1);
+  await expect(desktopTable(page)).toBeVisible();
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBe(0);
+});
+
 // Accessibility of the native tables (native-tables S3): semantics, keyboard and focus.
 test.describe('accessible records table', () => {
   test('marks only the sorted column with aria-sort', async ({ page }) => {

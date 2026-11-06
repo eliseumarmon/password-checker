@@ -177,3 +177,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - RED: prueba `leaves focus alone when a cancelled removal is followed by a filter that hides the row` (cancelar la confirmación de un grupo y escribir en el buscador). Fallaba.
   - GREEN: el foco solo se mueve si la eliminación lo dejó en `<body>`, tras actualizar el DOM, y la página tampoco cambia en otro caso.
   - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 110 de 110.
+- **L19 (2026-11-06).** La validación de la corrección de L18 la aprobó, y la revisión del tramo 2 queda aprobada y confirmada. Avisos que no bloqueaban nada:
+  - **`R3-table-overflow`:** la tabla nativa no tenía contenedor con desplazamiento. Prueba nueva `scrolls a wide table inside itself instead of widening the page`, con 900 px de ancho y un usuario de 125 caracteres. Pasa con PrimeVue en `main` (`abf8c3a`, ejecutada con el código de `main` en el directorio de trabajo) y fallaba con la tabla nativa: la página se ensanchaba 656 px. Corregido con `overflow-x:auto` en `.desktop-table`.
+  - **`R3-sort-persists-empty`:** en `GroupsTable` y `TrashView`, el orden elegido se conserva cuando la lista queda vacía y vuelve a tener filas, porque `useTable` vive en el componente y no en la tabla, que se desmonta. Con PrimeVue volvía al orden inicial. Es **intencionado**: es inofensivo y va en la dirección de S8 (T6).
+  - Comprobaciones: `npm run e2e`, 111 de 111.
