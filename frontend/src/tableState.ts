@@ -104,7 +104,8 @@ export function useRemovalFocus<T extends { id: string }>(
     // was cancelled or failed, and a filter hid the row), focus is wherever the person put it: leave it.
     if (document.activeElement && document.activeElement !== document.body) return;
     const target = rows[removal.index] ?? rows[removal.index - 1];
-    if (target) goTo(Math.floor(rows.indexOf(target) / PAGE_SIZE) + 1);
+    // Without a paginator every row is on screen; changing the page would lose the one asked for.
+    if (target && rows.length > PAGE_SIZE) goTo(Math.floor(rows.indexOf(target) / PAGE_SIZE) + 1);
     await nextTick();
     const button = target && root.value?.querySelector<HTMLElement>(`tr[data-row-id="${CSS.escape(target.id)}"] [data-action="${removal.action}"]`);
     if (button) return button.focus();

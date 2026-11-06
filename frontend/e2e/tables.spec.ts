@@ -238,6 +238,32 @@ test('returns to the earlier page when a filter that hid the paginator is cleare
   await expect(column(table, 1).first()).toHaveText('Alpha 60');
 });
 
+test('sorts when a taller header cell is clicked outside its button', async ({ page }) => {
+  await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, chromiumRow('Bravo', 'bob'), chromiumRow('Alpha', 'carol')] }]);
+  await showAllRecords(page, 2);
+  const table = desktopTable(page);
+  const header = columnHeader(table, 'Usuario');
+  // A wrapped label elsewhere in the row makes every header cell taller than its button.
+  await header.evaluate(cell => { (cell as HTMLElement).style.height = '80px'; });
+  const box = (await header.boundingBox())!;
+  await header.click({ position: { x: box.width / 2, y: box.height - 4 } });
+  await expect(column(table, 2)).toHaveText(['bob', 'carol']);
+});
+
+test('keeps the earlier page when a row is removed while a filter hides the paginator', async ({ page }) => {
+  await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, ...numberedRows('Alpha', 95)] }]);
+  await showAllRecords(page, 95);
+  const table = desktopTable(page);
+  const search = page.getByRole('textbox', { name: 'Buscar credenciales' });
+  await goToPage(table, 3);
+  await search.fill('Alpha 0');
+  await table.getByRole('row', { name: /Alpha 05/ }).getByRole('button', { name: 'Mover a la papelera' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('button', { name: 'Todas (94)' })).toBeVisible();
+  await search.fill('');
+  await expect(currentPage(table)).toHaveText('3');
+});
+
 test('moves to the previous page when the last one empties', async ({ page }) => {
   await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, ...numberedRows('Alpha', 61)] }]);
   await showAllRecords(page, 61);
