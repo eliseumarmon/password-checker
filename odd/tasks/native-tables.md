@@ -173,3 +173,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - **PrimeVue** solo queda en `main.ts`, `package.json` y los selectores `.p-*` de `style.css`; se retira en T4 (tramo 3).
   - **Capturas** de las tres tablas en 1440 × 900, 1280 × 720 y 390 × 844: la misma disposición, sin desplazamiento horizontal y con las tarjetas en 390 px. Las únicas diferencias son las de L16: iconos de orden y paginador.
   - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 109 de 109.
+- **L18 (2026-11-06).** La revisión del tramo 2 (`review-reliability`, con el consentimiento del usuario) pidió una corrección. Hallazgo `R3-stale-removal-focus`, crítico: `useRemovalFocus` recordaba la fila antes de confirmar la acción y no lo olvidaba si se cancelaba o fallaba. Un filtro posterior que ocultara la fila se tomaba por la eliminación y movía el foco fuera del buscador.
+  - RED: prueba `leaves focus alone when a cancelled removal is followed by a filter that hides the row` (cancelar la confirmación de un grupo y escribir en el buscador). Fallaba.
+  - GREEN: el foco solo se mueve si la eliminación lo dejó en `<body>`, tras actualizar el DOM, y la página tampoco cambia en otro caso.
+  - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 110 de 110.

@@ -90,6 +90,10 @@ export function useRemovalFocus<T extends { id: string }>(
     const removal = pending;
     pending = null;
     if (!removal || rows.some(row => row.id === removal.id)) return;
+    await nextTick();
+    // Only focus that the removal itself dropped is moved. If the row left for another reason (the action
+    // was cancelled or failed, and a filter hid the row), focus is wherever the person put it: leave it.
+    if (document.activeElement && document.activeElement !== document.body) return;
     const target = rows[removal.index] ?? rows[removal.index - 1];
     if (target) goTo(Math.floor(rows.indexOf(target) / PAGE_SIZE) + 1);
     await nextTick();

@@ -329,6 +329,19 @@ test.describe('accessible groups and trash tables', () => {
     await expect(trashOf('Bravo')).toBeFocused();
   });
 
+  test('leaves focus alone when a cancelled removal is followed by a filter that hides the row', async ({ page }) => {
+    const copies = (name: string) => [chromiumRow(name, 'alice'), chromiumRow(name, 'alice')];
+    await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, ...copies('Alpha'), ...copies('Bravo')] }]);
+    await desktopTable(page).getByRole('row', { name: /Alpha/ }).getByRole('button', { name: 'Mover grupo a la papelera' }).click();
+    await page.getByRole('alertdialog', { name: 'Confirmar acción' }).getByRole('button', { name: 'Cancelar' }).click();
+    const search = page.getByRole('textbox', { name: 'Buscar credenciales' });
+    await search.click();
+    await page.keyboard.type('Bravo');
+    await expect(column(desktopTable(page), 1)).toHaveText(['Bravo']);
+    await expect(search).toBeFocused();
+    await expect(search).toHaveValue('Bravo');
+  });
+
   test('restores from the keyboard and moves focus to a neighbouring row or to the trash title', async ({ page }) => {
     await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, chromiumRow('Alpha', 'alice'), chromiumRow('Bravo', 'bob')] }]);
     const ids = (await (await page.request.get('/api/workspace')).json()).records.map((record: { id: string }) => record.id);
