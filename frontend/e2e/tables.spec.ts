@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
-  bodyRows, column, currentPage, desktopTable, goToPage, pageButtons, pageControl, sortBy,
+  bodyRows, column, columnHeader, currentPage, desktopTable, goToPage, pageButtons, pageControl, sortBy,
 } from './tables';
 
 // Characterization of the desktop tables (native-tables T1): these tests pin how sorting and
@@ -214,6 +214,56 @@ test('shows at most five page numbers around the current page', async ({ page })
   await expect(pageButtons(table)).toHaveText(['2', '3', '4', '5', '6']);
 });
 
+test('sorts when any part of the header cell is clicked', async ({ page }) => {
+  await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, chromiumRow('Bravo', 'bob'), chromiumRow('Alpha', 'carol')] }]);
+  await showAllRecords(page, 2);
+  const table = desktopTable(page);
+  const header = columnHeader(table, 'Usuario');
+  const box = (await header.boundingBox())!;
+  await header.click({ position: { x: box.width - 3, y: 3 } });
+  await expect(column(table, 2)).toHaveText(['bob', 'carol']);
+});
+
+test('returns to the earlier page when a filter that hid the paginator is cleared', async ({ page }) => {
+  await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, ...numberedRows('Alpha', 95)] }]);
+  await showAllRecords(page, 95);
+  const table = desktopTable(page);
+  const search = page.getByRole('textbox', { name: 'Buscar credenciales' });
+  await goToPage(table, 3);
+  await expect(currentPage(table)).toHaveText('3');
+  await search.fill('Alpha 0');
+  await expect(bodyRows(table)).toHaveCount(10);
+  await search.fill('');
+  await expect(currentPage(table)).toHaveText('3');
+  await expect(column(table, 1).first()).toHaveText('Alpha 60');
+});
+
+test('sorts when a taller header cell is clicked outside its button', async ({ page }) => {
+  await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, chromiumRow('Bravo', 'bob'), chromiumRow('Alpha', 'carol')] }]);
+  await showAllRecords(page, 2);
+  const table = desktopTable(page);
+  const header = columnHeader(table, 'Usuario');
+  // A wrapped label elsewhere in the row makes every header cell taller than its button.
+  await header.evaluate(cell => { (cell as HTMLElement).style.height = '80px'; });
+  const box = (await header.boundingBox())!;
+  await header.click({ position: { x: box.width / 2, y: box.height - 4 } });
+  await expect(column(table, 2)).toHaveText(['bob', 'carol']);
+});
+
+test('keeps the earlier page when a row is removed while a filter hides the paginator', async ({ page }) => {
+  await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, ...numberedRows('Alpha', 95)] }]);
+  await showAllRecords(page, 95);
+  const table = desktopTable(page);
+  const search = page.getByRole('textbox', { name: 'Buscar credenciales' });
+  await goToPage(table, 3);
+  await search.fill('Alpha 0');
+  await table.getByRole('row', { name: /Alpha 05/ }).getByRole('button', { name: 'Mover a la papelera' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('button', { name: 'Todas (94)' })).toBeVisible();
+  await search.fill('');
+  await expect(currentPage(table)).toHaveText('3');
+});
+
 test('moves to the previous page when the last one empties', async ({ page }) => {
   await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, ...numberedRows('Alpha', 61)] }]);
   await showAllRecords(page, 61);
@@ -224,4 +274,161 @@ test('moves to the previous page when the last one empties', async ({ page }) =>
   await expect(page.getByRole('button', { name: 'Todas (60)' })).toBeVisible();
   await expect(currentPage(table)).toHaveText('2');
   await expect(column(table, 1).first()).toHaveText('Alpha 30');
+});
+
+test('scrolls a wide table inside itself instead of widening the page', async ({ page }) => {
+  await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, chromiumRow('Alpha', `user-${'x'.repeat(120)}`)] }]);
+  await page.setViewportSize({ width: 900, height: 720 });
+  await showAllRecords(page, 1);
+  await expect(desktopTable(page)).toBeVisible();
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBe(0);
+});
+
+// Accessibility of the native tables (native-tables S3): semantics, keyboard and focus.
+test.describe('accessible records table', () => {
+  test('marks only the sorted column with aria-sort', async ({ page }) => {
+    await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, chromiumRow('Bravo', 'bob'), chromiumRow('Alpha', 'alice')] }]);
+    await showAllRecords(page, 2);
+    const table = desktopTable(page);
+    const sorted = table.locator('thead th[aria-sort]');
+    await expect(sorted).toHaveCount(1);
+    await expect(columnHeader(table, 'Sitio / App')).toHaveAttribute('aria-sort', 'ascending');
+    await sortBy(table, 'Usuario');
+    await expect(sorted).toHaveCount(1);
+    await expect(columnHeader(table, 'Usuario')).toHaveAttribute('aria-sort', 'ascending');
+    await sortBy(table, 'Usuario');
+    await expect(columnHeader(table, 'Usuario')).toHaveAttribute('aria-sort', 'descending');
+    await sortBy(table, 'Usuario');
+    await expect(sorted).toHaveCount(0);
+  });
+
+  test('sorts from the keyboard and keeps focus on the header button', async ({ page }) => {
+    await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, chromiumRow('Bravo', 'bob'), chromiumRow('Alpha', 'carol')] }]);
+    await showAllRecords(page, 2);
+    const table = desktopTable(page);
+    const button = columnHeader(table, 'Usuario').getByRole('button', { name: 'Usuario', exact: true });
+    await button.focus();
+    await page.keyboard.press('Enter');
+    await expect(column(table, 2)).toHaveText(['bob', 'carol']);
+    await expect(button).toBeFocused();
+    await page.keyboard.press('Space');
+    await expect(column(table, 2)).toHaveText(['carol', 'bob']);
+    await expect(button).toBeFocused();
+  });
+
+  test('names the paginator and its controls in Spanish and marks the current page', async ({ page }) => {
+    await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, ...numberedRows('Alpha', 95)] }]);
+    await showAllRecords(page, 95);
+    const nav = desktopTable(page).getByRole('navigation', { name: 'Paginación' });
+    for (const name of ['Primera página', 'Página anterior', 'Página 1', 'Página 2', 'Página 3', 'Página 4', 'Página siguiente', 'Última página']) {
+      await expect(nav.getByRole('button', { name, exact: true })).toBeVisible();
+    }
+    await expect(nav.getByRole('button', { name: 'Página 1', exact: true })).toHaveAttribute('aria-current', 'page');
+    await expect(nav.locator('[aria-current]')).toHaveCount(1);
+  });
+
+  test('keeps focus in the paginator when the control used becomes disabled', async ({ page }) => {
+    await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, ...numberedRows('Alpha', 95)] }]);
+    await showAllRecords(page, 95);
+    const nav = desktopTable(page).getByRole('navigation', { name: 'Paginación' });
+    const control = (name: string) => nav.getByRole('button', { name, exact: true });
+    await control('Última página').focus();
+    await page.keyboard.press('Enter');
+    await expect(control('Página 4')).toHaveAttribute('aria-current', 'page');
+    await expect(control('Página 4')).toBeFocused();
+    await control('Página anterior').focus();
+    await page.keyboard.press('Enter');
+    await expect(control('Página 3')).toHaveAttribute('aria-current', 'page');
+    await expect(control('Página anterior')).toBeFocused();
+    await control('Primera página').focus();
+    await page.keyboard.press('Enter');
+    await expect(control('Página 1')).toBeFocused();
+  });
+
+  test('moves focus to the previous row when moving the only row of the last page to the trash', async ({ page }) => {
+    await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, ...numberedRows('Alpha', 31)] }]);
+    await showAllRecords(page, 31);
+    const table = desktopTable(page);
+    await goToPage(table, 'last');
+    const trashOf = (name: string) => table.getByRole('row', { name: new RegExp(name) }).getByRole('button', { name: 'Mover a la papelera' });
+    await trashOf('Alpha 30').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('button', { name: 'Todas (30)' })).toBeVisible();
+    await expect(bodyRows(table)).toHaveCount(30);
+    await expect(trashOf('Alpha 29')).toBeFocused();
+  });
+
+  test('moves focus to a neighbouring row, or to the section title, after moving a row to the trash', async ({ page }) => {
+    await seed(page, [{ name: 'chrome.csv', lines: [
+      CHROMIUM_HEADER, chromiumRow('Alpha', 'alice'), chromiumRow('Bravo', 'bob'), chromiumRow('Charlie', 'carol'),
+    ] }]);
+    await showAllRecords(page, 3);
+    const trashOf = (name: string) => desktopTable(page).getByRole('row', { name: new RegExp(name) })
+      .getByRole('button', { name: 'Mover a la papelera' });
+    await trashOf('Bravo').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('button', { name: 'Todas (2)' })).toBeVisible();
+    await expect(trashOf('Charlie')).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('button', { name: 'Todas (1)' })).toBeVisible();
+    await expect(trashOf('Alpha')).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('button', { name: 'Todas (0)' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Explorar y consolidar' })).toBeFocused();
+  });
+});
+
+test.describe('accessible groups and trash tables', () => {
+  test('sorts groups from the keyboard and moves focus after moving a group to the trash', async ({ page }) => {
+    const copies = (name: string, count: number) => Array.from({ length: count }, () => chromiumRow(name, 'alice'));
+    await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, ...copies('Alpha', 2), ...copies('Bravo', 3), ...copies('Charlie', 2)] }]);
+    const table = desktopTable(page);
+    await expect(columnHeader(table, 'Sitio')).toHaveAttribute('aria-sort', 'ascending');
+    const copiesButton = columnHeader(table, 'Copias').getByRole('button', { name: 'Copias', exact: true });
+    await copiesButton.focus();
+    await page.keyboard.press('Enter');
+    await expect(columnHeader(table, 'Copias')).toHaveAttribute('aria-sort', 'ascending');
+    await expect(copiesButton).toBeFocused();
+    await expect(column(table, 1)).toHaveText(['Alpha', 'Charlie', 'Bravo']);
+
+    const trashOf = (name: string) => table.getByRole('row', { name: new RegExp(name) })
+      .getByRole('button', { name: 'Mover grupo a la papelera' });
+    await trashOf('Charlie').focus();
+    await page.keyboard.press('Enter');
+    await page.getByRole('alertdialog', { name: 'Confirmar acción' }).getByRole('button', { name: 'Mover a la papelera', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Duplicados (2)' })).toBeVisible();
+    await expect(trashOf('Bravo')).toBeFocused();
+  });
+
+  test('leaves focus alone when a cancelled removal is followed by a filter that hides the row', async ({ page }) => {
+    const copies = (name: string) => [chromiumRow(name, 'alice'), chromiumRow(name, 'alice')];
+    await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, ...copies('Alpha'), ...copies('Bravo')] }]);
+    await desktopTable(page).getByRole('row', { name: /Alpha/ }).getByRole('button', { name: 'Mover grupo a la papelera' }).click();
+    await page.getByRole('alertdialog', { name: 'Confirmar acción' }).getByRole('button', { name: 'Cancelar' }).click();
+    const search = page.getByRole('textbox', { name: 'Buscar credenciales' });
+    await search.click();
+    await page.keyboard.type('Bravo');
+    await expect(column(desktopTable(page), 1)).toHaveText(['Bravo']);
+    await expect(search).toBeFocused();
+    await expect(search).toHaveValue('Bravo');
+  });
+
+  test('restores from the keyboard and moves focus to a neighbouring row or to the trash title', async ({ page }) => {
+    await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, chromiumRow('Alpha', 'alice'), chromiumRow('Bravo', 'bob')] }]);
+    const ids = (await (await page.request.get('/api/workspace')).json()).records.map((record: { id: string }) => record.id);
+    expect((await page.request.post('/api/records/trash', { data: { ids } })).ok()).toBe(true);
+    await page.reload();
+    await page.getByRole('button', { name: 'Papelera (2)' }).first().click();
+    const table = desktopTable(page);
+    await expect(table.getByRole('table', { name: 'Credenciales descartadas' })).toBeVisible();
+    const restoreOf = (name: string) => table.getByRole('row', { name: new RegExp(name) }).getByRole('button', { name: 'Restaurar' });
+    await restoreOf('Alpha').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('button', { name: 'Papelera (1)' }).first()).toBeVisible();
+    await expect(restoreOf('Bravo')).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.getByText('La papelera está vacía.')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Credenciales descartadas' })).toBeFocused();
+  });
 });

@@ -1,23 +1,47 @@
 <script setup lang="ts">
-import DataTable from 'primevue/datatable';
-import Column from 'primevue/column';
+import { ref } from 'vue';
+import SortHeader from './SortHeader.vue';
+import TablePaginator from './TablePaginator.vue';
 import TrashIcon from '../TrashIcon.vue';
 import { labelOrigin, labelReview, labelType } from '../labels';
-import { PAGE_SIZE } from '../limits';
+import { useRemovalFocus, useTable } from '../tableState';
 import type { CredentialSummary } from '../types';
 
-defineProps<{ rows: CredentialSummary[]; busy: boolean }>();
-defineEmits<{ edit: [id: string]; trash: [id: string] }>();
+// onTrash is a prop, not an emit, so the table can wait for the action and know when it ends.
+const props = defineProps<{ rows: CredentialSummary[]; busy: boolean; onTrash: (id: string) => unknown }>();
+const emit = defineEmits<{ edit: [id: string] }>();
+const { page, pages, paginated, sorted, visible, sortBy, direction, goTo } = useTable(() => props.rows, { field: 'name', direction: 'ascending' });
+const root = ref<HTMLElement>();
+const removal = useRemovalFocus(root, sorted, goTo);
+
+function trash(row: CredentialSummary): Promise<void> {
+  return removal.run(row, 'trash', () => props.onTrash(row.id));
+}
 </script>
 
 <template>
-  <DataTable :value="rows" dataKey="id" sortField="name" :sortOrder="1" stripedRows removableSort class="desktop-table" :paginator="rows.length>PAGE_SIZE" :rows="PAGE_SIZE">
-    <Column field="name" header="Sitio / App" sortable><template #body="{data:r}"><button class="table-link" @click="$emit('edit', r.id)">{{r.name}}</button><small class="url-truncate">{{r.url}}</small></template></Column>
-    <Column field="username" header="Usuario" sortable/>
-    <Column field="type" header="Tipo" sortable><template #body="{data:r}">{{labelType(r.type)}}</template></Column>
-    <Column field="source" header="Origen" sortable><template #body="{data:r}">{{labelOrigin(r.source)}}</template></Column>
-    <Column field="review" header="Revisión" sortable><template #body="{data:r}"><span class="status" :class="r.review">{{labelReview(r.review)}}</span></template></Column>
-    <Column header="Acciones"><template #body="{data:r}"><div class="row-actions"><button @click="$emit('edit', r.id)">Editar</button><button class="icon-button danger" aria-label="Mover a la papelera" title="Mover a la papelera" :disabled="busy" @click="$emit('trash', r.id)"><TrashIcon /></button></div></template></Column>
-  </DataTable>
-  <div class="mobile-cards"><article v-for="r in rows" :key="r.id" class="record-card"><div class="row-between"><strong>{{r.name}}</strong><span class="status" :class="r.review">{{labelReview(r.review)}}</span></div><p>{{r.username}}</p><p class="muted">{{labelType(r.type)}} · {{labelOrigin(r.source)}}</p><div class="row-actions"><button @click="$emit('edit', r.id)">Editar →</button><button class="icon-button danger" aria-label="Mover a la papelera" :disabled="busy" @click="$emit('trash', r.id)"><TrashIcon /></button></div></article></div>
+  <div ref="root" class="desktop-table">
+    <table aria-label="Credenciales">
+      <thead><tr>
+        <SortHeader label="Sitio / App" :direction="direction('name')" @sort="sortBy('name')" />
+        <SortHeader label="Usuario" :direction="direction('username')" @sort="sortBy('username')" />
+        <SortHeader label="Tipo" :direction="direction('type')" @sort="sortBy('type')" />
+        <SortHeader label="Origen" :direction="direction('source')" @sort="sortBy('source')" />
+        <SortHeader label="Revisión" :direction="direction('review')" @sort="sortBy('review')" />
+        <th scope="col">Acciones</th>
+      </tr></thead>
+      <tbody>
+        <tr v-for="r in visible" :key="r.id" :data-row-id="r.id">
+          <td><button class="table-link" @click="emit('edit', r.id)">{{r.name}}</button><small class="url-truncate">{{r.url}}</small></td>
+          <td>{{r.username}}</td>
+          <td>{{labelType(r.type)}}</td>
+          <td>{{labelOrigin(r.source)}}</td>
+          <td><span class="status" :class="r.review">{{labelReview(r.review)}}</span></td>
+          <td><div class="row-actions"><button @click="emit('edit', r.id)">Editar</button><button class="icon-button danger" data-action="trash" aria-label="Mover a la papelera" title="Mover a la papelera" :disabled="busy" @click="trash(r)"><TrashIcon /></button></div></td>
+        </tr>
+      </tbody>
+    </table>
+    <TablePaginator v-if="paginated" :page="page" :pages="pages" @go="goTo" />
+  </div>
+  <div class="mobile-cards"><article v-for="r in rows" :key="r.id" class="record-card"><div class="row-between"><strong>{{r.name}}</strong><span class="status" :class="r.review">{{labelReview(r.review)}}</span></div><p>{{r.username}}</p><p class="muted">{{labelType(r.type)}} · {{labelOrigin(r.source)}}</p><div class="row-actions"><button @click="$emit('edit', r.id)">Editar →</button><button class="icon-button danger" aria-label="Mover a la papelera" :disabled="busy" @click="onTrash(r.id)"><TrashIcon /></button></div></article></div>
 </template>

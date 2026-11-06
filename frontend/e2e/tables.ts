@@ -5,6 +5,8 @@ import type { Locator, Page } from '@playwright/test';
 
 export type PageControl = 'first' | 'previous' | 'next' | 'last' | number;
 
+const CONTROL_NAMES = { first: 'Primera página', previous: 'Página anterior', next: 'Página siguiente', last: 'Última página' };
+
 export function desktopTable(page: Page): Locator {
   return page.locator('.desktop-table');
 }
@@ -24,18 +26,18 @@ export function columnHeader(table: Locator, name: string): Locator {
 }
 
 export async function sortBy(table: Locator, name: string): Promise<void> {
-  await columnHeader(table, name).click();
+  await columnHeader(table, name).getByRole('button').click();
 }
 
 export function paginator(table: Locator): Locator {
-  return table.locator('.p-paginator');
+  return table.getByRole('navigation', { name: 'Paginación' });
 }
 
 export function pageControl(table: Locator, control: PageControl): Locator {
   if (typeof control === 'number') {
-    return paginator(table).locator('.p-paginator-page', { hasText: new RegExp(`^${control}$`) });
+    return paginator(table).getByRole('button', { name: `Página ${control}`, exact: true });
   }
-  return paginator(table).locator(`.p-paginator-${control === 'previous' ? 'prev' : control}`);
+  return paginator(table).getByRole('button', { name: CONTROL_NAMES[control], exact: true });
 }
 
 export async function goToPage(table: Locator, control: PageControl): Promise<void> {
@@ -44,10 +46,10 @@ export async function goToPage(table: Locator, control: PageControl): Promise<vo
 
 /** The number buttons of the paginator, in order. */
 export function pageButtons(table: Locator): Locator {
-  return paginator(table).locator('.p-paginator-page');
+  return paginator(table).getByRole('button', { name: /^Página \d+$/ });
 }
 
 /** The number button of the page on screen. */
 export function currentPage(table: Locator): Locator {
-  return paginator(table).locator('.p-paginator-page-selected');
+  return paginator(table).locator('[aria-current="page"]');
 }
