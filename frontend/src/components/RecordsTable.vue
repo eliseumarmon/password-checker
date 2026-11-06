@@ -10,7 +10,7 @@ import type { CredentialSummary } from '../types';
 // onTrash is a prop, not an emit, so the table can wait for the action and know when it ends.
 const props = defineProps<{ rows: CredentialSummary[]; busy: boolean; onTrash: (id: string) => unknown }>();
 const emit = defineEmits<{ edit: [id: string] }>();
-const { page, pages, paginated, sorted, visible, sortBy, direction, goTo } = useTable(() => props.rows, { field: 'name', direction: 'ascending' });
+const { page, pages, paginated, sorted, visible, sortBy, direction, goTo } = useTable('records', () => props.rows, { field: 'name', direction: 'ascending' });
 const root = ref<HTMLElement>();
 const removal = useRemovalFocus(root, sorted, goTo);
 

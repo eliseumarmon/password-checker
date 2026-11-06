@@ -8,7 +8,7 @@ import type { CredentialSummary } from '../types';
 
 // onRestore is a prop, not an emit, so the table can wait for the action and know when it ends.
 const props = defineProps<{ rows: CredentialSummary[]; busy: boolean; onRestore: (id: string) => unknown }>();
-const { page, pages, paginated, sorted, visible, sortBy, direction, goTo } = useTable(() => props.rows, { field: 'name', direction: 'ascending' });
+const { page, pages, paginated, sorted, visible, sortBy, direction, goTo } = useTable('trash', () => props.rows, { field: 'name', direction: 'ascending' });
 const root = ref<HTMLElement>();
 const removal = useRemovalFocus(root, sorted, goTo);
 

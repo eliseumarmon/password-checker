@@ -2,7 +2,7 @@
 
 Objetivo: sustituir `DataTable` y `Column` de PrimeVue por tablas HTML nativas con Vue en `RecordsTable`, `GroupsTable` y `TrashView`. Deben conservar su comportamiento, ser accesibles desde el principio y permitir retirar PrimeVue (`primevue`, `@primeuix/themes` y su configuración).
 Rama: `refactor/native-tables` desde `main`, después de integrar `css-tokens`, porque los estilos de la tabla usan sus variables. Entrega: `ask-on-risk`. La previsión es de ~550 líneas cambiadas sin contar `package-lock.json`, por encima de ~400, así que antes del commit que lo supere se pregunta la estrategia de encadenado. T4 (dependencias) va en un commit propio.
-Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso desde el 2026-11-06 (L9); tramo 1 (T1) integrado en `main` (`abf8c3a`); tramo 2 (T2 y T3) integrado en `main` (`99f7b01`); tramo 3 (T4 y T5) hecho y pendiente de integrar (L24-L25).
+Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso desde el 2026-11-06 (L9); tramo 1 (T1) integrado en `main` (`abf8c3a`); tramo 2 (T2 y T3) integrado en `main` (`99f7b01`); tramo 3 (T4 y T5) integrado en `main` (`27325c0`); tramo 4 (T6) hecho y pendiente de integrar (L26). Falta que el usuario acepte las diferencias visuales (S5).
 
 ## Specs
 
@@ -48,6 +48,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - Cada tabla conserva su columna y su dirección de ordenación al salir de su pantalla y volver. La paginación también se conserva mientras siga siendo válida.
   - Hoy se pierde porque `App.vue` cambia de pantalla con `v-if` y cada tabla se desmonta. El estado de orden tiene que vivir fuera del componente; por ejemplo, en el módulo de lógica de S4.
   - Conservarla también al recargar la página es `review-filters` (S3), en la Fase 2.
+  - **Supuesto (L26):** al sustituir los datos (importar o abrir otra sesión), las tablas vuelven a la primera página y conservan el orden elegido.
 
 ## Tasks
 
@@ -67,7 +68,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
 - [x] T5 — Coherencia del plan de dependencias. Ruta: inline. Evidencia en L25.
   - P12 es un paso propio de esta fase, [frontend-major-updates](frontend-major-updates.md) (L7). Al integrar T4, se anota en su Log (su T4) que `primevue` y `@primeuix/themes` ya se retiraron, y en `docs/auditoria-dependencias.md`, que ya no son dependencias.
   - Depende de: T4. `docs/close-dependency-hardening`, que modificaba esos dos archivos, ya está integrada en `main` (L6).
-- [ ] T6 — S8: continuidad de la ordenación y la paginación al cambiar de pantalla, en las tres tablas. RED primero en E2E: ordenar, cambiar de pantalla y volver. Depende de: T3. Ruta: inline.
+- [x] T6 — S8: continuidad de la ordenación y la paginación al cambiar de pantalla, en las tres tablas. RED primero en E2E: ordenar, cambiar de pantalla y volver. Depende de: T3. Ruta: inline. Evidencia en L26.
 
 ## Log
 
@@ -223,3 +224,9 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - **Otras reglas globales de PrimeVue:** el verificador recorrió las reglas de los cuatro `<style>` que inyectaba PrimeVue en `99f7b01`. Las únicas con efecto sin una clase `.p-*` son `color-scheme` y `box-sizing`, las dos de L24. El resto no se usa: variables `--p-*`, `.pi` y `@keyframes p-animate-*`.
   - **Revisión** (`review-risk` y `review-reliability`, con el consentimiento del usuario; riesgo punto 5, elevado a mano): aprobada sin hallazgos y confirmada.
   - **T5:** anotada la retirada en `docs/auditoria-dependencias.md` (dependencias del frontend y H10), `docs/pendiente.md`, `docs/hoja-de-ruta.md`, `frontend-major-updates` (L3), `frontend-bundle` (L6) y `light-theme` (L4). Este último corrige que `app-dark` fuera «solo para PrimeVue»: el tema claro también tendrá que cambiar `color-scheme`.
+- **L26 (2026-11-06).** Tramo 3 integrado en `main` (`27325c0`, `--no-ff`; el contenido es idéntico al de `2c50d1c`), con `Tests` y `Dependency audit` en verde en la rama y en `main`. T6:
+  - **RED:** cinco pruebas nuevas en `tables.spec.ts` (`continuity across screens`), que fallaban: el orden y la página de `RecordsTable` al salir de la pantalla y de la subpestaña; el orden de `GroupsTable` al cambiar de subpestaña y el de `TrashView` al cambiar de pantalla; la última página que queda si la conservada ya no existe al volver; y la primera página, con el mismo orden, tras importar otros archivos.
+  - **GREEN:** `useTable` recibe una clave de tabla (`records`, `groups` o `trash`) y guarda el orden y la página pedida en un `Map` del módulo, fuera de los componentes. Recargar lo borra. El ajuste de la página también se aplica al montar la tabla, porque las filas pueden haber cambiado mientras estaba fuera de pantalla.
+  - **Supuesto, no pedido de forma expresa:** al importar o abrir otra sesión, `resetTablePages()` vuelve a la primera página, porque un número de página de los datos anteriores no significa nada en los nuevos, y conserva el orden elegido, igual que hará `review-filters` al recargar. Sin esto, la memoria habría provocado una regresión: antes, «Todas» siempre empezaba en la página 1 tras importar. **Diferencia con PrimeVue:** si la tabla de Duplicados seguía montada durante la importación, PrimeVue mantenía la página, y ahora vuelve a la 1. La apertura de sesión usa la misma función, pero solo la importación tiene prueba.
+  - **Documentación:** `docs/flujo-usuario.md`, en «Casos y límites relevantes».
+  - Comprobaciones: `npm run build` correcto; `npm run e2e`, 122 de 122; `python -m unittest discover -s tests`, OK; `ruff check .`, sin avisos. Riesgo: ninguno de los puntos de la lista.

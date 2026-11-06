@@ -10,7 +10,7 @@ import type { DuplicateGroup } from '../types';
 // onTrash is a prop, not an emit, so the table can wait for the action and know when it ends.
 const props = defineProps<{ groups: DuplicateGroup[]; busy: boolean; onTrash: (group: DuplicateGroup) => unknown }>();
 const emit = defineEmits<{ open: [group: DuplicateGroup] }>();
-const { page, pages, paginated, sorted, visible, sortBy, direction, goTo } = useTable(() => props.groups, { field: 'name', direction: 'ascending' });
+const { page, pages, paginated, sorted, visible, sortBy, direction, goTo } = useTable('groups', () => props.groups, { field: 'name', direction: 'ascending' });
 const root = ref<HTMLElement>();
 const removal = useRemovalFocus(root, sorted, goTo);
 
