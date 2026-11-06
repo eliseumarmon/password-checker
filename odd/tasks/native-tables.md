@@ -51,7 +51,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
 
 ## Tasks
 
-- [x] T1 — S2, S5, S6: línea base y caracterización sobre PrimeVue. Ruta: inline. Evidencia en L10 y L11. Commits `79cd412` y el de L11.
+- [x] T1 — S2, S5, S6: línea base y caracterización sobre PrimeVue. Ruta: inline. Evidencia en L10-L12. Commits `79cd412`, `0f86c4f` y el de L12.
   - Medición del bundle y capturas de referencia.
   - E2E de caracterización en verde sobre `main`: orden inicial; ciclo de orden en una columna de texto y en `count`; comparación con mayúsculas, acentos y números («a2» frente a «a10»); paginador solo con más de 30 filas; cada control de paginación; página actual al filtrar, al ordenar y al vaciar la última página.
   - Los selectores de tabla y paginador se agrupan en un helper de E2E, para que en T2 solo cambie el helper.
@@ -139,3 +139,8 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - `tables.spec.ts` fija el idioma del navegador en `es-ES`, porque el orden del texto depende de él (`Intl.Collator` sin idioma explícito). Con él, las pruebas definen también lo que debe igualar el comparador nativo de T2.
   - El helper `seed` documenta que solo es seguro porque las E2E se ejecutan en serie contra un único backend.
   - Fechas de `css-tokens`: la integración fue el 2026-11-04 y el cierre del plan, el 2026-11-06. Se aclara en su L8 y en la hoja de ruta.
+- **L12 (2026-11-06).** Segunda revisión de T1 (`review-reliability`, con el consentimiento del usuario), sobre el tramo hasta `0f86c4f`: aprobada y confirmada. Se aplican sus cuatro sugerencias, que no bloqueaban nada:
+  - **Tercera pulsación en `Copias`:** ahora también se comprueba. Los grupos llegan ordenados por nombre, así que los datos se eligieron para que ese orden (3, 10, 2) no coincida ni con el ascendente ni con el descendente. Con los nombres anteriores, el orden de llegada coincidía con el descendente y la prueba no distinguía los dos casos.
+  - **Valores vacíos:** PrimeVue considera vacío tanto el nulo como la cadena vacía (`isEmpty` de `@primeuix/utils`), y los deja al final en las dos direcciones. Ahora lo fija una prueba con un usuario vacío. Los nulos no llegan a la tabla, porque la API devuelve cadenas y números.
+  - **Papelera:** una prueba fija su orden inicial y el ciclo de ordenación. Su paginación ya la cubría `review.spec.ts`.
+  - **Evidencia tras fijar el idioma:** `npm run build` es correcto y `npm run e2e` pasa 101 de 101, con `tables.spec.ts` en 11 pruebas.

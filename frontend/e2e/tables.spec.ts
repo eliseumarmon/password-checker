@@ -67,12 +67,45 @@ test('cycles a column through ascending, descending and the original order', asy
 
 test('sorts the number of copies as numbers', async ({ page }) => {
   const copies = (name: string, count: number) => Array.from({ length: count }, () => chromiumRow(name, 'alice'));
-  await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, ...copies('Ten', 10), ...copies('Two', 2), ...copies('Three', 3)] }]);
+  await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, ...copies('Bravo', 10), ...copies('Charlie', 2), ...copies('Alpha', 3)] }]);
   const table = desktopTable(page);
   await sortBy(table, 'Copias');
   await expect(column(table, 4)).toHaveText(['2', '3', '10']);
   await sortBy(table, 'Copias');
   await expect(column(table, 4)).toHaveText(['10', '3', '2']);
+  await sortBy(table, 'Copias');
+  // The groups arrive ordered by name, so the original order is neither of the other two.
+  await expect(column(table, 4)).toHaveText(['3', '10', '2']);
+});
+
+test('keeps empty values last in both directions', async ({ page }) => {
+  await seed(page, [{ name: 'chrome.csv', lines: [
+    CHROMIUM_HEADER, chromiumRow('Bravo', 'bob'), chromiumRow('Empty', ''), chromiumRow('Alpha', 'alice'),
+  ] }]);
+  await showAllRecords(page, 3);
+  const table = desktopTable(page);
+  await sortBy(table, 'Usuario');
+  await expect(column(table, 1)).toHaveText(['Alpha', 'Bravo', 'Empty']);
+  await sortBy(table, 'Usuario');
+  await expect(column(table, 1)).toHaveText(['Bravo', 'Alpha', 'Empty']);
+});
+
+test('sorts the trash table like the others', async ({ page }) => {
+  await seed(page, [{ name: 'chrome.csv', lines: [
+    CHROMIUM_HEADER, chromiumRow('Charlie', 'carol'), chromiumRow('Alpha', 'dave'), chromiumRow('Bravo', 'bob'),
+  ] }]);
+  const ids = (await (await page.request.get('/api/workspace')).json()).records.map((record: { id: string }) => record.id);
+  expect((await page.request.post('/api/records/trash', { data: { ids } })).ok()).toBe(true);
+  await page.reload();
+  await page.getByRole('button', { name: 'Papelera (3)' }).first().click();
+  const table = desktopTable(page);
+  await expect(column(table, 1)).toHaveText(['Alpha', 'Bravo', 'Charlie']);
+  await sortBy(table, 'Usuario');
+  await expect(column(table, 2)).toHaveText(['bob', 'carol', 'dave']);
+  await sortBy(table, 'Usuario');
+  await expect(column(table, 2)).toHaveText(['dave', 'carol', 'bob']);
+  await sortBy(table, 'Usuario');
+  await expect(column(table, 1)).toHaveText(['Charlie', 'Alpha', 'Bravo']);
 });
 
 test('sorts by the stored value, not by the label it shows', async ({ page }) => {
