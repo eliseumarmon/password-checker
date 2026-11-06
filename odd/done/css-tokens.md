@@ -2,7 +2,7 @@
 
 Objetivo: sustituir los colores escritos directamente en `frontend/src/style.css` por variables CSS en `:root`, sin ningún cambio visual. Es la base del futuro tema claro y de los estilos de tabla y de foco de la Fase 1.
 Rama: `refactor/css-tokens` desde `main`. Primer bloque de la Fase 1: no depende de otros; `native-tables` y `keyboard-accessibility` usan sus variables. Entrega: `ask-on-risk`, previsión ~60 líneas cambiadas (las 38 líneas de `style.css` son muy largas), un único PR.
-Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`; además, la comparación de capturas de S2. Estado: T1-T3 hechas el 2026-11-04 (L4-L7), pendiente de integrar en `main`.
+Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`; además, la comparación de capturas de S2. Estado: **hecho**. Integrado en `main` el 2026-11-04 (`3f6aea3`), con la CI en verde (L8).
 
 ## Specs
 
@@ -132,3 +132,6 @@ Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, tambi
 | texto | `--notice-warning-text` | `--notice-warning-bg` | 9.24:1 | 4.5:1 | sí | `.warning` (calculado) |
 | texto | `--notice-warning-footer` | `--notice-warning-bg` | 7.24:1 | 4.5:1 | sí | `.warning-footer` (calculado) |
 | indicador | `--success` | `--surface-track` | 5.55:1 | 3:1 | sí | `.progress span` (calculado) |
+
+- **L8 (2026-11-06).** Integrado en `main` (`3f6aea3`, `--no-ff`), con la CI en verde en la rama y en `main`. El plan pasa a `odd/done`. Petición del usuario: «Comprobar la accesibilidad sí me parece interesante. Lo dejamos anotado y seguimos con native-tables y pon css-tokens como hecho.»
+  - Queda anotada en `docs/pendiente.md` una prueba automática de contraste que exija 4,5:1 al texto y 3:1 a los bordes de control y al foco, en lugar de fijar los valores exactos de los colores. Antes, el usuario tiene que decidir qué hacer con los seis bordes de control de L7, o la prueba fallaría desde el principio.
