@@ -2,7 +2,7 @@
 
 Objetivo: sustituir `DataTable` y `Column` de PrimeVue por tablas HTML nativas con Vue en `RecordsTable`, `GroupsTable` y `TrashView`. Deben conservar su comportamiento, ser accesibles desde el principio y permitir retirar PrimeVue (`primevue`, `@primeuix/themes` y su configuración).
 Rama: `refactor/native-tables` desde `main`, después de integrar `css-tokens`, porque los estilos de la tabla usan sus variables. Entrega: `ask-on-risk`. La previsión es de ~550 líneas cambiadas sin contar `package-lock.json`, por encima de ~400, así que antes del commit que lo supere se pregunta la estrategia de encadenado. T4 (dependencias) va en un commit propio.
-Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso desde el 2026-11-06 (L9); tramo 1 (T1) integrado en `main` (`abf8c3a`); tramo 2 (T2 y T3) integrado en `main` (`99f7b01`); tramo 3 (T4 y T5) en curso (L24).
+Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso desde el 2026-11-06 (L9); tramo 1 (T1) integrado en `main` (`abf8c3a`); tramo 2 (T2 y T3) integrado en `main` (`99f7b01`); tramo 3 (T4 y T5) hecho y pendiente de integrar (L24-L25).
 
 ## Specs
 
@@ -60,11 +60,11 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - RED primero en las pruebas nuevas de teclado y accesibilidad: `aria-sort` solo en la columna ordenada, nombres del paginador en español, foco tras ordenar y tras paginar, y el supuesto de S3.
   - La caracterización de T1 sigue en verde.
 - [x] T3 — S2-S5: `GroupsTable` y `TrashView` nativas, reutilizando lo de T2, con sus pruebas de teclado. Ruta: inline. Evidencia en L17.
-- [ ] T4 — S6: retirada de PrimeVue. Ruta: inline.
+- [x] T4 — S6: retirada de PrimeVue. Ruta: inline. Commit `2a3f1ba`; evidencia en L24 y L25.
   - Cambios en `main.ts`, `package.json` y `package-lock.json` (con `npm uninstall`); se quitan los selectores `.p-*` y la clase `app-dark` si queda sin uso.
   - Medición posterior y comparación con T1 en el Log; capturas finales (S5).
   - Riesgo: punto 5 (dependencias). Commit propio y verificación independiente.
-- [ ] T5 — Coherencia del plan de dependencias. Ruta: inline.
+- [x] T5 — Coherencia del plan de dependencias. Ruta: inline. Evidencia en L25.
   - P12 es un paso propio de esta fase, [frontend-major-updates](frontend-major-updates.md) (L7). Al integrar T4, se anota en su Log (su T4) que `primevue` y `@primeuix/themes` ya se retiraron, y en `docs/auditoria-dependencias.md`, que ya no son dependencias.
   - Depende de: T4. `docs/close-dependency-hardening`, que modificaba esos dos archivos, ya está integrada en `main` (L6).
 - [ ] T6 — S8: continuidad de la ordenación y la paginación al cambiar de pantalla, en las tres tablas. RED primero en E2E: ordenar, cambiar de pantalla y volver. Depende de: T3. Ruta: inline.
@@ -197,7 +197,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 116 de 116.
 - **L23 (2026-11-06).** Revisión de `4ea07f2` (`review-reliability`, con el consentimiento del usuario): aprobada y confirmada. Su única sugerencia, `R3-pending-retention-unproved`, queda **pendiente**, sin corregir: probar con una E2E que retrase la petición que una actualización intermedia de la lista no desvía el foco, y guardar el vecino por identidad en lugar de por índice. Solo afecta a cambios de la lista que no mueven el foco durante una acción en curso. Una reordenación por el usuario ya queda protegida por la comprobación del foco en `<body>`. Tras cinco revisiones aprobadas seguidas, el tramo 2 se da por cerrado.
 - **L24 (2026-11-06).** Tramo 2 integrado en `main` (`99f7b01`, `--no-ff`; el contenido es idéntico al de `78b41a3`), con la CI en verde en la rama y en `main`. La rama sigue desde `99f7b01` para el tramo 3. T4, retirada de PrimeVue (excepción a RED: no cambia ningún comportamiento; lo prueban la comparación de estilos y la suite):
-  - **Dependencias:** `npm uninstall primevue @primeuix/themes`. `package-lock.json` solo pierde entradas: 7 paquetes (`primevue`, `@primevue/core`, `@primevue/icons`, `@primeuix/styled`, `@primeuix/styles`, `@primeuix/themes` y `@primeuix/utils`), ninguno añadido ni cambiado, de 120 a 113. `npm audit`: 0 vulnerabilidades.
+  - **Dependencias:** `npm uninstall primevue @primeuix/themes`. `package-lock.json` solo pierde entradas: 7 paquetes (`primevue`, `@primevue/core`, `@primevue/icons`, `@primeuix/styled`, `@primeuix/styles`, `@primeuix/themes` y `@primeuix/utils`), ninguno añadido ni cambiado, de 119 a 112 sin contar la raíz. `npm audit`: 0 vulnerabilidades.
   - **Código:** `main.ts` sin `app.use(PrimeVue…)`, `index.html` sin `app-dark` y `style.css` sin selectores `.p-*`. Ya no queda ninguna mención en `src`, `e2e`, `index.html` ni `package.json`.
   - **Hallazgo: PrimeVue aportaba estilos globales que nadie había documentado.** Se detectó comparando los estilos calculados antes y después de retirarlo, en los mismos 20 estados que `css-tokens` (S2). La primera comparación dio 15 902 diferencias:
     - `color-scheme: dark`, por la clase `app-dark`, que no era «solo para PrimeVue» como decían S6 y `light-theme` L3. Oscurece los controles nativos (desplegables, casillas y barras de desplazamiento) y los colores del sistema. Sin él, 36 elementos también cambiaban de color de texto.
@@ -213,3 +213,13 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
     El JS baja un 84 % (un 75 % con gzip). El CSS sube 669 bytes (123 con gzip), por los estilos de la tabla nativa. **Vite ya no avisa de ningún chunk de más de 500 kB.**
   - **Capturas finales** en 1440 × 900, 1280 × 720 y 390 × 844: sin desplazamiento horizontal, con la tabla en escritorio y las tarjetas en 390 px. Las diferencias con la línea base son las de L16 (iconos de orden y paginador). **S5 pide que el usuario las acepte: pendiente.**
   - Comprobaciones: `npm run build` correcto; `npm run e2e`, 117 de 117; `python -m unittest discover -s tests`, OK; `ruff check .`, sin avisos. Riesgo: punto 5 (dependencias); pendiente de verificación independiente.
+- **L25 (2026-11-06).** Verificación y revisión de T4, y T5:
+  - **Verificación independiente** (`2a3f1ba` frente a `99f7b01`, en copias limpias): sin bloqueos. Confirma:
+    - en `package-lock.json`, 7 entradas eliminadas y 112 conservadas sin cambios, y ninguna conservada depende de las eliminadas;
+    - `npm ci`, `npm ls --all` y `npm audit` sin problemas (0 vulnerabilidades);
+    - sin rastro de PrimeVue en el código fuente ni en `dist`;
+    - los tamaños de L24, byte a byte, y que Vite no avisa;
+    - `npm run e2e`, 117 de 117.
+  - **Otras reglas globales de PrimeVue:** el verificador recorrió las reglas de los cuatro `<style>` que inyectaba PrimeVue en `99f7b01`. Las únicas con efecto sin una clase `.p-*` son `color-scheme` y `box-sizing`, las dos de L24. El resto no se usa: variables `--p-*`, `.pi` y `@keyframes p-animate-*`.
+  - **Revisión** (`review-risk` y `review-reliability`, con el consentimiento del usuario; riesgo punto 5, elevado a mano): aprobada sin hallazgos y confirmada.
+  - **T5:** anotada la retirada en `docs/auditoria-dependencias.md` (dependencias del frontend y H10), `docs/pendiente.md`, `docs/hoja-de-ruta.md`, `frontend-major-updates` (L3), `frontend-bundle` (L6) y `light-theme` (L4). Este último corrige que `app-dark` fuera «solo para PrimeVue»: el tema claro también tendrá que cambiar `color-scheme`.

@@ -74,6 +74,8 @@ Sin vulnerabilidades conocidas en el frontend: `npm audit` da 0 en producción y
 | `vue-tsc` | desarrollo | `^3.0.0` | 3.3.13 | 3.3.14 | 3.3.14 |
 | `@playwright/test` | desarrollo | `^1.64.1` | 1.64.1 | 1.64.1 | 1.64.1 |
 
+**Actualización (2026-11-06):** `primevue` y `@primeuix/themes` ya no son dependencias. Se retiraron al pasar a tablas HTML nativas ([native-tables](../odd/tasks/native-tables.md), T4). La tabla refleja el momento de la auditoría.
+
 - **`package-lock.json`:** `lockfileVersion` 3, 119 entradas (74 de desarrollo, 53 opcionales por plataforma; la CI en Linux instala 70). Todas se resuelven desde `https://registry.npmjs.org/` con `integrity` SHA-512; `node_modules` coincide con el lockfile (`npm ls` sin errores).
 - **Scripts de instalación:** solo `esbuild` 0.28.2 (verifica su binario de plataforma) y `fsevents` (opcional, solo macOS). Ambos con firma verificada.
 - La CI instala con `npm ci --no-audit --no-fund`: reproducible con el lockfile.
@@ -166,6 +168,7 @@ Las cuatro acciones son de GitHub y se fijan por etiqueta mayor (`@v7`), que pue
 
 - `primevue` 4.x no publica desde 2026-04-08, `@primeuix/themes` 1.x desde 2025-09-27, `pinia` 3.x desde 2025-11-05 y `vue-router` 4.x desde 2025-12-11; todas tienen una versión mayor posterior. `vite` 7.x y `typescript` 5.9 también están por detrás, pero `vite` 7 sigue recibiendo versiones (7.3.7, 2026-10-06).
 - No hay vulnerabilidades conocidas, y la exposición es limitada (sin HTML dinámico, CSP estricta).
+- **Actualización (2026-11-06):** este hallazgo ya no se aplica a `primevue` ni a `@primeuix/themes`, porque se retiraron ([native-tables](../odd/tasks/native-tables.md), T4).
 - **Riesgo:** que una corrección futura solo llegue a la versión mayor nueva y obligue a migrar con prisa.
 - **Ámbito:** producción (bundle) y build.
 

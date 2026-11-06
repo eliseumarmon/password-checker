@@ -16,7 +16,7 @@ Este documento reúne lo que la aplicación todavía no hace: limitaciones conoc
 - Prueba automática de contraste: medir los pares de texto, borde de control y foco en uso, y exigir 4,5:1 al texto y 3:1 a lo demás (WCAG 1.4.3 y 1.4.11), sin fijar los valores exactos de los colores. Antes hay que decidir qué hacer con los seis bordes de control que no llegan a 3:1 ([css-tokens](../odd/done/css-tokens.md), L7); corregirlos es un cambio visual.
 - Dependencias: el endurecimiento está completado ([auditoría de dependencias](auditoria-dependencias.md) y plan en [dependency-hardening](../odd/done/dependency-hardening.md)). Las medidas que quedaban tienen su propio plan, enlazado desde la [hoja de ruta](hoja-de-ruta.md#fase-0--endurecimiento-de-dependencias).
 - Una evaluación local de fortaleza más completa.
-- Optimización del bundle frontend: analizar el aviso de Vite por un chunk superior a 500 kB; valorar división de código y carga diferida sin ocultar el aviso aumentando únicamente el umbral.
+- Optimización del bundle frontend: tras retirar PrimeVue, Vite ya no avisa de ningún chunk de más de 500 kB (JS de 117 kB, 43 kB con gzip). Queda retirar `vue-router`, que no se usa ([frontend-bundle](../odd/tasks/frontend-bundle.md)).
 - Identidad de servicios y duplicados: definir si las credenciales se identifican por la URL/URI encontrada al importar o si se vinculan a un servicio lógico común (web, Android, iOS). Conservar las asociaciones originales y evaluar las consecuencias para la detección de duplicados; pertenecer al mismo servicio no implica fusionarlas automáticamente.
 
 ## Funcionalidades planificadas
