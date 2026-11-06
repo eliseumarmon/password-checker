@@ -2,7 +2,7 @@
 
 Objetivo: sustituir `DataTable` y `Column` de PrimeVue por tablas HTML nativas con Vue en `RecordsTable`, `GroupsTable` y `TrashView`. Deben conservar su comportamiento, ser accesibles desde el principio y permitir retirar PrimeVue (`primevue`, `@primeuix/themes` y su configuración).
 Rama: `refactor/native-tables` desde `main`, después de integrar `css-tokens`, porque los estilos de la tabla usan sus variables. Entrega: `ask-on-risk`. La previsión es de ~550 líneas cambiadas sin contar `package-lock.json`, por encima de ~400, así que antes del commit que lo supere se pregunta la estrategia de encadenado. T4 (dependencias) va en un commit propio.
-Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: planificado, sin empezar.
+Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso desde el 2026-11-06 (L9); T1 hecha (L10).
 
 ## Specs
 
@@ -51,7 +51,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
 
 ## Tasks
 
-- [ ] T1 — S2, S5, S6: línea base y caracterización sobre PrimeVue. Ruta: inline.
+- [x] T1 — S2, S5, S6: línea base y caracterización sobre PrimeVue. Ruta: inline. Evidencia en L10.
   - Medición del bundle y capturas de referencia.
   - E2E de caracterización en verde sobre `main`: orden inicial; ciclo de orden en una columna de texto y en `count`; comparación con mayúsculas, acentos y números («a2» frente a «a10»); paginador solo con más de 30 filas; cada control de paginación; página actual al filtrar, al ordenar y al vaciar la última página.
   - Los selectores de tabla y paginador se agrupan en un helper de E2E, para que en T2 solo cambie el helper.
@@ -121,3 +121,17 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - T5 ya no espera a otra rama, solo a T4.
 - **L7 (2026-11-04).** `dependency-hardening` pasa a `odd/done`, y P12 sale de él a un paso propio de esta fase, [frontend-major-updates](frontend-major-updates.md). T5 anota allí la retirada de PrimeVue. Encargo en `odd/done/roadmap-horizons.md`, L1.
 - **L8 (2026-11-04).** Anotaciones del usuario sobre una conversación externa, pegada en la sesión, para añadirlas a la hoja de ruta. Se añaden S8 y T6: la ordenación de cada tabla se conserva al cambiar de pantalla. La conversación la situaba aquí («Fase 1 · native-tables»), y la continuidad tras recargar, en `review-filters`.
+- **L9 (2026-11-06).** El usuario aprueba empezar: «Comprobar la accesibilidad sí me parece interesante. Lo dejamos anotado y seguimos con native-tables y pon css-tokens como hecho.» `css-tokens` está integrado en `main` (`3f6aea3`) y su plan está en `odd/done` (`8ea75e7`). Rama `refactor/native-tables` creada desde `8ea75e7`.
+- **L10 (2026-11-06).** T1, línea base sobre PrimeVue 4.5.5.
+  - **Caracterización:** `frontend/e2e/tables.spec.ts`, con 9 pruebas, en verde sin tocar el código de la aplicación. Excepción a RED: fijan un comportamiento que ya existe. Los selectores de tabla, cabecera y paginador están en `frontend/e2e/tables.ts`; `review.spec.ts` ya no usa clases `.p-*` directamente, así que en T2 solo cambia ese módulo.
+  - **Comportamiento observado,** que coincide con el código de PrimeVue (`sortSingle`, `onColumnHeaderClick` y `sort` de `@primeuix/utils`):
+    - El texto se compara con `Intl.Collator(undefined, { numeric: true })`: «a2» va antes que «a10», los acentos no separan («Álamo» antes que «alpha») y, entre mayúsculas y minúsculas, la minúscula va primero («beta» antes que «Beta»). Los números se comparan como números. Los valores nulos van siempre al final. La ordenación es estable.
+    - Se ordena por el valor guardado: `unknown` va después de `firefox`, aunque su etiqueta, «Desconocido», iría antes.
+    - La tercera pulsación deja las filas en el orden en que llegan, no en el orden inicial por nombre.
+    - Ordenar vuelve a la página 1.
+    - Si un filtro deja menos páginas que la actual, se muestra la última que queda. Si la página actual sigue existiendo, se queda en ella, también al quitar el filtro. Si la última página se vacía (por ejemplo, al mover su única fila a la papelera), se pasa a la anterior.
+    - El paginador tiene «primera», «anterior», los números, «siguiente» y «última». En la página 1, «primera» y «anterior» están deshabilitados; en la última, «siguiente» y «última». Muestra como mucho cinco números, centrados en la página actual siempre que se pueda.
+    - No se detectó ningún comportamiento defectuoso (S2).
+  - **Bundle** (`npm run build`, gzip de nivel 9 con `zlib` de Node): `index-*.js`, 751 412 bytes (172 592 con gzip); `index-*.css`, 15 670 bytes (4006 con gzip). Vite avisa de un chunk de más de 500 kB.
+  - **Capturas de referencia** fuera del repositorio, en 1440 × 900, 1280 × 720 y 390 × 844: Duplicados, Todas (con paginador), Todas ordenada por usuario y Papelera. En ninguna hay desplazamiento horizontal. La tabla de escritorio se ve en 1440 y 1280, y no en 390, donde se muestran las tarjetas. Detalles de PrimeVue que no se conservarán tal cual: el botón de la página actual usa el verde del tema Aura, y los iconos de orden son los de PrimeVue.
+  - Comprobaciones: `npm run build` correcto; `npm run e2e`, 99 de 99.
