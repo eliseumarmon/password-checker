@@ -23,3 +23,4 @@ Cada tarea es una funcionalidad con su propia rama, como pedía P12. Este plan s
 
 - **L1 (2026-11-04).** P12 sale de `dependency-hardening` (su L33) a este plan, como paso propio de la Fase 1. Encargo completo en [roadmap-horizons](../done/roadmap-horizons.md), L1.
 - **L2 (2026-11-04).** Decisión sobre `vue-router` y Pinia, tras comprobar el código: `vue-router` no tiene ningún import en `frontend/src` y Pinia sí se usa (`useWorkspace`). Se valoró conservar `vue-router` para la futura navegación multiusuario. La recomendación fue retirarlo, porque el multiusuario llega después de la bóveda (Fase 6) y reinstalarlo entonces es trivial. El usuario decidió retirarlo en la Fase 1 y conservar Pinia (S2).
+- **L3 (2026-11-06).** `native-tables` T4 retira `primevue` y `@primeuix/themes` (`2a3f1ba`), así que este plan no los actualizará. Su T4 sigue abierta hasta que `frontend-bundle` T1 retire `vue-router`.
