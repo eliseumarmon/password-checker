@@ -276,6 +276,12 @@ test('moves to the previous page when the last one empties', async ({ page }) =>
   await expect(column(table, 1).first()).toHaveText('Alpha 30');
 });
 
+test('keeps native controls dark without any table library', async ({ page }) => {
+  await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, chromiumRow('Alpha', 'alice')] }]);
+  // Selects, checkboxes and scrollbars follow the color scheme, which the page has to declare itself.
+  await expect(page.locator('html')).toHaveCSS('color-scheme', 'dark');
+});
+
 test('scrolls a wide table inside itself instead of widening the page', async ({ page }) => {
   await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, chromiumRow('Alpha', `user-${'x'.repeat(120)}`)] }]);
   await page.setViewportSize({ width: 900, height: 720 });

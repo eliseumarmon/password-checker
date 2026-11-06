@@ -2,7 +2,7 @@ import { computed, nextTick, ref, toValue, watch, type MaybeRefOrGetter, type Re
 import { PAGE_SIZE } from './limits';
 
 // Sorting and paging of the desktop tables, without markup (native-tables S4).
-// It reproduces what PrimeVue's DataTable did, as pinned by e2e/tables.spec.ts.
+// e2e/tables.spec.ts pins this behavior.
 
 export type SortDirection = 'ascending' | 'descending';
 export interface SortState<F extends string> { field: F | null; direction: SortDirection }
@@ -48,7 +48,7 @@ export function pageWindow(page: number, pages: number, size = 5): number[] {
 export function useTable<T, F extends keyof T & string = keyof T & string>(rows: MaybeRefOrGetter<readonly T[]>, initial: SortState<NoInfer<F>>) {
   const sort = ref(initial) as Ref<SortState<F>>;
   // The page asked for is kept apart from the page shown: while a filter hides the paginator, the page
-  // asked for survives and comes back when the filter is cleared, as it did with PrimeVue.
+  // asked for survives and comes back when the filter is cleared.
   const requested = ref(1);
   const sorted = computed(() => sortRows(toValue(rows), sort.value));
   const pages = computed(() => pageCount(sorted.value.length));

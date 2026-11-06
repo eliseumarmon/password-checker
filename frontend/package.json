@@ -10,9 +10,7 @@
     "e2e": "playwright test"
   },
   "dependencies": {
-    "@primeuix/themes": "^1.0.0",
     "pinia": "^3.0.0",
-    "primevue": "^4.0.0",
     "vue": "^3.5.0",
     "vue-router": "^4.5.0"
   },
