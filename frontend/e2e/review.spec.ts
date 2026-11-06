@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { bodyRows, desktopTable, goToPage, paginator } from './tables';
 
 // Fictional credentials only, built in memory: real exports never touch the repo.
 const CHROME_CSV = [
@@ -51,13 +52,12 @@ async function seedPaginationRows(page: Page, count: number, duplicates = false,
 }
 
 async function expectThirtyRowsPerPage(page: Page, count: number): Promise<void> {
-  const table = page.locator('.desktop-table');
-  await expect(table.locator('tbody tr')).toHaveCount(30);
-  const paginator = table.locator('.p-paginator');
-  await expect(paginator).toHaveCount(count === 31 ? 1 : 0);
+  const table = desktopTable(page);
+  await expect(bodyRows(table)).toHaveCount(30);
+  await expect(paginator(table)).toHaveCount(count === 31 ? 1 : 0);
   if (count === 31) {
-    await paginator.locator('.p-paginator-next').click();
-    await expect(table.locator('tbody tr')).toHaveCount(1);
+    await goToPage(table, 'next');
+    await expect(bodyRows(table)).toHaveCount(1);
   }
 }
 
