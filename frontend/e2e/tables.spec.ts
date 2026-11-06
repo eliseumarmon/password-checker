@@ -65,6 +65,19 @@ test('cycles a column through ascending, descending and the original order', asy
   await expect(column(table, 2)).toHaveText(['bob', 'carol', 'dave']);
 });
 
+test('keeps tied rows in their original order in both directions', async ({ page }) => {
+  await seed(page, [{ name: 'chrome.csv', lines: [
+    CHROMIUM_HEADER, chromiumRow('Charlie', 'same'), chromiumRow('Alpha', 'other'), chromiumRow('Bravo', 'same'),
+  ] }]);
+  await showAllRecords(page, 3);
+  const table = desktopTable(page);
+  await sortBy(table, 'Usuario');
+  await expect(column(table, 1)).toHaveText(['Alpha', 'Charlie', 'Bravo']);
+  // Descending is not the ascending order reversed: the tied rows keep their original order.
+  await sortBy(table, 'Usuario');
+  await expect(column(table, 1)).toHaveText(['Charlie', 'Bravo', 'Alpha']);
+});
+
 test('sorts the number of copies as numbers', async ({ page }) => {
   const copies = (name: string, count: number) => Array.from({ length: count }, () => chromiumRow(name, 'alice'));
   await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, ...copies('Bravo', 10), ...copies('Charlie', 2), ...copies('Alpha', 3)] }]);

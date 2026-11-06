@@ -26,7 +26,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - La ordenación se activa con un `<button>` dentro de la cabecera, operable con `Tab`, `Enter` y `Espacio`. Solo la columna ordenada lleva `aria-sort` (`ascending` o `descending`), según el patrón de tabla ordenable de WAI-ARIA APG.
   - El paginador es un `<nav>` con nombre accesible. Sus botones tienen nombres en español («Primera página», «Página anterior», «Página N», «Página siguiente», «Última página») y la página actual lleva `aria-current="page"`.
   - Foco: tras ordenar, sigue en el botón de la cabecera. Tras activar un control de paginación, nunca cae en `<body>`, tampoco cuando ese control queda deshabilitado al llegar al principio o al final.
-  - **Supuesto, a confirmar al aprobar el plan:** si una acción quita del listado la fila que tiene el foco (mover a la papelera, restaurar), el foco pasa a la misma acción de la fila siguiente, o de la anterior si era la última, o al título de la sección si no quedan filas. Hoy el foco se pierde.
+  - **Confirmado por el usuario (L13):** si una acción quita del listado la fila que tiene el foco (mover a la papelera, restaurar), el foco pasa a la misma acción de la fila siguiente, o de la anterior si era la última, o al título de la sección si no quedan filas. Hoy el foco se pierde.
 - **S4 — Reutilización.** «3. Reutilización: separar la lógica de ordenación y paginación de la representación visual, sin introducir abstracciones innecesarias.»
   - La lógica vive en un único módulo TypeScript sin plantilla, usado por las tres tablas: estado de orden, ciclo ascendente/descendente/sin orden, comparación, corte por páginas y ajuste de la página cuando cambian las filas.
   - De la presentación solo se comparten el botón de cabecera ordenable y el paginador. Cada tabla conserva su propio marcado de columnas. No se crea un componente `DataTable` genérico ni una configuración de columnas.
@@ -51,7 +51,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
 
 ## Tasks
 
-- [x] T1 — S2, S5, S6: línea base y caracterización sobre PrimeVue. Ruta: inline. Evidencia en L10-L12. Commits `79cd412`, `0f86c4f` y el de L12.
+- [x] T1 — S2, S5, S6: línea base y caracterización sobre PrimeVue. Ruta: inline. Evidencia en L10-L15. Commits `79cd412`, `0f86c4f`, `267d79b` y el de L15. Tramo 1 (L14).
   - Medición del bundle y capturas de referencia.
   - E2E de caracterización en verde sobre `main`: orden inicial; ciclo de orden en una columna de texto y en `count`; comparación con mayúsculas, acentos y números («a2» frente a «a10»); paginador solo con más de 30 filas; cada control de paginación; página actual al filtrar, al ordenar y al vaciar la última página.
   - Los selectores de tabla y paginador se agrupan en un helper de E2E, para que en T2 solo cambie el helper.
@@ -144,3 +144,12 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - **Valores vacíos:** PrimeVue considera vacío tanto el nulo como la cadena vacía (`isEmpty` de `@primeuix/utils`), y los deja al final en las dos direcciones. Ahora lo fija una prueba con un usuario vacío. Los nulos no llegan a la tabla, porque la API devuelve cadenas y números.
   - **Papelera:** una prueba fija su orden inicial y el ciclo de ordenación. Su paginación ya la cubría `review.spec.ts`.
   - **Evidencia tras fijar el idioma:** `npm run build` es correcto y `npm run e2e` pasa 101 de 101, con `tables.spec.ts` en 11 pruebas.
+- **L13 (2026-11-06).** El usuario confirma el supuesto de foco de S3: «Sí, el funcionamiento del foco me parece concreto.» S3 pasa de supuesto a requisito.
+- **L14 (2026-11-06).** Estrategia de entrega, elegida por el usuario: «Por tramos a main (Recomendado)». Cada tramo se integra en `main` cuando pasa la CI y el usuario lo aprueba:
+  1. T1, solo pruebas, en `refactor/native-tables` (desde `79cd412` hasta el commit de L15).
+  2. T2 y T3, las tablas nativas.
+  3. T4 y T5, la retirada de PrimeVue (riesgo de dependencias, aparte).
+  4. T6, el orden al cambiar de pantalla.
+  Cada tramo siguiente parte de `main` con el anterior ya integrado.
+- **L15 (2026-11-06).** Tercera revisión de T1 (`review-reliability`, con el consentimiento del usuario), sobre el tramo hasta `267d79b`: aprobada y confirmada. Su sugerencia, que no bloqueaba nada: fijar que la ordenación es estable. Se añade una prueba con dos filas empatadas. En el descendente conservan su orden de llegada, así que un orden nativo que invirtiera el ascendente fallaría.
+  - Comprobaciones: `npm run build` correcto. La primera ejecución completa de `npm run e2e` dio 100 de 102, con dos fallos ajenos a este cambio: un servidor aislado que no llegó a arrancar y un cierre del editor. Duró 5,2 minutos en lugar de unos 2, así que parece lentitud de la máquina. Las dos pasaron al repetirlas, y una segunda ejecución completa pasó 102 de 102 (3,0 minutos). `tables.spec.ts` tiene 12 pruebas.
