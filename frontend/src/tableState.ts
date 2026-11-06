@@ -97,8 +97,9 @@ export function useRemovalFocus<T extends { id: string }>(
 
   watch(sorted, async rows => {
     const removal = pending;
-    pending = null;
+    // Other updates while the action runs leave the row in place: keep waiting for it to leave.
     if (!removal || rows.some(row => row.id === removal.id)) return;
+    pending = null;
     await nextTick();
     // Only focus that the removal itself dropped is moved. If the row left for another reason (the action
     // was cancelled or failed, and a filter hid the row), focus is wherever the person put it: leave it.
