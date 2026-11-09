@@ -99,3 +99,4 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - **`R3-001`, regresión:** las flechas con un modificador quedaban capturadas, y `Alt+←` y `Alt+→` dejaban de ir atrás y adelante en el navegador. Ahora los modificadores se dejan al navegador. Prueba: `leaves arrow keys with a modifier to the browser`, que fallaba.
   - **`R3-002`:** la prueba de la parada única de `Tab` comprueba también que esa parada sigue a la pestaña seleccionada.
   - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 140 de 140; `python -m unittest discover -s tests`, OK; `ruff check .`, sin avisos.
+- **L15 (2026-11-09).** Revisión de `a127803` (`review-reliability`, con el consentimiento del usuario): aprobada y confirmada. Su única sugerencia queda **pendiente**, sin corregir: que la prueba de las flechas con modificador compruebe también que el evento no se cancela (`defaultPrevented`) e incluya `ArrowLeft` y `Meta`. Tramo 2 cerrado.
