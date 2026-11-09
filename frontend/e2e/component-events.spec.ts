@@ -71,20 +71,20 @@ welcomeTest('imports a CSV dropped on the welcome screen', async ({ page }) => {
   });
   expect(dragoverPrevented).toBe(true);
   await dropzone.dispatchEvent('drop', { dataTransfer });
-  await expect(page.getByRole('button', { name: 'Todas (1)' })).toBeVisible();
-  await page.getByRole('button', { name: 'Todas (1)' }).click();
+  await expect(page.getByRole('tab', { name: 'Todas (1)' })).toBeVisible();
+  await page.getByRole('tab', { name: 'Todas (1)' }).click();
   const table = page.locator('.desktop-table');
   const original = table.getByRole('row', { name: /alice/ });
   await expect(original).toContainText('Example');
   await page.reload();
-  await page.getByRole('button', { name: 'Todas (1)' }).click();
+  await page.getByRole('tab', { name: 'Todas (1)' }).click();
   await expect(original).toContainText('Example');
 });
 
 test('reselects the same CSV after cancelling and replaces the workspace', async ({ page }, testInfo) => {
   await seedWorkspace(page);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Todas (1)' }).click();
+  await page.getByRole('tab', { name: 'Todas (1)' }).click();
   const table = page.locator('.desktop-table');
   const original = table.getByRole('row', { name: /alice/ });
   await editName(page, original, 'Example reviewed');
@@ -96,9 +96,9 @@ test('reselects the same CSV after cancelling and replaces the workspace', async
   expect(await workspace(page)).toEqual(beforeCancel);
   await expect(original).toContainText('Example reviewed');
   await chooseCsv(page, replacement, true);
-  await expect(page.getByRole('button', { name: 'Todas (2)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Todas (2)' })).toBeVisible();
   expect((await workspace(page)).can_undo).toBe(false);
-  await page.getByRole('button', { name: 'Todas (2)' }).click();
+  await page.getByRole('tab', { name: 'Todas (2)' }).click();
   await expect(table).toContainText('bob');
   await expect(table).toContainText('carol');
   await expect(table).not.toContainText('alice');
@@ -107,7 +107,7 @@ test('reselects the same CSV after cancelling and replaces the workspace', async
 test('keeps the workspace and undo history after cancelling an import and reloading', async ({ page }, testInfo) => {
   await seedWorkspace(page, replacementCsv);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Todas (2)' }).click();
+  await page.getByRole('tab', { name: 'Todas (2)' }).click();
   const table = page.locator('.desktop-table');
   const replacementRow = table.getByRole('row', { name: /bob/ });
   await editName(page, replacementRow, 'Replacement reviewed');
@@ -117,7 +117,7 @@ test('keeps the workspace and undo history after cancelling an import and reload
   await chooseCsv(page, original, false);
   await page.reload();
   expect(await workspace(page)).toEqual(beforeCancel);
-  await page.getByRole('button', { name: 'Todas (2)' }).click();
+  await page.getByRole('tab', { name: 'Todas (2)' }).click();
   await expect(replacementRow).toContainText('Replacement reviewed');
   await expect(table).toContainText('carol');
   await expect(table).not.toContainText('alice');

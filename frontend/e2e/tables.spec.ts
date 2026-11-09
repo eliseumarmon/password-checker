@@ -229,7 +229,7 @@ test('keeps the earlier page when a row is removed while a filter hides the pagi
   await search.fill('Alpha 0');
   await table.getByRole('row', { name: /Alpha 05/ }).getByRole('button', { name: 'Mover a la papelera' }).focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('button', { name: 'Todas (94)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Todas (94)' })).toBeVisible();
   await search.fill('');
   await expect(currentPage(table)).toHaveText('3');
 });
@@ -241,7 +241,7 @@ test('moves to the previous page when the last one empties', async ({ page }) =>
   await goToPage(table, 'last');
   await expect(currentPage(table)).toHaveText('3');
   await bodyRows(table).getByRole('button', { name: 'Mover a la papelera' }).click();
-  await expect(page.getByRole('button', { name: 'Todas (60)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Todas (60)' })).toBeVisible();
   await expect(currentPage(table)).toHaveText('2');
   await expect(column(table, 1).first()).toHaveText('Alpha 30');
 });
@@ -330,7 +330,7 @@ test.describe('accessible records table', () => {
     const trashOf = (name: string) => table.getByRole('row', { name: new RegExp(name) }).getByRole('button', { name: 'Mover a la papelera' });
     await trashOf('Alpha 30').focus();
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('button', { name: 'Todas (30)' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Todas (30)' })).toBeVisible();
     await expect(bodyRows(table)).toHaveCount(30);
     await expect(trashOf('Alpha 29')).toBeFocused();
   });
@@ -344,13 +344,13 @@ test.describe('accessible records table', () => {
       .getByRole('button', { name: 'Mover a la papelera' });
     await trashOf('Bravo').focus();
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('button', { name: 'Todas (2)' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Todas (2)' })).toBeVisible();
     await expect(trashOf('Charlie')).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('button', { name: 'Todas (1)' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Todas (1)' })).toBeVisible();
     await expect(trashOf('Alpha')).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('button', { name: 'Todas (0)' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Todas (0)' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Explorar y consolidar' })).toBeFocused();
   });
 });
@@ -373,7 +373,7 @@ test.describe('accessible groups and trash tables', () => {
     await trashOf('Charlie').focus();
     await page.keyboard.press('Enter');
     await page.getByRole('alertdialog', { name: 'Confirmar acción' }).getByRole('button', { name: 'Mover a la papelera', exact: true }).click();
-    await expect(page.getByRole('button', { name: 'Duplicados (2)' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Duplicados (2)' })).toBeVisible();
     await expect(trashOf('Bravo')).toBeFocused();
   });
 
@@ -430,7 +430,7 @@ test.describe('continuity across screens', () => {
     await expect(currentPage(table)).toHaveText('2');
     await expect(column(table, 2).first()).toHaveText(firstUser!);
 
-    await page.getByRole('button', { name: /^Duplicados/ }).click();
+    await page.getByRole('tab', { name: /^Duplicados/ }).click();
     await showAllRecords(page, 95);
     await expect(columnHeader(table, 'Usuario')).toHaveAttribute('aria-sort', 'descending');
     await expect(currentPage(table)).toHaveText('2');
@@ -443,7 +443,7 @@ test.describe('continuity across screens', () => {
     await sortBy(table, 'Copias');
     await expect(column(table, 1)).toHaveText(['Bravo', 'Alpha']);
     await showAllRecords(page, 5);
-    await page.getByRole('button', { name: /^Duplicados/ }).click();
+    await page.getByRole('tab', { name: /^Duplicados/ }).click();
     await expect(columnHeader(table, 'Copias')).toHaveAttribute('aria-sort', 'ascending');
     await expect(column(table, 1)).toHaveText(['Bravo', 'Alpha']);
   });
@@ -469,7 +469,7 @@ test.describe('continuity across screens', () => {
     const table = desktopTable(page);
     await goToPage(table, 'last');
     await expect(currentPage(table)).toHaveText('4');
-    await page.getByRole('button', { name: /^Duplicados/ }).click();
+    await page.getByRole('tab', { name: /^Duplicados/ }).click();
     await page.getByRole('textbox', { name: 'Buscar credenciales' }).fill('Beta');
     await showAllRecords(page, 95);
     await expect(currentPage(table)).toHaveText('2');

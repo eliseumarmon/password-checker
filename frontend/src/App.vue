@@ -87,6 +87,13 @@ async function loadFileList(files: FileList | File[]): Promise<void> {
   resetTablePages();
   compareIds.value = null; selected.value = null; subtab.value = 'duplicates'; screen.value = 'credentials';
 }
+// Arrows move between the tabs and show each one at once; Tab leaves the group (WAI-ARIA APG tabs).
+function onTabKey(event: KeyboardEvent): void {
+  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+  event.preventDefault();
+  subtab.value = subtab.value === 'duplicates' ? 'all' : 'duplicates';
+  (event.currentTarget as HTMLElement).querySelector<HTMLElement>(`#tab-${subtab.value}`)?.focus();
+}
 function openGroup(group: DuplicateGroup): void {
   compareIds.value = group.members.map(member => member.id); selected.value = null;
 }
@@ -169,7 +176,7 @@ onUnmounted(() => layoutObserver?.disconnect());
     <aside class="sidebar" :class="{collapsed}" aria-label="Navegación principal">
       <button class="brand" :aria-label="collapsed?'Expandir menú':'Contraer menú'" :title="collapsed?'Expandir menú':'Contraer menú'" :aria-expanded="!collapsed" @click="collapsed=!collapsed"><span class="brand-mark">◇</span><span class="label"><strong>Password Checker</strong><small>Revisión privada de credenciales</small></span></button>
       <nav>
-        <button v-for="s in SCREENS" :key="s.id" :class="{active:screen===s.id}" :title="s.showCount?`${s.label} (${trashed.length})`:s.label" @click="screen=s.id"><span class="nav-icon"><TrashIcon v-if="s.icon.kind==='trash'" /><template v-else>{{s.icon.text}}</template></span><span class="label">{{s.label}}<template v-if="s.showCount"> ({{trashed.length}})</template></span></button>
+        <button v-for="s in SCREENS" :key="s.id" :class="{active:screen===s.id}" :aria-current="screen===s.id ? 'page' : undefined" :title="s.showCount?`${s.label} (${trashed.length})`:s.label" @click="screen=s.id"><span class="nav-icon"><TrashIcon v-if="s.icon.kind==='trash'" /><template v-else>{{s.icon.text}}</template></span><span class="label">{{s.label}}<template v-if="s.showCount"> ({{trashed.length}})</template></span></button>
       </nav>
       <p class="sidebar-note label">Solo en este equipo · Sin conexión externa</p>
     </aside>
@@ -199,10 +206,15 @@ onUnmounted(() => layoutObserver?.disconnect());
           <div class="section-heading"><div><h2>Explorar y consolidar</h2><p>Analiza los registros antes de elegir cuáles exportar.</p></div>
             <div class="heading-actions"><button @click="fileInput?.click()">Importar otros CSV</button><button :disabled="store.busy" @click="merge">Fusionar copias exactas</button></div>
           </div>
-          <div class="tabs" role="tablist"><button :class="{selected:subtab==='duplicates'}" @click="subtab='duplicates'">Duplicados ({{groups.length}})</button><button :class="{selected:subtab==='all'}" @click="subtab='all'">Todas ({{activeRecords.length}})</button></div>
+          <div class="tabs" role="tablist" aria-label="Vista de credenciales" @keydown="onTabKey">
+            <button id="tab-duplicates" role="tab" :class="{selected:subtab==='duplicates'}" :aria-selected="subtab==='duplicates'" aria-controls="credentials-panel" :tabindex="subtab==='duplicates' ? 0 : -1" @click="subtab='duplicates'">Duplicados ({{groups.length}})</button>
+            <button id="tab-all" role="tab" :class="{selected:subtab==='all'}" :aria-selected="subtab==='all'" aria-controls="credentials-panel" :tabindex="subtab==='all' ? 0 : -1" @click="subtab='all'">Todas ({{activeRecords.length}})</button>
+          </div>
+          <div id="credentials-panel" role="tabpanel" :aria-labelledby="`tab-${subtab}`">
           <div class="filters"><input v-model="query" aria-label="Buscar credenciales" placeholder="Buscar por nombre, URL o usuario" /><select v-model="filterType" aria-label="Filtrar tipo"><option value="all">Web y Android</option><option value="web">Solo web</option><option value="android">Solo Android</option></select><label class="check"><input v-model="pendingOnly" type="checkbox" /> Solo pendientes</label></div>
           <GroupsTable v-if="subtab==='duplicates'" :groups="visibleGroups" :busy="store.busy" @open="openGroup" @trash="trashGroup" />
           <RecordsTable v-else :rows="visibleRows" :busy="store.busy" @edit="openRecord" @trash="moveToTrash" />
+          </div>
         </section>
         <AuditView v-else-if="screen==='audit'" :audit="data.audit" :records="recById" @review="openRecord" />
         <TrashView v-else-if="screen==='trash'" :rows="trashed" :busy="store.busy" @restore="restore" />
@@ -225,6 +237,6 @@ onUnmounted(() => layoutObserver?.disconnect());
       <ErrorNotice v-if="errorHost==='session'" :message="store.error" @close="store.error=''" />
     </SessionDialog>
     <ConfirmDialog v-if="pendingConfirm" :request="pendingConfirm" @settle="settleConfirm" />
-    <nav ref="mobileNav" class="mobile-nav" aria-label="Navegación móvil"><button v-for="s in SCREENS" :key="s.id" :class="{active:screen===s.id}" @click="screen=s.id"><TrashIcon v-if="s.icon.kind==='trash'" /><template v-else>{{s.icon.text}}</template><span>{{s.label}}</span></button></nav>
+    <nav ref="mobileNav" class="mobile-nav" aria-label="Navegación móvil"><button v-for="s in SCREENS" :key="s.id" :class="{active:screen===s.id}" :aria-current="screen===s.id ? 'page' : undefined" @click="screen=s.id"><TrashIcon v-if="s.icon.kind==='trash'" /><template v-else>{{s.icon.text}}</template><span>{{s.label}}</span></button></nav>
   </div>
 </template>
