@@ -2,7 +2,7 @@
 
 Objetivo: sustituir `DataTable` y `Column` de PrimeVue por tablas HTML nativas con Vue en `RecordsTable`, `GroupsTable` y `TrashView`. Deben conservar su comportamiento, ser accesibles desde el principio y permitir retirar PrimeVue (`primevue`, `@primeuix/themes` y su configuración).
 Rama: `refactor/native-tables` desde `main`, después de integrar `css-tokens`, porque los estilos de la tabla usan sus variables. Entrega: `ask-on-risk`. La previsión es de ~550 líneas cambiadas sin contar `package-lock.json`, por encima de ~400, así que antes del commit que lo supere se pregunta la estrategia de encadenado. T4 (dependencias) va en un commit propio.
-Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso desde el 2026-11-06 (L9); tramo 1 (T1) integrado en `main` (`abf8c3a`); tramo 2 (T2 y T3) integrado en `main` (`99f7b01`); tramo 3 (T4 y T5) integrado en `main` (`27325c0`); tramo 4 (T6) hecho y pendiente de integrar (L26). Falta que el usuario acepte las diferencias visuales (S5).
+Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: **hecho**. Integrado en `main` en cuatro tramos, el último el 2026-11-09 (`328ed69`), con la CI en verde (L27).
 
 ## Specs
 
@@ -34,7 +34,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - Los E2E existentes siguen pasando. Lo único que puede cambiar en ellos son los selectores de clases de PrimeVue (`.p-paginator` y `.p-paginator-next`, en `frontend/e2e/review.spec.ts:56-59`), que pasan a seleccionar por rol; las aserciones no cambian.
   - Pruebas de teclado nuevas para la ordenación, la paginación y las acciones de fila (S3).
   - Equivalencia funcional: las pruebas de caracterización de T1 pasan igual con PrimeVue y con la tabla nativa.
-  - Equivalencia visual: capturas de `main` y de la rama en 1440 × 900, 1280 × 720 y 390 × 844, con los mismos datos ficticios. No pueden ser idénticas, porque los estilos de PrimeVue se sustituyen por otros propios; las diferencias se describen en el Log y el usuario las acepta. La página no debe desplazarse en horizontal y el cambio a tarjetas en pantallas pequeñas debe ocurrir en el mismo punto. El script vive fuera del repositorio y no se versiona.
+  - Equivalencia visual: capturas de `main` y de la rama en 1440 × 900, 1280 × 720 y 390 × 844, con los mismos datos ficticios. No pueden ser idénticas, porque los estilos de PrimeVue se sustituyen por otros propios; las diferencias se describen en el Log y el usuario las acepta. **Aceptadas (L27).** La página no debe desplazarse en horizontal y el cambio a tarjetas en pantallas pequeñas debe ocurrir en el mismo punto. El script vive fuera del repositorio y no se versiona.
 - **S6 — Medición y retirada.** «5. Medir antes y después: comparar el tamaño del bundle y retirar completamente PrimeVue y sus estilos cuando ya no se utilicen.»
   - Antes (T1) y después (T4) se mide con `npm run build` cada archivo de `frontend/dist/assets`, sin comprimir y con gzip, y se anota si Vite avisa de algún chunk de más de 500 kB. Como referencia, sin haberla medido con este procedimiento: `index-*.js` de 751 401 bytes.
   - La retirada debe ser completa:
@@ -230,3 +230,8 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - **Supuesto, no pedido de forma expresa:** al importar o abrir otra sesión, `resetTablePages()` vuelve a la primera página, porque un número de página de los datos anteriores no significa nada en los nuevos, y conserva el orden elegido, igual que hará `review-filters` al recargar. Sin esto, la memoria habría provocado una regresión: antes, «Todas» siempre empezaba en la página 1 tras importar. **Diferencia con PrimeVue:** si la tabla de Duplicados seguía montada durante la importación, PrimeVue mantenía la página, y ahora vuelve a la 1. La apertura de sesión usa la misma función, pero solo la importación tiene prueba.
   - **Documentación:** `docs/flujo-usuario.md`, en «Casos y límites relevantes».
   - Comprobaciones: `npm run build` correcto; `npm run e2e`, 122 de 122; `python -m unittest discover -s tests`, OK; `ruff check .`, sin avisos. Riesgo: ninguno de los puntos de la lista.
+- **L27 (2026-11-09).** Cierre del plan.
+  - **S5, equivalencia visual:** el usuario compara las capturas o la aplicación y acepta las diferencias de L16 (iconos de orden y paginador): «Los cambios me parecen incluso mejores.»
+  - **Revisión de T6:** el usuario eligió «Omitir esta vez» para `4f18505`, así que ese tramo no tiene registro de revisión. Antes de integrar pidió subirlo: «haz push».
+  - **Tramo 4 integrado** en `main` (`328ed69`, `--no-ff`; el contenido es idéntico al de `4f18505`), con `Tests` en verde en esa versión. El plan pasa a `odd/done`.
+  - **Queda pendiente, sin corregir:** `R3-pending-retention-unproved` (L23).
