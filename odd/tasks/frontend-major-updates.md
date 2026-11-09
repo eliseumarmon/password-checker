@@ -17,10 +17,11 @@ Cada tarea es una funcionalidad con su propia rama, como pedía P12. Este plan s
 - [ ] T1 — S1-S3: `pinia` 4 (hoy `^3.0.0`). Se conserva Pinia: la usa `useWorkspace` en `frontend/src/store.ts`. Rama `chore/pinia-4`. Ruta: inline. Riesgo: punto 5 (dependencias).
 - [ ] T2 — S1-S3: `vite` 8 (hoy `^7.0.0`). Rama `chore/vite-8`. Ruta: inline. Riesgo: punto 5.
 - [ ] T3 — S1-S3: `typescript` 7 (hoy `~5.9.0`). Antes, comprobar que `vue-tsc` (hoy `^3.0.0`) admite esa versión; si no, la tarea espera. Rama `chore/typescript-7`. Ruta: inline. Riesgo: punto 5.
-- [ ] T4 — Registrar en el Log las retiradas, cuando ocurran: `primevue` y `@primeuix/themes` (`native-tables` T4) y `vue-router` (`frontend-bundle` T1). Ruta: inline.
+- [x] T4 — Registrar en el Log las retiradas, cuando ocurran: `primevue` y `@primeuix/themes` (`native-tables` T4) y `vue-router` (`frontend-bundle` T1). Ruta: inline. Evidencia en L3 y L4.
 
 ## Log
 
 - **L1 (2026-11-04).** P12 sale de `dependency-hardening` (su L33) a este plan, como paso propio de la Fase 1. Encargo completo en [roadmap-horizons](../done/roadmap-horizons.md), L1.
 - **L2 (2026-11-04).** Decisión sobre `vue-router` y Pinia, tras comprobar el código: `vue-router` no tiene ningún import en `frontend/src` y Pinia sí se usa (`useWorkspace`). Se valoró conservar `vue-router` para la futura navegación multiusuario. La recomendación fue retirarlo, porque el multiusuario llega después de la bóveda (Fase 6) y reinstalarlo entonces es trivial. El usuario decidió retirarlo en la Fase 1 y conservar Pinia (S2).
 - **L3 (2026-11-06).** `native-tables` T4 retira `primevue` y `@primeuix/themes` (`2a3f1ba`), así que este plan no los actualizará. Su T4 sigue abierta hasta que `frontend-bundle` T1 retire `vue-router`.
+- **L4 (2026-11-09).** `frontend-bundle` T1 retira `vue-router` (`d56cdd9`), así que este plan no lo actualizará. Con esto se cierra su T4. Quedan `pinia` 4, `vite` 8 y `typescript` 7.
