@@ -1,8 +1,8 @@
 # Actualizaciones mayores del frontend (P12)
 
 Objetivo: evaluar y, si compensa, aplicar las versiones mayores pendientes de `pinia` (4), `vite` (8) y `typescript` (7), con pruebas de compatibilidad. Corresponde al hallazgo H10 de la [auditoría de dependencias](../../docs/auditoria-dependencias.md#h10--líneas-mayores-del-frontend-sin-publicaciones-recientes).
-Ramas: una por dependencia, desde `main`, cuando se aborde. Fase 1, después de `native-tables` (retira PrimeVue) y de `frontend-bundle` T1 (retira `vue-router`), para no actualizar lo que se va a retirar ni cruzar cambios en `package-lock.json`.
-Comprobaciones por tarea: `npm run build` (incluye `vue-tsc`) y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: planificado, sin empezar; no está aprobado para implementarse.
+Rama: `chore/update-dependencies`, desde `main`, con un commit por paquete (L5). Fase 1, después de `native-tables` (retira PrimeVue) y de `frontend-bundle` T1 (retira `vue-router`), para no actualizar lo que se va a retirar ni cruzar cambios en `package-lock.json`.
+Comprobaciones por tarea: `npm run build` (incluye `vue-tsc`) y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso desde el 2026-11-09 (L5); `typescript` 7 bloqueado.
 
 ## Specs
 
@@ -12,11 +12,11 @@ Comprobaciones por tarea: `npm run build` (incluye `vue-tsc`) y `npm run e2e` en
 
 ## Tasks
 
-Cada tarea es una funcionalidad con su propia rama, como pedía P12. Este plan sustituye al documento ODD que P12 preveía para cada una.
+P12 proponía una rama por dependencia; el usuario decidió una sola, con un commit por paquete (L5). Este plan sustituye al documento ODD que P12 preveía para cada una.
 
-- [ ] T1 — S1-S3: `pinia` 4 (hoy `^3.0.0`). Se conserva Pinia: la usa `useWorkspace` en `frontend/src/store.ts`. Rama `chore/pinia-4`. Ruta: inline. Riesgo: punto 5 (dependencias).
-- [ ] T2 — S1-S3: `vite` 8 (hoy `^7.0.0`). Rama `chore/vite-8`. Ruta: inline. Riesgo: punto 5.
-- [ ] T3 — S1-S3: `typescript` 7 (hoy `~5.9.0`). Antes, comprobar que `vue-tsc` (hoy `^3.0.0`) admite esa versión; si no, la tarea espera. Rama `chore/typescript-7`. Ruta: inline. Riesgo: punto 5.
+- [x] T1 — S1-S3: `pinia` 4 (antes `^3.0.0`). Se conserva Pinia: la usa `useWorkspace` en `frontend/src/store.ts`. Ruta: inline. Evidencia en L5. Riesgo: punto 5 (dependencias).
+- [ ] T2 — S1-S3: `vite` 8 (hoy `^7.0.0`). Ruta: inline. Riesgo: punto 5.
+- [ ] T3 — S1-S3: `typescript` 7 (hoy `~5.9.0`). Antes, comprobar que `vue-tsc` (hoy `^3.0.0`) admite esa versión; si no, la tarea espera. **Bloqueada** (L5): `vue-tsc` y `@vue/compiler-sfc` no funcionan con TS 7. Ruta: inline. Riesgo: punto 5.
 - [x] T4 — Registrar en el Log las retiradas, cuando ocurran: `primevue` y `@primeuix/themes` (`native-tables` T4) y `vue-router` (`frontend-bundle` T1). Ruta: inline. Evidencia en L3 y L4.
 
 ## Log
@@ -25,3 +25,13 @@ Cada tarea es una funcionalidad con su propia rama, como pedía P12. Este plan s
 - **L2 (2026-11-04).** Decisión sobre `vue-router` y Pinia, tras comprobar el código: `vue-router` no tiene ningún import en `frontend/src` y Pinia sí se usa (`useWorkspace`). Se valoró conservar `vue-router` para la futura navegación multiusuario. La recomendación fue retirarlo, porque el multiusuario llega después de la bóveda (Fase 6) y reinstalarlo entonces es trivial. El usuario decidió retirarlo en la Fase 1 y conservar Pinia (S2).
 - **L3 (2026-11-06).** `native-tables` T4 retira `primevue` y `@primeuix/themes` (`2a3f1ba`), así que este plan no los actualizará. Su T4 sigue abierta hasta que `frontend-bundle` T1 retire `vue-router`.
 - **L4 (2026-11-09).** `frontend-bundle` T1 retira `vue-router` (`d56cdd9`), así que este plan no lo actualizará. Con esto se cierra su T4. Quedan `pinia` 4, `vite` 8 y `typescript` 7.
+- **L5 (2026-11-09).** El usuario pide una sola rama: «En serio hay que actualizar en cada rama no puedes hacer chore/update-dependencies o algo asi?». Aprueba empezar: «Sí». Pide comprobar antes la compatibilidad: «compruebalo. cómo lo sabemos eso?» y «y consultando internet?».
+  - **Comprobación en una copia aparte** (`main` en `57ddfa2`), instalando cada versión:
+    - `pinia` 4.1.0: comprobación de tipos y compilación correctas.
+    - `vite` 8.3.7: comprobación de tipos y compilación correctas.
+    - `pinia` 4 y `vite` 8 juntos: `npm run e2e`, 147 de 147.
+    - `typescript` 7.0.2: **falla**. `vue-tsc` da `ERR_PACKAGE_PATH_NOT_EXPORTED` en `./lib/tsc`, y `vite build` falla en `@vue/compiler-sfc`, al resolver los tipos importados de `defineProps`. El rango de `vue-tsc` (`typescript >=5.0.0`) admite TS 7 aunque no funcione.
+  - **Fuentes consultadas:** [vuejs/language-tools #6124](https://github.com/vuejs/language-tools/issues/6124) y [la beta de TS 7.1](https://infoq.com/news/2026/11/typescript-7-1-beta), para TS 7; [las notas de Pinia 4.0.0](https://newreleases.io/project/npm/pinia/release/4.0.0); [la guía de migración de Vite](https://vite.dev/guide/migration.md). T3 queda bloqueada hasta que las herramientas de Vue admitan TS 7.
+  - **T1:** `pinia` pasa a `^4.1.0`. Según sus notas, los cambios son ESM y `@vue/devtools-api` como dependencia obligatoria, que npm instala solo (8.2.1). `package-lock.json`: 5 paquetes retirados (`copy-anything`, `mitt`, `rfdc`, `speakingurl` y `superjson`), 1 añadido (`nostics`) y 5 cambiados. `npm audit`: 0 vulnerabilidades.
+  - **Bundle** (medido antes de T1, sobre `main`): JS, 120 547 bytes (43 707 con gzip); con `pinia` 4, 120 567 (43 713). No cambia de forma apreciable.
+  - Comprobaciones: `npm run build` correcto; `npm run e2e`, 147 de 147. Riesgo: punto 5 (dependencias).
