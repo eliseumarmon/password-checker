@@ -3,6 +3,7 @@ import { computed, onUnmounted, ref, watch } from 'vue';
 import TrashIcon from '../TrashIcon.vue';
 import { safeWebUrl } from '../api';
 import { confirmAction } from '../confirm';
+import { useDialogFocus } from '../dialogFocus';
 import { labelOrigin, labelReview } from '../labels';
 import type { CredentialDetail, RecordEdit } from '../types';
 
@@ -58,6 +59,8 @@ async function requestClose(): Promise<void> {
   if (dirty.value && !await confirmAction('Hay cambios sin guardar en esta credencial. Si cierras la ficha, se perderán. ¿Continuar?', 'Descartar cambios', true)) return;
   emit('close');
 }
+const dialog = ref<HTMLElement | null>(null);
+useDialogFocus(dialog, { initial: () => dialog.value?.querySelector('input'), onEscape: () => void requestClose() });
 // Trash and restore act on the saved record and close the editor, dropping any unsaved edit.
 function confirmDroppingEdits(label: string, danger = false): Promise<boolean> {
   return dirty.value
@@ -84,7 +87,7 @@ async function openSite(url: string): Promise<void> {
 
 <template>
   <div class="overlay modal-overlay" @pointerdown="onBackdropDown" @pointerup="onBackdropUp" @click="onBackdropClick">
-    <section class="editor-dialog card" role="dialog" aria-modal="true" aria-label="Editar credencial">
+    <section ref="dialog" class="editor-dialog card" role="dialog" aria-modal="true" aria-label="Editar credencial">
       <slot />
       <div class="dialog-content">
       <div class="drawer-top"><h2>Editar credencial</h2><button aria-label="Cerrar" @click="requestClose">✕</button></div>

@@ -41,7 +41,7 @@ function restore(row: CredentialSummary): Promise<void> {
         </table>
         <TablePaginator v-if="paginated" :page="page" :pages="pages" @go="goTo" />
       </div>
-      <div class="mobile-cards"><article v-for="r in rows" :key="r.id" class="record-card"><strong>{{r.name}}</strong><p>{{r.username}}</p><p class="muted">{{labelOrigin(r.source)}}</p><button :disabled="busy" @click="onRestore(r.id)">Restaurar</button></article></div>
+      <div class="mobile-cards"><article v-for="r in rows" :key="r.id" :data-row-id="r.id" class="record-card"><strong>{{r.name}}</strong><p>{{r.username}}</p><p class="muted">{{labelOrigin(r.source)}}</p><button :disabled="busy" @click="onRestore(r.id)">Restaurar</button></article></div>
     </template>
   </section>
 </template>

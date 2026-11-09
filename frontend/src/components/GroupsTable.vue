@@ -44,5 +44,5 @@ function trash(group: DuplicateGroup): Promise<void> {
     </table>
     <TablePaginator v-if="paginated" :page="page" :pages="pages" @go="goTo" />
   </div>
-  <div class="mobile-cards"><article v-for="g in groups" :key="g.id" class="record-card" @click="$emit('open', g)"><div class="row-between"><strong>{{g.name}}</strong><span class="status" :class="g.kind">{{labelGroup(g.kind)}}</span></div><p>{{g.username}}</p><p class="muted">{{g.count}} registros · {{labelType(g.type)}}</p><div class="row-actions"><button @click.stop="$emit('open', g)">Comparar →</button><button class="icon-button danger" aria-label="Mover grupo a la papelera" :disabled="busy" @click.stop="onTrash(g)"><TrashIcon /></button></div></article></div>
+  <div class="mobile-cards"><article v-for="g in groups" :key="g.id" :data-row-id="g.id" class="record-card" @click="$emit('open', g)"><div class="row-between"><strong>{{g.name}}</strong><span class="status" :class="g.kind">{{labelGroup(g.kind)}}</span></div><p>{{g.username}}</p><p class="muted">{{g.count}} registros · {{labelType(g.type)}}</p><div class="row-actions"><button @click.stop="$emit('open', g)">Comparar →</button><button class="icon-button danger" aria-label="Mover grupo a la papelera" :disabled="busy" @click.stop="onTrash(g)"><TrashIcon /></button></div></article></div>
 </template>

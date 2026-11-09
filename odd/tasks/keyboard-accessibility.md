@@ -1,7 +1,7 @@
 # Accesibilidad y teclado
 
 Objetivo: hacer la revisión de accesibilidad y teclado que pide `docs/pendiente.md`, y corregir lo que ya se sabe que falta: la gestión del foco en los diálogos de comparación, ficha y sesión, y la semántica de las pestañas y de la navegación.
-Rama: `feat/keyboard-accessibility` desde `main`, después de integrar `css-tokens` y `native-tables` (comparten `style.css` y `App.vue`; el teclado de las tablas se resuelve en `native-tables`). Entrega: `ask-on-risk`, previsión ~350 líneas cambiadas, un único PR.
+Rama: `feat/keyboard-accessibility` desde `main`, después de integrar `css-tokens` y `native-tables` (comparten `style.css` y `App.vue`; el teclado de las tablas se resuelve en `native-tables`). Entrega: `ask-on-risk`, por tramos a `main` (L9): tramo 1, T2 con su documentación; tramo 2, T3 y lo que quede de T4.
 Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso desde el 2026-11-09 (L5).
 
 ## Specs
@@ -16,14 +16,14 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - **Supuesto:** no se añaden herramientas automáticas (por ejemplo, axe-core), porque serían una dependencia nueva; si se quieren, es una decisión aparte.
   - Ya existen, y la revisión solo comprueba que cubren todos los controles: `:focus-visible` con contorno de 3 px en `button`, `input`, `select` y `textarea`, y `prefers-reduced-motion`.
 - **S3 — Foco en los diálogos de comparación, ficha y sesión.** Hoy solo `ConfirmDialog` gestiona el foco. Según `docs/flujo-usuario.md`, el diálogo de confirmación «empieza con el foco en «Cancelar», `Tab` no sale de él y, al cerrarse, el foco vuelve al control que lo abrió». Los otros tres diálogos deben comportarse igual:
-  - Al abrirse, el foco entra en el diálogo. **Supuesto, a confirmar al aprobar el plan:** en la ficha, el campo «Nombre»; en la sesión, el primer campo; en la comparación, su título (`tabindex="-1"`), para que se lea el contenido antes que los botones.
+  - Al abrirse, el foco entra en el diálogo. **Confirmado por el usuario (L7):** en la ficha, el campo «Nombre»; en la sesión, el primer campo; en la comparación, su título (`tabindex="-1"`), para que se lea el contenido antes que los botones.
   - Mientras está abierto, `Tab` y `Mayús+Tab` no salen de él.
-  - Al cerrarse, el foco vuelve al control que lo abrió. **Supuesto:** si ese control ya no existe (por ejemplo, la fila se movió a la papelera), el foco va al título de la sección.
+  - Al cerrarse, el foco vuelve al control que lo abrió. **Decidido por el usuario (L7):** si ese control ya no existe (por ejemplo, la fila se movió a la papelera), se aplica la misma regla que en las tablas: el foco pasa al mismo control de la fila siguiente, o de la anterior si era la última, o al título de la sección si no quedan filas.
   - El diálogo de confirmación abierto encima de otro diálogo sigue funcionando como hoy.
   - La lógica de foco de `ConfirmDialog` se extrae a una única función reutilizable que usan los cuatro diálogos; las E2E actuales de `ConfirmDialog` siguen pasando.
   - `Esc` (D2, opción A) cierra el diálogo de comparación, la ficha y la sesión. La ficha con cambios sin guardar pide confirmación antes de cerrarse, igual que con «✕». Con varios diálogos abiertos, `Esc` solo actúa sobre el superior.
 - **S4 — Pestañas y navegación.**
-  - «Duplicados» y «Todas» siguen el patrón de pestañas de WAI-ARIA APG: `role="tab"`, `aria-selected`, `aria-controls`, el panel con `role="tabpanel"`, y las flechas cambian de pestaña. **Supuesto:** activación automática al moverse con las flechas.
+  - «Duplicados» y «Todas» siguen el patrón de pestañas de WAI-ARIA APG: `role="tab"`, `aria-selected`, `aria-controls`, el panel con `role="tabpanel"`, y las flechas cambian de pestaña. **Decidido por el usuario (L7):** activación automática al moverse con las flechas.
   - Las E2E que pulsan «Todas (N)» como `button` (unas 13 en `component-events.spec.ts` e `import-warnings.spec.ts`) pasan a seleccionar el rol `tab`; las aserciones no cambian.
   - Navegación lateral e inferior: la pantalla activa lleva `aria-current="page"`.
 - **S5 — Fuera de alcance:**
@@ -34,7 +34,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
 ## Tasks
 
 - [x] T1 — S2: revisión con teclado, zoom al 200 % y pantalla de 360 px; hallazgos en el Log. Ruta: inline. Sin código. Evidencia en L6.
-- [ ] T2 — S3: foco de los diálogos y `Esc`. Ruta: inline.
+- [ ] T2 — S3: foco de los diálogos y `Esc`. Ruta: inline. Hecha y pendiente de verificación (L8).
   - RED primero: E2E de foco inicial, `Tab` que no sale del diálogo, retorno del foco y `Esc`, en cada uno de los tres diálogos.
   - Implementar la función compartida y migrar `ConfirmDialog` a ella.
   - Comprobación diferencial: las E2E de `ConfirmDialog` dan el mismo resultado antes y después.
@@ -42,7 +42,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
 - [ ] T3 — S4: pestañas y navegación. Ruta: inline.
   - RED primero: E2E de flechas, `aria-selected` y `aria-current`.
   - Cambio de los selectores de rol en las E2E afectadas.
-- [ ] T4 — Documentación: `docs/flujo-usuario.md` (foco de los diálogos y teclado en las pestañas) y, si cambia algún criterio, `docs/guia-visual.md`. Ruta: inline.
+- [ ] T4 — Documentación: `docs/flujo-usuario.md` (foco de los diálogos, hecho con T2 en L9; teclado en las pestañas) y, si cambia algún criterio, `docs/guia-visual.md`. Ruta: inline.
 
 ## Log
 
@@ -65,3 +65,16 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
     - **H2 — Objetivos táctiles de menos de 44 px en móvil** (§2.2): «Editar →», «Comparar →» y «Restaurar», 40 px de alto; papelera, 42 × 40; pestañas, 39 de alto; campos, 43 de alto; casilla «Solo pendientes», 18 × 18; botones del comparador, 36 de alto; cierre «✕», 43 × 40.
     - **H3 — Icono de papelera de 16 px** (§2.2: 18–24 px). Tiene etiqueta accesible.
     - **H4 — «Guardar» y «Cancelar» fuera de la vista al abrir** la ficha y la sesión a 640 × 360 y 360 × 340 (§8, «Guardar/cancelar siempre accesible»). En la sesión se llega con `Tab`; en la ficha, el recorrido no llegó a esos botones (tope de 90 pulsaciones) y se comprobará en T2.
+- **L7 (2026-11-09).** Decisiones del usuario sobre los supuestos de S3 y S4:
+  - Foco al abrir: «Sí, correcto.»
+  - Foco si el control ya no existe: «Creo recordar que iba a la fila siguiente y si no ha fila siguiente entonces sí al título. Puede ser?» Es la regla de `native-tables` (L13), con el paso intermedio de la fila anterior, y S3 la decía de otra forma. Se alinea con esa regla.
+  - Pestañas: «Automático.»
+- **L8 (2026-11-09).** T2:
+  - **RED:** nueve pruebas nuevas en `frontend/e2e/dialogs.spec.ts`, que fallaban: foco inicial, `Tab` que no sale, `Esc` y retorno del foco en la ficha, la comparación y la sesión (guardar y abrir); `Esc` con cambios sin guardar pide confirmación y solo cierra el diálogo superior; llegar a «Guardar cambios» con `Tab`; y el foco cuando la fila que abrió el diálogo desaparece (siguiente, anterior, título, tarjetas en móvil y grupos en la comparación).
+  - **GREEN:** `frontend/src/dialogFocus.ts` con `useDialogFocus`, que usan los cuatro diálogos; `ConfirmDialog` pierde su lógica propia. Una pila de diálogos abiertos hace que el teclado solo afecte al superior. Las tarjetas móviles llevan `data-row-id`, como las filas. `seed`, `chromiumRow` y demás datos de prueba pasan de `tables.spec.ts` a `e2e/tables.ts`, para compartirlos.
+  - **Comprobación diferencial:** las E2E de `ConfirmDialog` siguen pasando sin cambios.
+  - **Auditoría repetida** (el script de L6): 0 paradas de `Tab` fuera del diálogo en los 16 casos.
+    - **H4 se reduce:** en la ficha y en la sesión, «Guardar» y «Cancelar» siguen fuera de la vista al abrir a 640 × 360 y 360 × 340, pero `Tab` llega a ellos.
+    - **H1 se amplía:** ya dentro de la ficha, la barra fija de «Guardar» y «Cancelar» tapa a veces el campo con foco («Estado de revisión» a 1280 × 720, y «Código 2FA» y su botón a 360 × 640), y «Notas» es más alto que la pantalla en tamaños pequeños. No lo causa este cambio: antes no se veía porque `Tab` se salía del diálogo.
+  - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 131 de 131. Riesgo: punto 3 (la lógica de foco de `ConfirmDialog` pasa a ser compartida); pendiente de verificación independiente.
+- **L9 (2026-11-09).** Estrategia de entrega, elegida por el usuario: «Por tramos a main (Recomendado)». T2 superaba la previsión (unas 440 líneas en la rama, 30 de ellas datos de prueba movidos de archivo). La parte de T4 sobre los diálogos (`docs/flujo-usuario.md`) va con T2, junto al comportamiento que describe.

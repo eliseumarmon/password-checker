@@ -43,5 +43,5 @@ function trash(row: CredentialSummary): Promise<void> {
     </table>
     <TablePaginator v-if="paginated" :page="page" :pages="pages" @go="goTo" />
   </div>
-  <div class="mobile-cards"><article v-for="r in rows" :key="r.id" class="record-card"><div class="row-between"><strong>{{r.name}}</strong><span class="status" :class="r.review">{{labelReview(r.review)}}</span></div><p>{{r.username}}</p><p class="muted">{{labelType(r.type)}} · {{labelOrigin(r.source)}}</p><div class="row-actions"><button @click="$emit('edit', r.id)">Editar →</button><button class="icon-button danger" aria-label="Mover a la papelera" :disabled="busy" @click="onTrash(r.id)"><TrashIcon /></button></div></article></div>
+  <div class="mobile-cards"><article v-for="r in rows" :key="r.id" :data-row-id="r.id" class="record-card"><div class="row-between"><strong>{{r.name}}</strong><span class="status" :class="r.review">{{labelReview(r.review)}}</span></div><p>{{r.username}}</p><p class="muted">{{labelType(r.type)}} · {{labelOrigin(r.source)}}</p><div class="row-actions"><button @click="$emit('edit', r.id)">Editar →</button><button class="icon-button danger" aria-label="Mover a la papelera" :disabled="busy" @click="onTrash(r.id)"><TrashIcon /></button></div></article></div>
 </template>
