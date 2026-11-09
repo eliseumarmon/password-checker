@@ -5,7 +5,7 @@ Ramas:
 - T1 en `chore/remove-vue-router` desde `main`. No depende de otros bloques y puede ir en cualquier momento.
 - T2 y T3 en `perf/frontend-bundle` desde `main`, después de integrar `native-tables` (y `keyboard-accessibility` si T3 llega a cargar diálogos bajo demanda).
 
-Entrega: `ask-on-risk`, previsión ~10 líneas en T1 (sin contar `package-lock.json`) y ~60 en T3 si se necesita. Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso desde el 2026-11-09 (L7); T1 en `chore/remove-vue-router`.
+Entrega: `ask-on-risk`, previsión ~10 líneas en T1 (sin contar `package-lock.json`) y ~60 en T3 si se necesita. Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: **hecho** (L8). Se integra en `main` con `chore/remove-vue-router`.
 
 ## Specs
 
@@ -21,11 +21,11 @@ Entrega: `ask-on-risk`, previsión ~10 líneas en T1 (sin contar `package-lock.j
 
 ## Tasks
 
-- [ ] T1 — S2: retirar `vue-router` con `npm uninstall`. Ruta: inline.
+- [x] T1 — S2: retirar `vue-router` con `npm uninstall`. Ruta: inline. Commit `d56cdd9`; evidencia en L7 y L8.
   - Excepción a RED: no hay comportamiento que probar, porque la dependencia no se usa. La comprobación es el build y las E2E en verde.
   - Riesgo: punto 5 (dependencias). Commit propio y verificación independiente.
-- [ ] T2 — S1, S3: medición tras `native-tables` y decisión, registradas en el Log. Ruta: inline. Sin código si no hay aviso.
-- [ ] T3 — S4: carga diferida, solo si T2 la justifica y el usuario la aprueba. Ruta: inline.
+- [x] T2 — S1, S3: medición tras `native-tables` y decisión, registradas en el Log. Ruta: inline. Sin código si no hay aviso. Evidencia en L8.
+- [x] T3 — S4: carga diferida, solo si T2 la justifica y el usuario la aprueba. Ruta: inline. **No aplica:** T2 no la justifica (L8).
 - [ ] T4 — S5: al integrar T1, anotar en el Log de `frontend-major-updates` (su T4) que `vue-router` se retiró. Si coincide en el tiempo, se hace junto con `native-tables` T5. Ruta: inline.
 
 ## Log
@@ -44,3 +44,9 @@ Entrega: `ask-on-risk`, previsión ~10 líneas en T1 (sin contar `package-lock.j
   - `npm uninstall vue-router`. `package-lock.json` pierde 2 entradas (`vue-router` y su copia anidada de `@vue/devtools-api` 6.6.4), de 112 a 110 sin contar la raíz. Ninguna se añade ni cambia de versión: el `@vue/devtools-api` 7.7.10 de Pinia sigue igual. `npm audit`: 0 vulnerabilidades. S2: `npm ls vue-router` no lo muestra.
   - **Prueba de que no cambia nada:** `dist/index.html` y los dos archivos de `dist/assets` tienen el mismo SHA-256 antes y después de retirarlo: el bundle ya no lo incluía.
   - Comprobaciones: `npm run build` correcto; `npm run e2e`, 122 de 122; `python -m unittest discover -s tests`, OK; `ruff check .`, sin avisos. Riesgo: punto 5 (dependencias); pendiente de verificación independiente.
+- **L8 (2026-11-09).** Cierre del plan.
+  - **Verificación independiente de T1** (`d56cdd9` frente a `e974475`, en copias limpias): sin bloqueos. Confirma las entradas retiradas de `package-lock.json`, que ningún paquete conservado cambia, que `vue-router` no se usa en ningún sitio (tampoco de forma dinámica ni en plantillas), `npm ci`, `npm ls --all`, `npm audit` (0 vulnerabilidades), la compilación idéntica byte a byte y `npm run e2e`, 122 de 122.
+  - **Revisión** (`review-risk`, con el consentimiento del usuario; riesgo punto 5, elevado a mano): aprobada sin hallazgos y confirmada.
+  - **T2, medición final** con el procedimiento de S3 y Node 24, sobre `d56cdd9`: `index-*.js`, 117 680 bytes (42 862 con gzip); `index-*.css`, 16 339 bytes (4129 con gzip). Vite no avisa, ningún chunk pasa de 500 kB y `vite.config.ts` no tiene `chunkSizeWarningLimit` (S1). Según S3, el bloque se cierra con esta evidencia, sin dividir el código, y T3 no se aplica. Son 241 bytes más de JS que en L6, por la continuidad de orden y página de `native-tables` T6.
+  - **T2 va en esta rama, no en `perf/frontend-bundle`:** no lleva código, así que no hace falta otra rama.
+  - **T4:** anotado en `frontend-major-updates` (L4). También se actualizan `docs/auditoria-dependencias.md`, `docs/pendiente.md` y `docs/hoja-de-ruta.md`.

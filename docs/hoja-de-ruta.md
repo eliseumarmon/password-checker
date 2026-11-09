@@ -8,7 +8,7 @@ Este documento reúne en un solo sitio las fases de trabajo de Password Checker,
 |---|---|---|---|---|
 | 0 | Endurecer dependencias y cadena de suministro | **Cerrada** (2026-11-04), con P10 integrada el mismo día | — | [dependency-hardening](../odd/done/dependency-hardening.md), [actions-sha-pinning](../odd/done/actions-sha-pinning.md) (P10) |
 | — | Correcciones independientes: «Abrir sitio» y normalización de URL | En curso | — | [site-link-navigation](../odd/tasks/site-link-navigation.md) |
-| 1 | Cimientos del frontend: colores en variables, tablas nativas, accesibilidad, tamaño del bundle y actualizaciones mayores | En curso | D2, solo para una tarea | [css-tokens](../odd/done/css-tokens.md) (hecho), [native-tables](../odd/done/native-tables.md) (hecho), [keyboard-accessibility](../odd/tasks/keyboard-accessibility.md), [frontend-bundle](../odd/tasks/frontend-bundle.md), [frontend-major-updates](../odd/tasks/frontend-major-updates.md) (P12) |
+| 1 | Cimientos del frontend: colores en variables, tablas nativas, accesibilidad, tamaño del bundle y actualizaciones mayores | En curso | D2, solo para una tarea | [css-tokens](../odd/done/css-tokens.md) (hecho), [native-tables](../odd/done/native-tables.md) (hecho), [keyboard-accessibility](../odd/tasks/keyboard-accessibility.md), [frontend-bundle](../odd/done/frontend-bundle.md) (hecho), [frontend-major-updates](../odd/tasks/frontend-major-updates.md) (P12) |
 | 2 | Revisión más ágil, sin cambiar el formato `.pwc` | Planificada | — | [review-filters](../odd/tasks/review-filters.md), [undo-ux](../odd/tasks/undo-ux.md), [secret-visibility](../odd/tasks/secret-visibility.md), [export-preview](../odd/tasks/export-preview.md), [compare-resolution](../odd/tasks/compare-resolution.md), [local-strength](../odd/tasks/local-strength.md), [mobile-record-detail](../odd/tasks/mobile-record-detail.md), [audit-layout](../odd/tasks/audit-layout.md) |
 | 3 | Datos de revisión que se guardan en la sesión (`.pwc` v3) | **Bloqueada** | D8, D3 (y D5 para las asociaciones de servicio) | Sin plan detallado (véase [Fase 3](#fase-3--datos-de-revisión-en-la-sesión)) |
 | 4 | Ajustes: tema claro, ayuda, bloqueo por inactividad, idioma | Planificada en parte | D4 (bloqueo), D6 (idioma) | [light-theme](../odd/tasks/light-theme.md), [help-section](../odd/tasks/help-section.md) |
@@ -146,7 +146,7 @@ Cerrada el 2026-11-04: P2-P8 integradas en `main`, con las alertas de Dependabot
 | [css-tokens](../odd/done/css-tokens.md): colores en variables CSS, sin cambio visual. **Hecho** (2026-11-04) | — |
 | [native-tables](../odd/done/native-tables.md): tablas nativas y retirada de PrimeVue (D1); la ordenación se conserva al cambiar de pantalla. **Hecho** (2026-11-09) | `css-tokens` |
 | [keyboard-accessibility](../odd/tasks/keyboard-accessibility.md): revisión de accesibilidad, foco en diálogos, pestañas | `css-tokens`, `native-tables`; T2, de D2 |
-| [frontend-bundle](../odd/tasks/frontend-bundle.md): retirar `vue-router` (Pinia se conserva); dividir el código solo si sigue el aviso de 500 kB | T1: nada; T2-T3: `native-tables` |
+| [frontend-bundle](../odd/done/frontend-bundle.md): retirar `vue-router` (Pinia se conserva); dividir el código solo si sigue el aviso de 500 kB. **Hecho** (2026-11-09), sin dividir el código | T1: nada; T2-T3: `native-tables` |
 | [frontend-major-updates](../odd/tasks/frontend-major-updates.md): P12, evaluar `pinia` 4, `vite` 8 y `typescript` 7, cada una en su rama | `native-tables`, `frontend-bundle` T1 |
 
 ### Fase 2 — Revisión más ágil
@@ -211,3 +211,4 @@ Es un cambio de formato persistido: requerirá verificación independiente y un 
 | 2026-11-06 | Se cierra el plan de `css-tokens`, integrado en `main` el 2026-11-04, y empieza `native-tables`. Una prueba automática de contraste queda anotada en el [trabajo pendiente](pendiente.md#trabajo-pendiente). |
 | 2026-11-06 | `native-tables` retira PrimeVue (D1). El JS del frontend baja de 751 kB a 117 kB (de 173 kB a 43 kB con gzip) y Vite ya no avisa de ningún chunk de más de 500 kB. Con esa medición, `frontend-bundle` no necesitará dividir el código. |
 | 2026-11-09 | `native-tables` está hecho e integrado en `main`, y el usuario acepta las diferencias visuales. |
+| 2026-11-09 | `frontend-bundle` retira `vue-router` y se cierra sin dividir el código: Vite ya no avisa de ningún chunk de más de 500 kB. |
