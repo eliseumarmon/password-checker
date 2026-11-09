@@ -2,12 +2,12 @@
 
 Objetivo: hacer la revisión de accesibilidad y teclado que pide `docs/pendiente.md`, y corregir lo que ya se sabe que falta: la gestión del foco en los diálogos de comparación, ficha y sesión, y la semántica de las pestañas y de la navegación.
 Rama: `feat/keyboard-accessibility` desde `main`, después de integrar `css-tokens` y `native-tables` (comparten `style.css` y `App.vue`; el teclado de las tablas se resuelve en `native-tables`). Entrega: `ask-on-risk`, previsión ~350 líneas cambiadas, un único PR.
-Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: planificado, sin empezar.
+Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso desde el 2026-11-09 (L5).
 
 ## Specs
 
-- **S1 — Alcance.** `docs/pendiente.md`, «Trabajo pendiente»: «Una revisión más amplia de accesibilidad y teclado.» Decisión D1 (L2): «queremos mejorar la accesibilidad». Y en L2: «No hace falta resolver D2–D7 para planificar los bloques de la Fase 1 que no dependen de esas decisiones.» Por eso `Esc` (D2) queda fuera. Se conserva lo documentado en `docs/flujo-usuario.md`: «Los demás diálogos (comparación, ficha, sesión cifrada) no se cierran con `Esc`.»
-  - **Decisión pendiente D2** (opciones y recomendación en `docs/hoja-de-ruta.md`). Se recomienda resolverla antes de T2, que trabaja el teclado de esos mismos diálogos. Si se aprueba la opción A, `Esc` entra como requisito de T2 con su prueba E2E, y la ficha con cambios pide confirmación igual que con «✕».
+- **S1 — Alcance.** `docs/pendiente.md`, «Trabajo pendiente»: «Una revisión más amplia de accesibilidad y teclado.» Decisión D1 (L2): «queremos mejorar la accesibilidad». Y en L2: «No hace falta resolver D2–D7 para planificar los bloques de la Fase 1 que no dependen de esas decisiones.»
+  - **D2 aprobada, opción A (L5).** `Esc` entra como requisito de T2 con su prueba E2E. Deja de aplicarse lo documentado en `docs/flujo-usuario.md`: «Los demás diálogos (comparación, ficha, sesión cifrada) no se cierran con `Esc`.»
 - **S2 — Revisión.** Criterios de `docs/guia-visual.md`:
   - §2.2: «Foco de teclado destacado (contorno sólido de 2 px, color contrastado). Componentes tabulares navegables con teclado.» «Iconos de **18–24 px**, siempre acompañados de etiqueta accesible.» «Controles táctiles: objetivo **44 × 44 px o mayor**, salvo controles de escritorio claramente diferenciados.» «Respetar `prefers-reduced-motion`.»
   - §4: «**Interacción teclado:** `Tab` recorre controles, `Enter` abre registro; confirmar de forma explícita las acciones destructivas.»
@@ -21,12 +21,12 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - Al cerrarse, el foco vuelve al control que lo abrió. **Supuesto:** si ese control ya no existe (por ejemplo, la fila se movió a la papelera), el foco va al título de la sección.
   - El diálogo de confirmación abierto encima de otro diálogo sigue funcionando como hoy.
   - La lógica de foco de `ConfirmDialog` se extrae a una única función reutilizable que usan los cuatro diálogos; las E2E actuales de `ConfirmDialog` siguen pasando.
+  - `Esc` (D2, opción A) cierra el diálogo de comparación, la ficha y la sesión. La ficha con cambios sin guardar pide confirmación antes de cerrarse, igual que con «✕». Con varios diálogos abiertos, `Esc` solo actúa sobre el superior.
 - **S4 — Pestañas y navegación.**
   - «Duplicados» y «Todas» siguen el patrón de pestañas de WAI-ARIA APG: `role="tab"`, `aria-selected`, `aria-controls`, el panel con `role="tabpanel"`, y las flechas cambian de pestaña. **Supuesto:** activación automática al moverse con las flechas.
   - Las E2E que pulsan «Todas (N)» como `button` (unas 13 en `component-events.spec.ts` e `import-warnings.spec.ts`) pasan a seleccionar el rol `tab`; las aserciones no cambian.
   - Navegación lateral e inferior: la pantalla activa lleva `aria-current="page"`.
 - **S5 — Fuera de alcance:**
-  - `Esc` (D2).
   - El teclado de las tablas (`native-tables`).
   - Corregir contrastes (`css-tokens`, S3, decisión del usuario).
   - Los avisos de error y advertencia: `NoticeBase.vue` ya usa `role="alert"` y `role="status"`.
@@ -34,8 +34,8 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
 ## Tasks
 
 - [ ] T1 — S2: revisión con teclado, zoom al 200 % y pantalla de 360 px; hallazgos en el Log. Ruta: inline. Sin código.
-- [ ] T2 — S3: foco de los diálogos. Depende de: D2 resuelta, o confirmado que `Esc` queda fuera. Ruta: inline.
-  - RED primero: E2E de foco inicial, `Tab` que no sale del diálogo y retorno del foco, en cada uno de los tres diálogos.
+- [ ] T2 — S3: foco de los diálogos y `Esc`. Ruta: inline.
+  - RED primero: E2E de foco inicial, `Tab` que no sale del diálogo, retorno del foco y `Esc`, en cada uno de los tres diálogos.
   - Implementar la función compartida y migrar `ConfirmDialog` a ella.
   - Comprobación diferencial: las E2E de `ConfirmDialog` dan el mismo resultado antes y después.
   - Riesgo: punto 3 (la lógica de foco de `ConfirmDialog` pasa a ser compartida). Requiere verificación independiente.
@@ -55,3 +55,4 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - `style.css` ya incluye `:focus-visible` (3 px) y `prefers-reduced-motion`.
   - Ruta: inline en todas las tareas; no aplica el disparador de escritor (las unidades comparten `App.vue`, `style.css` y los E2E).
 - **L4 (2026-11-04).** Petición: «Necesito que documentes todos los planes y que marques las decisiones pendientes.» Con ella, el usuario aporta una revisión externa que recomienda resolver D2 durante la Fase 1, antes del bloque de accesibilidad. Se marca D2 como decisión pendiente en S1 y como dependencia de T2; las opciones están en `docs/hoja-de-ruta.md`.
+- **L5 (2026-11-09).** El usuario resuelve D2: «Opción A». Y aprueba empezar: «Sí», a «¿Empiezo `keyboard-accessibility`?». Rama `feat/keyboard-accessibility`, desde `6f553e4`. Se actualizan S1, S3, S5 y T2. Las dependencias ya están integradas: `css-tokens`, `native-tables`.
