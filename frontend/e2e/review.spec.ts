@@ -27,7 +27,7 @@ async function importFixtures(page: Page) {
     { name: 'brave.csv', mimeType: 'text/csv', buffer: Buffer.from(BRAVE_CSV) },
   ]);
   if (replacing) await confirmWith(page, 'Importar');
-  await expect(page.getByRole('button', { name: 'Todas (6)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Todas (6)' })).toBeVisible();
 }
 
 function paginationCsv(count: number, duplicates = false): string {
@@ -108,7 +108,7 @@ test.beforeEach(async ({ page }) => importFixtures(page));
 
 test('imports several CSV files and groups duplicates and conflicts', async ({ page }) => {
   await expect(metric(page, 'Credenciales')).toHaveText('6');
-  await expect(page.getByRole('button', { name: 'Duplicados (2)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Duplicados (2)' })).toBeVisible();
   const table = page.locator('.desktop-table');
   await expect(table.getByRole('row', { name: /Conflict/ })).toBeVisible();
   await expect(table.getByRole('row', { name: /Example/ })).toBeVisible();
@@ -117,7 +117,7 @@ test('imports several CSV files and groups duplicates and conflicts', async ({ p
 test('paginates duplicate groups after 30', async ({ page }) => {
   for (const count of [30, 31]) {
     await seedPaginationRows(page, count, true);
-    await expect(page.getByRole('button', { name: `Duplicados (${count})` })).toBeVisible();
+    await expect(page.getByRole('tab', { name: `Duplicados (${count})` })).toBeVisible();
     await expectThirtyRowsPerPage(page, count);
   }
 });
@@ -125,7 +125,7 @@ test('paginates duplicate groups after 30', async ({ page }) => {
 test('paginates records after 30', async ({ page }) => {
   for (const count of [30, 31]) {
     await seedPaginationRows(page, count);
-    await page.getByRole('button', { name: `Todas (${count})` }).click();
+    await page.getByRole('tab', { name: `Todas (${count})` }).click();
     await expectThirtyRowsPerPage(page, count);
   }
 });
@@ -139,7 +139,7 @@ test('paginates trashed records after 30', async ({ page }) => {
 });
 
 test('shows Android apps in Bitwarden format', async ({ page }) => {
-  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.getByRole('tab', { name: 'Todas (6)' }).click();
   const row = page.locator('.desktop-table').getByRole('row', { name: /com\.example\.app/ });
   await expect(row).toContainText('androidapp://com.example.app');
   await expect(row).toContainText('Android');
@@ -147,7 +147,7 @@ test('shows Android apps in Bitwarden format', async ({ page }) => {
 
 test('shows each credential type on mobile cards', async ({ page }) => {
   await page.setViewportSize({ width: 600, height: 800 });
-  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.getByRole('tab', { name: 'Todas (6)' }).click();
   const cards = page.locator('.mobile-cards .record-card');
   const web = cards.filter({ has: page.getByText('carol', { exact: true }) });
   const android = cards.filter({ has: page.getByText('eve', { exact: true }) });
@@ -168,7 +168,7 @@ test('shows each credential type on mobile cards', async ({ page }) => {
 });
 
 test('keeps table cells readable on the dark theme', async ({ page }) => {
-  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.getByRole('tab', { name: 'Todas (6)' }).click();
   const row = page.locator('.desktop-table tbody tr').first();
   for (const index of [1, 2, 3, 5]) {
     expect(await contrastOf(row.locator('td').nth(index))).toBeGreaterThanOrEqual(4.5);
@@ -177,7 +177,7 @@ test('keeps table cells readable on the dark theme', async ({ page }) => {
 
 test('keeps drawer actions visible and saves edits', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 600 });
-  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.getByRole('tab', { name: 'Todas (6)' }).click();
   await page.locator('.desktop-table').getByRole('row', { name: /bob/ }).first()
     .getByRole('button', { name: 'Editar' }).click();
   const drawer = page.getByRole('dialog', { name: 'Editar credencial' });
@@ -192,7 +192,7 @@ test('keeps drawer actions visible and saves edits', async ({ page }) => {
 });
 
 test('preserves review options and saves the selected state', async ({ page }) => {
-  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.getByRole('tab', { name: 'Todas (6)' }).click();
   const row = page.locator('.desktop-table').getByRole('row', { name: /carol/ });
   await row.getByRole('button', { name: 'Editar' }).click();
   const editor = page.getByRole('dialog', { name: 'Editar credencial' });
@@ -213,7 +213,7 @@ test('merges exact copies into the trash and can undo it', async ({ page }) => {
   await page.getByRole('button', { name: 'Fusionar copias exactas' }).click();
   await confirmWith(page, 'Fusionar');
   await expect(metric(page, 'En la papelera')).toHaveText('1');
-  await expect(page.getByRole('button', { name: 'Todas (5)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Todas (5)' })).toBeVisible();
   await page.getByRole('button', { name: /Deshacer/ }).click();
   await expect(metric(page, 'En la papelera')).toHaveText('0');
 });
@@ -223,10 +223,10 @@ function sidebar(page: Page): Locator {
 }
 
 test('trashes a row from its quick action and restores it from the trash', async ({ page }) => {
-  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.getByRole('tab', { name: 'Todas (6)' }).click();
   await page.locator('.desktop-table').getByRole('row', { name: /carol/ })
     .getByRole('button', { name: 'Mover a la papelera' }).click();
-  await expect(page.getByRole('button', { name: 'Todas (5)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Todas (5)' })).toBeVisible();
   await expect(page.locator('.desktop-table')).not.toContainText('carol');
 
   const trashButton = sidebar(page).getByRole('button', { name: 'Papelera (1)' });
@@ -247,7 +247,7 @@ async function expectBackdropAt(page: Page, x: number, y: number): Promise<void>
 }
 
 test('keeps the editor open when a text selection ends outside it', async ({ page }) => {
-  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.getByRole('tab', { name: 'Todas (6)' }).click();
   await page.locator('.desktop-table').getByRole('row', { name: /carol/ }).getByRole('button', { name: 'Editar' }).click();
   const editor = page.getByRole('dialog', { name: 'Editar credencial' });
   const notes = editor.getByLabel('Notas');
@@ -264,7 +264,7 @@ test('keeps the editor open when a text selection ends outside it', async ({ pag
 });
 
 test('keeps the editor open when a press on the backdrop ends inside it', async ({ page }) => {
-  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.getByRole('tab', { name: 'Todas (6)' }).click();
   await page.locator('.desktop-table').getByRole('row', { name: /carol/ }).getByRole('button', { name: 'Editar' }).click();
   const editor = page.getByRole('dialog', { name: 'Editar credencial' });
   const notes = editor.getByLabel('Notas');
@@ -281,7 +281,7 @@ test('keeps the editor open when a press on the backdrop ends inside it', async 
 });
 
 test('closes the editor with a click on the backdrop', async ({ page }) => {
-  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.getByRole('tab', { name: 'Todas (6)' }).click();
   await page.locator('.desktop-table').getByRole('row', { name: /carol/ }).getByRole('button', { name: 'Editar' }).click();
   const editor = page.getByRole('dialog', { name: 'Editar credencial' });
   await expect(editor).toBeVisible();
@@ -292,7 +292,7 @@ test('closes the editor with a click on the backdrop', async ({ page }) => {
 });
 
 test('asks before closing the editor with unsaved changes', async ({ page }) => {
-  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.getByRole('tab', { name: 'Todas (6)' }).click();
   const row = page.locator('.desktop-table').getByRole('row', { name: /carol/ });
   await row.getByRole('button', { name: 'Editar' }).click();
   const editor = page.getByRole('dialog', { name: 'Editar credencial' });
@@ -320,7 +320,7 @@ test('asks before closing the editor with unsaved changes', async ({ page }) => 
 });
 
 test('asks before discarding a record with unsaved changes from the editor', async ({ page }) => {
-  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.getByRole('tab', { name: 'Todas (6)' }).click();
   await page.locator('.desktop-table').getByRole('row', { name: /carol/ }).getByRole('button', { name: 'Editar' }).click();
   const editor = page.getByRole('dialog', { name: 'Editar credencial' });
   const name = editor.getByLabel('Nombre');
@@ -378,7 +378,7 @@ test('asks before restoring a record with unsaved changes from the editor', asyn
 });
 
 test('warns before closing the page with unsaved changes in the editor', async ({ page }) => {
-  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.getByRole('tab', { name: 'Todas (6)' }).click();
   await page.locator('.desktop-table').getByRole('row', { name: /carol/ }).getByRole('button', { name: 'Editar' }).click();
   const name = page.getByRole('dialog', { name: 'Editar credencial' }).getByLabel('Nombre');
   await name.fill('Fictional unsaved name');
@@ -394,7 +394,7 @@ test('warns before closing the page with unsaved changes in the editor', async (
 
 for (const settle of ['reverted', 'saved'] as const) {
   test(`closes the page without a warning once the edit is ${settle}`, async ({ page }) => {
-    await page.getByRole('button', { name: 'Todas (6)' }).click();
+    await page.getByRole('tab', { name: 'Todas (6)' }).click();
     await page.locator('.desktop-table').getByRole('row', { name: /carol/ }).getByRole('button', { name: 'Editar' }).click();
     const editor = page.getByRole('dialog', { name: 'Editar credencial' });
     await editor.getByLabel('Nombre').fill('Fictional temporary name');
@@ -413,7 +413,7 @@ for (const settle of ['reverted', 'saved'] as const) {
 }
 
 test('closes the editor without asking when edits are reverted or saved', async ({ page }) => {
-  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.getByRole('tab', { name: 'Todas (6)' }).click();
   const row = page.locator('.desktop-table').getByRole('row', { name: /carol/ });
   await row.getByRole('button', { name: 'Editar' }).click();
   const editor = page.getByRole('dialog', { name: 'Editar credencial' });
@@ -433,7 +433,7 @@ test('closes the editor without asking when edits are reverted or saved', async 
 });
 
 test('discards a record from the editor into the trash', async ({ page }) => {
-  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.getByRole('tab', { name: 'Todas (6)' }).click();
   await page.locator('.desktop-table').getByRole('row', { name: /carol/ })
     .getByRole('button', { name: 'Editar' }).click();
   const editor = page.getByRole('dialog', { name: 'Editar credencial' });
@@ -453,7 +453,7 @@ test('reviews a record from the audit without leaving the audit', async ({ page 
 });
 
 test('opens the editor centred on the screen', async ({ page }) => {
-  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.getByRole('tab', { name: 'Todas (6)' }).click();
   await page.locator('.desktop-table').getByRole('row', { name: /carol/ })
     .getByRole('button', { name: 'Editar' }).click();
   const box = await page.getByRole('dialog', { name: 'Editar credencial' }).boundingBox();
@@ -503,14 +503,14 @@ test('trashes a whole duplicate group in one undoable step', async ({ page }) =>
   await table.getByRole('row', { name: /Conflict/ }).getByRole('button', { name: 'Mover grupo a la papelera' }).click();
   await confirmWith(page, 'Mover a la papelera');
   await expect(metric(page, 'En la papelera')).toHaveText('2');
-  await expect(page.getByRole('button', { name: 'Duplicados (1)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Duplicados (1)' })).toBeVisible();
   await page.getByRole('button', { name: /Deshacer/ }).click();
   await expect(metric(page, 'En la papelera')).toHaveText('0');
 });
 
 test('keeps the header, stats and sidebar visible while scrolling', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 420 });
-  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.getByRole('tab', { name: 'Todas (6)' }).click();
   await page.mouse.wheel(0, 2000);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
   await expect(page.getByRole('heading', { level: 1 })).toBeInViewport();
@@ -663,7 +663,7 @@ async function openedTabs(page: Page): Promise<OpenedTab[]> {
 }
 
 async function editCarol(page: Page): Promise<Locator> {
-  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.getByRole('tab', { name: 'Todas (6)' }).click();
   await page.locator('.desktop-table').getByRole('row', { name: /carol/ }).getByRole('button', { name: 'Editar' }).click();
   return page.getByRole('dialog', { name: 'Editar credencial' });
 }
@@ -712,7 +712,7 @@ test('does not offer to open unsupported schemes or addresses with embedded cred
 test('asks above the editor before opening a local address on Android', async ({ page }) => {
   await page.addInitScript(() => Object.defineProperty(navigator, 'userAgent', { get: () => 'Mozilla/5.0 (Linux; Android 14) Mobile' }));
   await page.reload();
-  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.getByRole('tab', { name: 'Todas (6)' }).click();
   await page.locator('.desktop-table').getByRole('row', { name: /carol/ }).getByRole('button', { name: 'Editar' }).click();
   const editor = page.getByRole('dialog', { name: 'Editar credencial' });
   await editor.getByLabel('URL o paquete Android').fill('http://localhost:8000/fictional-path');
@@ -732,7 +732,7 @@ test('asks above the editor before opening a local address on Android', async ({
 test('opens a local address on Android after confirming', async ({ page }) => {
   await page.addInitScript(() => Object.defineProperty(navigator, 'userAgent', { get: () => 'Mozilla/5.0 (Linux; Android 14) Mobile' }));
   await page.reload();
-  await page.getByRole('button', { name: 'Todas (6)' }).click();
+  await page.getByRole('tab', { name: 'Todas (6)' }).click();
   await page.locator('.desktop-table').getByRole('row', { name: /carol/ }).getByRole('button', { name: 'Editar' }).click();
   const editor = page.getByRole('dialog', { name: 'Editar credencial' });
   // The E2E server itself, so the new tab never reaches a real local service.
@@ -1171,7 +1171,7 @@ for (const viewport of [{ width: 320, height: 320 }, { width: 390, height: 250 }
 
 for (const viewport of [{ width: 320, height: 401 }, { width: 844, height: 401 }]) {
   test(`keeps editor fields clear of actions with a notice at ${viewport.width}x${viewport.height}`, async ({ page }) => {
-    await page.getByRole('button', { name: 'Todas (6)' }).click();
+    await page.getByRole('tab', { name: 'Todas (6)' }).click();
     await page.locator('.desktop-table').getByRole('button', { name: 'Editar' }).first().click();
     await page.setViewportSize(viewport);
     const editor = page.getByRole('dialog', { name: 'Editar credencial' });
@@ -1205,7 +1205,7 @@ test('shows an unknown origin throughout the workspace', async ({ page }) => {
   });
   expect(imported.ok()).toBe(true);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Todas (2)' }).click();
+  await page.getByRole('tab', { name: 'Todas (2)' }).click();
   const row = page.locator('.desktop-table').getByRole('row', { name: /alice/ }).first();
   await expect(row).toContainText('Desconocido');
   await row.getByRole('button', { name: 'Editar', exact: true }).click();
@@ -1216,7 +1216,7 @@ test('shows an unknown origin throughout the workspace', async ({ page }) => {
   await expect(page.locator('.mobile-cards .record-card', { hasText: 'alice' }).first()).toContainText('Desconocido');
 
   await page.setViewportSize({ width: 1280, height: 720 });
-  await page.getByRole('button', { name: 'Duplicados (1)' }).click();
+  await page.getByRole('tab', { name: 'Duplicados (1)' }).click();
   await page.locator('.desktop-table').getByRole('button', { name: 'Comparar' }).click();
   const compare = page.getByRole('dialog', { name: 'Comparar duplicados' });
   const cards = compare.locator('.compare-card');

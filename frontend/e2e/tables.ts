@@ -83,5 +83,5 @@ export function numberedRows(prefix: string, count: number): string[] {
 }
 
 export async function showAllRecords(page: Page, count: number): Promise<void> {
-  await page.getByRole('button', { name: `Todas (${count})` }).click();
+  await page.getByRole('tab', { name: `Todas (${count})` }).click();
 }

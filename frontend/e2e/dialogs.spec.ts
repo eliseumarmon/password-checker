@@ -98,7 +98,7 @@ test.describe('record dialog', () => {
     const discard = async (row: string, left: number) => {
       await openWithKeyboard(page, rowAction(page, row, 'Editar'));
       await editor(page).getByRole('button', { name: 'Descartar' }).click();
-      await expect(page.getByRole('button', { name: `Todas (${left})` })).toBeVisible();
+      await expect(page.getByRole('tab', { name: `Todas (${left})` })).toBeVisible();
     };
     await discard('Bravo', 2);
     await expect(rowAction(page, 'Charlie', 'Editar')).toBeFocused();
@@ -147,7 +147,7 @@ test.describe('comparison dialog', () => {
     await seedGroups(page, 'Alpha', 'Bravo', 'Charlie');
     await openWithKeyboard(page, rowAction(page, 'Bravo', 'Comparar'));
     await compare(page).getByRole('button', { name: 'Descartar' }).first().click();
-    await expect(page.getByRole('button', { name: 'Duplicados (2)' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Duplicados (2)' })).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(compare(page)).toBeHidden();
     await expect(rowAction(page, 'Charlie', 'Comparar')).toBeFocused();

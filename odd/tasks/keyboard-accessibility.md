@@ -2,7 +2,7 @@
 
 Objetivo: hacer la revisión de accesibilidad y teclado que pide `docs/pendiente.md`, y corregir lo que ya se sabe que falta: la gestión del foco en los diálogos de comparación, ficha y sesión, y la semántica de las pestañas y de la navegación.
 Rama: `feat/keyboard-accessibility` desde `main`, después de integrar `css-tokens` y `native-tables` (comparten `style.css` y `App.vue`; el teclado de las tablas se resuelve en `native-tables`). Entrega: `ask-on-risk`, por tramos a `main` (L9): tramo 1, T2 con su documentación; tramo 2, T3 y lo que quede de T4.
-Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso desde el 2026-11-09 (L5).
+Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso desde el 2026-11-09 (L5). Tramo 1 integrado en `main` (`e1dd3f5`); tramo 2 hecho y pendiente de integrar (L13). Quedan por decidir los hallazgos de L6 y L8.
 
 ## Specs
 
@@ -39,10 +39,10 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - Implementar la función compartida y migrar `ConfirmDialog` a ella.
   - Comprobación diferencial: las E2E de `ConfirmDialog` dan el mismo resultado antes y después.
   - Riesgo: punto 3 (la lógica de foco de `ConfirmDialog` pasa a ser compartida). Requiere verificación independiente.
-- [ ] T3 — S4: pestañas y navegación. Ruta: inline.
+- [x] T3 — S4: pestañas y navegación. Ruta: inline. Commit `a4b5c7d` y el de L14; evidencia en L13 y L14.
   - RED primero: E2E de flechas, `aria-selected` y `aria-current`.
   - Cambio de los selectores de rol en las E2E afectadas.
-- [ ] T4 — Documentación: `docs/flujo-usuario.md` (foco de los diálogos, hecho con T2 en L9; teclado en las pestañas) y, si cambia algún criterio, `docs/guia-visual.md`. Ruta: inline.
+- [x] T4 — Documentación: `docs/flujo-usuario.md` (foco de los diálogos, hecho con T2 en L9; teclado en las pestañas, en L13) y, si cambia algún criterio, `docs/guia-visual.md`. Ruta: inline.
 
 ## Log
 
@@ -88,3 +88,15 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - **`R3-002`:** mantener `Esc` pulsado solo actúa una vez. Antes, cada repetición de la tecla cerraba el siguiente diálogo.
   - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 134 de 134; `python -m unittest discover -s tests`, OK; `ruff check .`, sin avisos.
 - **L12 (2026-11-09).** Revisión de `bc52380` (`review-reliability`, con el consentimiento del usuario): aprobada y confirmada. Su única sugerencia queda **pendiente**, sin corregir: una prueba en el repositorio para cuando se descarta desde la ficha la única fila de la última página y el foco va a la última fila de la página anterior (`neighbour()` en `dialogFocus.ts`). La verificación independiente lo comprobó (L10), pero ninguna prueba versionada lo cubre. Tramo 1 cerrado.
+- **L13 (2026-11-09).** Tramo 1 integrado en `main` (`e1dd3f5`, `--no-ff`; el contenido es idéntico al de `2411d7e`), con `Tests` en verde en la rama y en `main`. T3 y lo que quedaba de T4:
+  - **RED:** cinco pruebas nuevas en `frontend/e2e/navigation.spec.ts`, que fallaban: roles de pestaña y panel, flechas con activación automática y vuelta al principio, una sola parada de `Tab`, y `aria-current` en la navegación lateral y en la móvil.
+  - **GREEN:** en `App.vue`, `role="tab"`, `aria-selected`, `aria-controls`, `tabindex` móvil y las flechas. Un único `tabpanel` (`credentials-panel`) envuelve los filtros y la tabla, porque los filtros son comunes a las dos pestañas. La pantalla activa lleva `aria-current="page"`.
+  - **Selectores:** 61 selectores de las E2E pasan del rol `button` al rol `tab`, de forma mecánica. Ninguna aserción cambia.
+  - **Sin cambio visual:** los estilos calculados de los 20 estados de `css-tokens` dan 0 diferencias frente a `main`, sin contar el contenedor nuevo.
+  - **Documentación:** `docs/flujo-usuario.md`, en «Casos y límites relevantes».
+  - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 139 de 139; `python -m unittest discover -s tests`, OK; `ruff check .`, sin avisos. Riesgo: ninguno de los puntos de la lista.
+- **L14 (2026-11-09).** Revisión del tramo 2 hasta `a4b5c7d` (`review-reliability`, con el consentimiento del usuario): aprobada y confirmada. Se aplican sus dos avisos:
+  - **`R3-001`, regresión:** las flechas con un modificador quedaban capturadas, y `Alt+←` y `Alt+→` dejaban de ir atrás y adelante en el navegador. Ahora los modificadores se dejan al navegador. Prueba: `leaves arrow keys with a modifier to the browser`, que fallaba.
+  - **`R3-002`:** la prueba de la parada única de `Tab` comprueba también que esa parada sigue a la pestaña seleccionada.
+  - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 140 de 140; `python -m unittest discover -s tests`, OK; `ruff check .`, sin avisos.
+- **L15 (2026-11-09).** Revisión de `a127803` (`review-reliability`, con el consentimiento del usuario): aprobada y confirmada. Su única sugerencia queda **pendiente**, sin corregir: que la prueba de las flechas con modificador compruebe también que el evento no se cancela (`defaultPrevented`) e incluya `ArrowLeft` y `Meta`. Tramo 2 cerrado.

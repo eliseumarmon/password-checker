@@ -18,7 +18,7 @@ async function importSafari(page: Page): Promise<void> {
   await page.locator('input[type=file][accept*=".csv"]').first()
     .setInputFiles([{ name: 'Passwords.csv', mimeType: 'text/csv', buffer: Buffer.from(SAFARI_CSV) }]);
   if (replacing) await confirmWith(page, 'Importar');
-  await page.getByRole('button', { name: 'Todas (2)' }).click();
+  await page.getByRole('tab', { name: 'Todas (2)' }).click();
 }
 
 async function confirmWith(page: Page, label: string): Promise<void> {
@@ -103,7 +103,7 @@ test('keeps the Safari TOTP hidden, editable and intact up to the Bitwarden expo
   await loadDialog.getByRole('button', { name: 'Abrir sesión' }).click();
   await confirmWith(page, 'Abrir sesión');
   await expect(loadDialog).toBeHidden();
-  await page.getByRole('button', { name: 'Todas (2)' }).click();
+  await page.getByRole('tab', { name: 'Todas (2)' }).click();
   editor = await openEditor(page, 'alice');
   await expect(totpField(editor)).toHaveValue(EDITED_TOTP);
   await editor.getByRole('button', { name: 'Cancelar' }).click();

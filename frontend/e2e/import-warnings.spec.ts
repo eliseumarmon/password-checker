@@ -84,7 +84,7 @@ async function isDirectlyClickable(locator: Locator): Promise<boolean> {
 
 test('shows the import warning with file, columns and row counts, never the discarded values', async ({ page }) => {
   await importViaUi(page, [csvFile('adv.csv', TWO_COLUMN_CSV)]);
-  await expect(page.getByRole('button', { name: 'Todas (3)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Todas (3)' })).toBeVisible();
   const notice = warning(page);
   await expect(notice).toBeVisible();
   await expect(notice.getByText('Importación completada con advertencias', { exact: true })).toBeVisible();
@@ -111,7 +111,7 @@ test('keeps the warning across screens, dialogs, edits and undo', async ({ page 
     await expect(notice).toBeVisible();
   }
   await sidebar.getByRole('button', { name: /Credenciales/ }).click();
-  await page.getByRole('button', { name: 'Todas (3)' }).click();
+  await page.getByRole('tab', { name: 'Todas (3)' }).click();
   // Behind the editor, then back on top once it closes.
   await page.locator('.desktop-table').getByRole('row', { name: /alice/ }).first().getByRole('button', { name: 'Editar' }).click();
   const editor = page.getByRole('dialog', { name: 'Editar credencial' });
@@ -167,7 +167,7 @@ test('keeps the previous warning when a new import is cancelled', async ({ page 
   await importViaUi(page, [csvFile('clean.csv', CLEAN_CSV)], 'cancel');
   await expect(notice).toBeVisible();
   await expect(notice).toContainText('Se han importado 3 credenciales de adv.csv');
-  await expect(page.getByRole('button', { name: 'Todas (3)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Todas (3)' })).toBeVisible();
 });
 
 test('keeps the previous warning when a new import fails', async ({ page }) => {
@@ -194,7 +194,7 @@ test('replaces the warnings on a successful import and clears them on a clean on
   await expect(notice).not.toContainText('extra_secret');
   await importViaUi(page, [csvFile('clean.csv', CLEAN_CSV)]);
   await expect(notice).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Todas (1)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Todas (1)' })).toBeVisible();
 });
 
 test('keeps the previous warning while the new import request is still in flight', async ({ page }) => {
@@ -212,7 +212,7 @@ test('keeps the previous warning while the new import request is still in flight
   await expect(notice).toContainText('adv.csv');
   // The confirmed clean import completes and removes the warnings.
   await expect(notice).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Todas (1)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Todas (1)' })).toBeVisible();
 });
 
 test('lists up to three discarded columns directly and summarizes from four, across files', async ({ page }) => {
@@ -276,7 +276,7 @@ test('stays behind comparison, editor, session and confirmation, and returns whe
   await expect(compare).toBeHidden();
   expect(await topAtWarningCenter(page)).toBe('warning');
 
-  await page.getByRole('button', { name: 'Todas (3)' }).click();
+  await page.getByRole('tab', { name: 'Todas (3)' }).click();
   await page.locator('.desktop-table').getByRole('row', { name: /bob/ }).getByRole('button', { name: 'Editar' }).click();
   const editor = page.getByRole('dialog', { name: 'Editar credencial' });
   await expect(editor).toBeVisible();
@@ -365,7 +365,7 @@ test('clears the warning only when a session opens successfully', async ({ page 
   await openSession(passphrase);
   await confirmWith(page, 'Abrir sesión');
   await expect(loadDialog).toBeHidden();
-  await expect(page.getByRole('button', { name: 'Todas (3)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Todas (3)' })).toBeVisible();
   await expect(notice).toHaveCount(0);
 });
 
@@ -376,7 +376,7 @@ test('does not survive a reload and is not stored in the browser', async ({ page
   const storedKeys = await page.evaluate(() => Object.keys(window.localStorage));
   expect(storedKeys.filter(key => key.toLowerCase().includes('warn'))).toEqual([]);
   await page.reload();
-  await expect(page.getByRole('button', { name: 'Todas (3)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Todas (3)' })).toBeVisible();
   await expect(notice).toHaveCount(0);
   await expect(page.locator('.page-notices')).toHaveCount(0);
 });
