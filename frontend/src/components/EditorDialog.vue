@@ -60,7 +60,8 @@ async function requestClose(): Promise<void> {
   emit('close');
 }
 const dialog = ref<HTMLElement | null>(null);
-useDialogFocus(dialog, { initial: () => dialog.value?.querySelector('input'), onEscape: () => void requestClose() });
+// While a save runs the form still looks dirty: asking to discard it now would leave a confirmation with nothing behind it.
+useDialogFocus(dialog, { initial: () => dialog.value?.querySelector('input'), onEscape: () => { if (!props.busy) void requestClose(); } });
 // Trash and restore act on the saved record and close the editor, dropping any unsaved edit.
 function confirmDroppingEdits(label: string, danger = false): Promise<boolean> {
   return dirty.value

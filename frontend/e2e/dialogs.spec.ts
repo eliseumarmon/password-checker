@@ -78,6 +78,21 @@ test.describe('record dialog', () => {
     await expect(opener).toBeFocused();
   });
 
+  test('ignores Escape while its save is in flight', async ({ page }) => {
+    await seedRecords(page, 'Alpha');
+    await page.route('**/api/records/*', async route => {
+      if (route.request().method() === 'PATCH') await new Promise(resolve => setTimeout(resolve, 500));
+      await route.continue();
+    });
+    await openWithKeyboard(page, rowAction(page, 'Alpha', 'Editar'));
+    await editor(page).getByLabel('Nombre').fill('Alpha saved');
+    await editor(page).getByRole('button', { name: 'Guardar cambios' }).click();
+    await page.keyboard.press('Escape');
+    await expect(editor(page)).toBeHidden();
+    await expect(confirmation(page)).toBeHidden();
+    await expect(desktopTable(page)).toContainText('Alpha saved');
+  });
+
   test('moves focus to the next row, the previous one or the title when its row leaves', async ({ page }) => {
     await seedRecords(page, 'Alpha', 'Bravo', 'Charlie');
     const discard = async (row: string, left: number) => {

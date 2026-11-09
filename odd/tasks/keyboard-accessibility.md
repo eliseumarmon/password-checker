@@ -34,7 +34,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
 ## Tasks
 
 - [x] T1 — S2: revisión con teclado, zoom al 200 % y pantalla de 360 px; hallazgos en el Log. Ruta: inline. Sin código. Evidencia en L6.
-- [ ] T2 — S3: foco de los diálogos y `Esc`. Ruta: inline. Hecha y pendiente de verificación (L8).
+- [x] T2 — S3: foco de los diálogos y `Esc`. Ruta: inline. Commit `eddd5f8` y el de L10; evidencia en L8 y L10.
   - RED primero: E2E de foco inicial, `Tab` que no sale del diálogo, retorno del foco y `Esc`, en cada uno de los tres diálogos.
   - Implementar la función compartida y migrar `ConfirmDialog` a ella.
   - Comprobación diferencial: las E2E de `ConfirmDialog` dan el mismo resultado antes y después.
@@ -78,3 +78,8 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
     - **H1 se amplía:** ya dentro de la ficha, la barra fija de «Guardar» y «Cancelar» tapa a veces el campo con foco («Estado de revisión» a 1280 × 720, y «Código 2FA» y su botón a 360 × 640), y «Notas» es más alto que la pantalla en tamaños pequeños. No lo causa este cambio: antes no se veía porque `Tab` se salía del diálogo.
   - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 131 de 131. Riesgo: punto 3 (la lógica de foco de `ConfirmDialog` pasa a ser compartida); pendiente de verificación independiente.
 - **L9 (2026-11-09).** Estrategia de entrega, elegida por el usuario: «Por tramos a main (Recomendado)». T2 superaba la previsión (unas 440 líneas en la rama, 30 de ellas datos de prueba movidos de archivo). La parte de T4 sobre los diálogos (`docs/flujo-usuario.md`) va con T2, junto al comportamiento que describe.
+- **L10 (2026-11-09).** Verificación independiente de T2 (`eddd5f8` frente a `6f553e4`, en una copia limpia): sin bloqueos, y S3 cumple. `npm run e2e`, 131 de 131, y las E2E de `ConfirmDialog` no cambian. Comprobó además, con pruebas propias: la ficha abierta desde la comparación, la confirmación sobre dos diálogos, descartar la única fila de la última página (el foco va a la última fila de la página anterior), abrir con el enlace del nombre, un diálogo cuyo origen sigue en su sitio, la sesión con un error dentro y abrir y cerrar diálogos varias veces.
+  - **Aviso corregido:** `Esc` mientras se guarda la ficha abría la confirmación de descartar cambios, que se quedaba sin ficha detrás. Ahora `Esc` no hace nada en la ficha mientras hay una petición en curso. Prueba: `ignores Escape while its save is in flight`, que fallaba. La «✕» tiene el mismo problema desde antes de este plan, y es más difícil de provocar: no se cambia aquí.
+  - **Cambio de comportamiento en `ConfirmDialog`,** sin efecto visible con sus dos botones: `Tab` recorre todos los controles enfocables y el foco se devuelve tras `nextTick`.
+  - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 132 de 132; `python -m unittest discover -s tests`, OK; `ruff check .`, sin avisos.
+  - **No probado:** un lector de pantalla real, ni un teclado virtual real. En un móvil, poner el foco en «Nombre» al abrir la ficha puede hacer aparecer el teclado virtual.
