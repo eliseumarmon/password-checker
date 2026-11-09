@@ -147,7 +147,7 @@ Cerrada el 2026-11-04: P2-P8 integradas en `main`, con las alertas de Dependabot
 | [native-tables](../odd/done/native-tables.md): tablas nativas y retirada de PrimeVue (D1); la ordenación se conserva al cambiar de pantalla. **Hecho** (2026-11-09) | `css-tokens` |
 | [keyboard-accessibility](../odd/done/keyboard-accessibility.md): revisión de accesibilidad, foco en diálogos, pestañas. **Hecho** (2026-11-09) | `css-tokens`, `native-tables` |
 | [frontend-bundle](../odd/done/frontend-bundle.md): retirar `vue-router` (Pinia se conserva); dividir el código solo si sigue el aviso de 500 kB. **Hecho** (2026-11-09), sin dividir el código | T1: nada; T2-T3: `native-tables` |
-| [frontend-major-updates](../odd/tasks/frontend-major-updates.md): P12, evaluar `pinia` 4, `vite` 8 y `typescript` 7, cada una en su rama | `native-tables`, `frontend-bundle` T1 |
+| [frontend-major-updates](../odd/tasks/frontend-major-updates.md): P12: `pinia` 4 y `vite` 8 **hechos** (2026-11-09), en una sola rama; `typescript` 7 **bloqueado** hasta que las herramientas de Vue lo admitan | `native-tables`, `frontend-bundle` T1 |
 
 ### Fase 2 — Revisión más ágil
 
@@ -214,3 +214,4 @@ Es un cambio de formato persistido: requerirá verificación independiente y un 
 | 2026-11-09 | `frontend-bundle` retira `vue-router` y se cierra sin dividir el código: Vite ya no avisa de ningún chunk de más de 500 kB. |
 | 2026-11-09 | El usuario aprueba D2, opción A: `Esc` cierra también los diálogos de comparación, ficha y sesión. Empieza `keyboard-accessibility`. |
 | 2026-11-09 | `keyboard-accessibility` está hecho: foco y `Esc` en todos los diálogos, pestañas con flechas, y foco nunca tapado por las barras fijas. Los hallazgos no aprobados quedan en el [trabajo pendiente](pendiente.md#trabajo-pendiente). |
+| 2026-11-09 | P12: `pinia` 4 y `vite` 8 actualizados en una sola rama, por decisión del usuario. `typescript` 7 queda bloqueado: `vue-tsc` y el compilador de Vue no funcionan con él. |
