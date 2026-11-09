@@ -5,7 +5,7 @@ Ramas:
 - T1 en `chore/remove-vue-router` desde `main`. No depende de otros bloques y puede ir en cualquier momento.
 - T2 y T3 en `perf/frontend-bundle` desde `main`, después de integrar `native-tables` (y `keyboard-accessibility` si T3 llega a cargar diálogos bajo demanda).
 
-Entrega: `ask-on-risk`, previsión ~10 líneas en T1 (sin contar `package-lock.json`) y ~60 en T3 si se necesita. Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: planificado, sin empezar.
+Entrega: `ask-on-risk`, previsión ~10 líneas en T1 (sin contar `package-lock.json`) y ~60 en T3 si se necesita. Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso desde el 2026-11-09 (L7); T1 en `chore/remove-vue-router`.
 
 ## Specs
 
@@ -40,3 +40,7 @@ Entrega: `ask-on-risk`, previsión ~10 líneas en T1 (sin contar `package-lock.j
 - **L4 (2026-11-04).** Integrado `origin/main` (`eb719fe`): `docs/close-dependency-hardening`, con la vinculación de P12, ya está en `main`. P11 fija Node 24 en `frontend/.nvmrc`; las mediciones de S3 se hacen con esa versión.
 - **L5 (2026-11-04).** Decisión del usuario, literal: «**Vue Router:** retirarlo durante la Fase 1 y conservar Pinia.» Antes se valoró conservar `vue-router` para la futura navegación multiusuario. La recomendación fue retirarlo: sigue sin usarse, el multiusuario llega después de la bóveda (Fase 6) y reinstalarlo entonces es trivial. P12 sale de `dependency-hardening`, que pasa a `odd/done`, a [frontend-major-updates](frontend-major-updates.md). S5 y T4 apuntan ahora allí. Encargo completo en `odd/done/roadmap-horizons.md`, L1.
 - **L6 (2026-11-06).** Medición de `native-tables` T4 (`2a3f1ba`), con el procedimiento de S3 y Node 24: `index-*.js`, 117 439 bytes (42 737 con gzip); `index-*.css`, 16 339 bytes (4129 con gzip). Antes, el JS era de 751 412 bytes (172 592 con gzip). **Vite ya no avisa de ningún chunk de más de 500 kB.** Según S3, T2 se cierra con esta evidencia al integrar ese tramo en `main`, sin dividir el código, y T3 no hace falta. T1 (retirar `vue-router`) sigue pendiente.
+- **L7 (2026-11-09).** El usuario aprueba empezar: «Sí», a «¿Subo el cierre y sigo con `frontend-bundle`?». T1 en `chore/remove-vue-router`, desde `e974475` (excepción a RED: no hay comportamiento que probar):
+  - `npm uninstall vue-router`. `package-lock.json` pierde 2 entradas (`vue-router` y su copia anidada de `@vue/devtools-api` 6.6.4), de 112 a 110 sin contar la raíz. Ninguna se añade ni cambia de versión: el `@vue/devtools-api` 7.7.10 de Pinia sigue igual. `npm audit`: 0 vulnerabilidades. S2: `npm ls vue-router` no lo muestra.
+  - **Prueba de que no cambia nada:** `dist/index.html` y los dos archivos de `dist/assets` tienen el mismo SHA-256 antes y después de retirarlo: el bundle ya no lo incluía.
+  - Comprobaciones: `npm run build` correcto; `npm run e2e`, 122 de 122; `python -m unittest discover -s tests`, OK; `ruff check .`, sin avisos. Riesgo: punto 5 (dependencias); pendiente de verificación independiente.
