@@ -45,11 +45,32 @@ export function pageWindow(page: number, pages: number, size = 5): number[] {
   return Array.from({ length: end - start + 1 }, (_, index) => start + index + 1);
 }
 
-export function useTable<T, F extends keyof T & string = keyof T & string>(rows: MaybeRefOrGetter<readonly T[]>, initial: SortState<NoInfer<F>>) {
-  const sort = ref(initial) as Ref<SortState<F>>;
+export type TableKey = 'groups' | 'records' | 'trash';
+interface TableMemory { sort: Ref<SortState<string>>; requested: Ref<number> }
+
+// Outlives the components, which unmount when the screen or the tab changes. A reload clears it.
+const memory = new Map<TableKey, TableMemory>();
+
+function remembered(key: TableKey, initial: SortState<string>): TableMemory {
+  let entry = memory.get(key);
+  if (!entry) {
+    entry = { sort: ref(initial), requested: ref(1) };
+    memory.set(key, entry);
+  }
+  return entry;
+}
+
+/** A new workspace has other rows, so the previous page numbers mean nothing there; the chosen sort stays. */
+export function resetTablePages(): void {
+  for (const entry of memory.values()) entry.requested.value = 1;
+}
+
+export function useTable<T, F extends keyof T & string = keyof T & string>(key: TableKey, rows: MaybeRefOrGetter<readonly T[]>, initial: SortState<NoInfer<F>>) {
   // The page asked for is kept apart from the page shown: while a filter hides the paginator, the page
   // asked for survives and comes back when the filter is cleared.
-  const requested = ref(1);
+  const stored = remembered(key, initial);
+  const sort = stored.sort as Ref<SortState<F>>;
+  const { requested } = stored;
   const sorted = computed(() => sortRows(toValue(rows), sort.value));
   const pages = computed(() => pageCount(sorted.value.length));
   const paginated = computed(() => sorted.value.length > PAGE_SIZE);
@@ -58,7 +79,8 @@ export function useTable<T, F extends keyof T & string = keyof T & string>(rows:
     ? sorted.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE)
     : sorted.value);
   // With the paginator on screen, fewer pages than the current one move to the last page left.
-  watch(pages, count => { if (paginated.value && requested.value > count) requested.value = count; });
+  // Also on mounting: the rows may have changed while the table was off screen.
+  watch(pages, count => { if (paginated.value && requested.value > count) requested.value = count; }, { immediate: true });
 
   function sortBy(field: F): void {
     sort.value = nextSort(sort.value, field);

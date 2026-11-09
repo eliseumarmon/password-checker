@@ -18,6 +18,7 @@ import SettingsView from './components/SettingsView.vue';
 import { confirmAction, pendingConfirm, settleConfirm } from './confirm';
 import { SCREENS } from './labels';
 import { MIN_SESSION_PASSPHRASE_LENGTH } from './limits';
+import { resetTablePages } from './tableState';
 import type { CredentialDetail, CredentialSummary, DuplicateGroup, FilterType, RecordEdit, Screen, SessionInput, SessionMode } from './types';
 
 const store = useWorkspace();
@@ -83,6 +84,7 @@ async function loadFileList(files: FileList | File[]): Promise<void> {
   if (!selectedFiles.length) { store.error = 'Selecciona archivos CSV'; return; }
   if (data.value?.stats.total && !await confirmAction('Importar reemplazará la sesión actual sin guardar. ¿Continuar?', 'Importar')) return;
   await store.importFiles(selectedFiles);
+  resetTablePages();
   compareIds.value = null; selected.value = null; subtab.value = 'duplicates'; screen.value = 'credentials';
 }
 function openGroup(group: DuplicateGroup): void {
@@ -139,6 +141,7 @@ async function submitSession({ passphrase, confirmation, file }: SessionInput): 
       if (store.error) return;
       // Only a session that really opened replaces what the warnings described.
       store.warnings = [];
+      resetTablePages();
       screen.value = 'credentials';
       subtab.value = 'duplicates';
       selected.value = null; compareIds.value = null;

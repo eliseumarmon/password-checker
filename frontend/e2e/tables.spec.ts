@@ -438,3 +438,88 @@ test.describe('accessible groups and trash tables', () => {
     await expect(page.getByRole('heading', { name: 'Credenciales descartadas' })).toBeFocused();
   });
 });
+
+// native-tables S8: each table keeps its sort and page when its screen is left and reopened.
+test.describe('continuity across screens', () => {
+  const screenButton = (page: Page, name: string) => page.getByRole('button', { name }).first();
+  const ROWS = [CHROMIUM_HEADER, ...numberedRows('Alpha', 60), ...numberedRows('Beta', 35)];
+
+  test('keeps the sort and the page of the records table when leaving its screen and its tab', async ({ page }) => {
+    await seed(page, [{ name: 'chrome.csv', lines: ROWS }]);
+    await showAllRecords(page, 95);
+    const table = desktopTable(page);
+    await sortBy(table, 'Usuario');
+    await sortBy(table, 'Usuario');
+    await goToPage(table, 2);
+    await expect(currentPage(table)).toHaveText('2');
+    const firstUser = await column(table, 2).first().textContent();
+
+    await screenButton(page, 'Auditoría').click();
+    await screenButton(page, 'Credenciales').click();
+    await expect(columnHeader(table, 'Usuario')).toHaveAttribute('aria-sort', 'descending');
+    await expect(currentPage(table)).toHaveText('2');
+    await expect(column(table, 2).first()).toHaveText(firstUser!);
+
+    await page.getByRole('button', { name: /^Duplicados/ }).click();
+    await showAllRecords(page, 95);
+    await expect(columnHeader(table, 'Usuario')).toHaveAttribute('aria-sort', 'descending');
+    await expect(currentPage(table)).toHaveText('2');
+  });
+
+  test('keeps the sort of the groups table when switching tabs', async ({ page }) => {
+    const copies = (name: string, count: number) => Array.from({ length: count }, () => chromiumRow(name, 'alice'));
+    await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, ...copies('Alpha', 3), ...copies('Bravo', 2)] }]);
+    const table = desktopTable(page);
+    await sortBy(table, 'Copias');
+    await expect(column(table, 1)).toHaveText(['Bravo', 'Alpha']);
+    await showAllRecords(page, 5);
+    await page.getByRole('button', { name: /^Duplicados/ }).click();
+    await expect(columnHeader(table, 'Copias')).toHaveAttribute('aria-sort', 'ascending');
+    await expect(column(table, 1)).toHaveText(['Bravo', 'Alpha']);
+  });
+
+  test('keeps the sort of the trash table when leaving its screen', async ({ page }) => {
+    await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, chromiumRow('Alpha', 'bob'), chromiumRow('Bravo', 'alice')] }]);
+    const ids = (await (await page.request.get('/api/workspace')).json()).records.map((record: { id: string }) => record.id);
+    expect((await page.request.post('/api/records/trash', { data: { ids } })).ok()).toBe(true);
+    await page.reload();
+    await screenButton(page, 'Papelera (2)').click();
+    const table = desktopTable(page);
+    await sortBy(table, 'Usuario');
+    await expect(column(table, 2)).toHaveText(['alice', 'bob']);
+    await screenButton(page, 'Ajustes').click();
+    await screenButton(page, 'Papelera (2)').click();
+    await expect(columnHeader(table, 'Usuario')).toHaveAttribute('aria-sort', 'ascending');
+    await expect(column(table, 2)).toHaveText(['alice', 'bob']);
+  });
+
+  test('shows the last page left when the page kept no longer exists on return', async ({ page }) => {
+    await seed(page, [{ name: 'chrome.csv', lines: ROWS }]);
+    await showAllRecords(page, 95);
+    const table = desktopTable(page);
+    await goToPage(table, 'last');
+    await expect(currentPage(table)).toHaveText('4');
+    await page.getByRole('button', { name: /^Duplicados/ }).click();
+    await page.getByRole('textbox', { name: 'Buscar credenciales' }).fill('Beta');
+    await showAllRecords(page, 95);
+    await expect(currentPage(table)).toHaveText('2');
+    await expect(bodyRows(table)).toHaveCount(5);
+  });
+
+  test('starts at the first page, with the same sort, after importing other files', async ({ page }) => {
+    await seed(page, [{ name: 'chrome.csv', lines: ROWS }]);
+    await showAllRecords(page, 95);
+    const table = desktopTable(page);
+    await sortBy(table, 'Usuario');
+    await goToPage(table, 3);
+    await expect(currentPage(table)).toHaveText('3');
+    await page.locator('input[type=file][accept*=".csv"]').first().setInputFiles({
+      name: 'chrome.csv', mimeType: 'text/csv', buffer: Buffer.from([CHROMIUM_HEADER, ...numberedRows('Gamma', 95)].join('\n')),
+    });
+    await page.getByRole('alertdialog', { name: 'Confirmar acción' }).getByRole('button', { name: 'Importar', exact: true }).click();
+    await showAllRecords(page, 95);
+    await expect(columnHeader(table, 'Usuario')).toHaveAttribute('aria-sort', 'ascending');
+    await expect(currentPage(table)).toHaveText('1');
+    await expect(column(table, 2).first()).toHaveText('gamma-00');
+  });
+});
