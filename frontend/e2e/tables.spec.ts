@@ -1,45 +1,15 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
-  bodyRows, column, columnHeader, currentPage, desktopTable, goToPage, pageButtons, pageControl, sortBy,
+  bodyRows, CHROMIUM_HEADER, chromiumRow, column, columnHeader, currentPage, desktopTable, goToPage, numberedRows,
+  pageButtons, pageControl, seed, showAllRecords, sortBy,
 } from './tables';
 
 // Characterization of the desktop tables (native-tables T1): these tests pin how sorting and
 // paging behave today, so the native tables can be checked against the same expectations.
 // Fictional credentials only, built in memory.
 
-const CHROMIUM_HEADER = 'name,url,username,password,note';
-
 // The tables compare text with the browser's locale, so the expected orders hold for this one.
 test.use({ locale: 'es-ES' });
-
-interface CsvFile { name: string; lines: string[] }
-
-/** Replaces the shared E2E workspace with these files and opens the app.
- * Safe only because the E2E tests run serially against one backend (playwright.config.ts). */
-async function seed(page: Page, files: CsvFile[]): Promise<void> {
-  const form = new FormData();
-  for (const file of files) form.append('files', new Blob([file.lines.join('\n')], { type: 'text/csv' }), file.name);
-  const imported = await page.request.post('/api/import', { multipart: form });
-  expect(imported.ok()).toBe(true);
-  await page.goto('/');
-}
-
-function chromiumRow(name: string, username: string): string {
-  const slug = name.normalize('NFD').replace(/[^\w]+/g, '-').toLowerCase();
-  return `${name},https://${slug}.invalid/,${username},fake-${slug}-secret-1234,`;
-}
-
-/** `count` sites named "<prefix> 00", "<prefix> 01"… with user names "<prefix>-00"… */
-function numberedRows(prefix: string, count: number): string[] {
-  return Array.from({ length: count }, (_, index) => {
-    const number = String(index).padStart(2, '0');
-    return chromiumRow(`${prefix} ${number}`, `${prefix.toLowerCase()}-${number}`);
-  });
-}
-
-async function showAllRecords(page: Page, count: number): Promise<void> {
-  await page.getByRole('button', { name: `Todas (${count})` }).click();
-}
 
 test('sorts by name at first, comparing numbers, case and accents as a person reads them', async ({ page }) => {
   const names = ['zulu', 'a10', 'Beta', 'Álamo', 'a2', 'beta', 'alpha', 'Zeta'];

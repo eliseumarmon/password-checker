@@ -1,6 +1,6 @@
 # Hoja de ruta
 
-Este documento reúne en un solo sitio las fases de trabajo de Password Checker, el plan de cada funcionalidad y las decisiones que siguen abiertas, para que la hoja de ruta no dependa de conversaciones. **Es una propuesta:** solo están aprobadas la decisión D1 y la planificación de la Fase 1. Las ideas de origen están en el [trabajo pendiente](pendiente.md); el funcionamiento actual, en el [flujo de usuario](flujo-usuario.md).
+Este documento reúne en un solo sitio las fases de trabajo de Password Checker, el plan de cada funcionalidad y las decisiones que siguen abiertas, para que la hoja de ruta no dependa de conversaciones. **Es una propuesta:** solo están aprobadas las decisiones D1, D2 y D9, y la planificación de la Fase 1. Las ideas de origen están en el [trabajo pendiente](pendiente.md); el funcionamiento actual, en el [flujo de usuario](flujo-usuario.md).
 
 ## Resumen
 
@@ -8,7 +8,7 @@ Este documento reúne en un solo sitio las fases de trabajo de Password Checker,
 |---|---|---|---|---|
 | 0 | Endurecer dependencias y cadena de suministro | **Cerrada** (2026-11-04), con P10 integrada el mismo día | — | [dependency-hardening](../odd/done/dependency-hardening.md), [actions-sha-pinning](../odd/done/actions-sha-pinning.md) (P10) |
 | — | Correcciones independientes: «Abrir sitio» y normalización de URL | En curso | — | [site-link-navigation](../odd/tasks/site-link-navigation.md) |
-| 1 | Cimientos del frontend: colores en variables, tablas nativas, accesibilidad, tamaño del bundle y actualizaciones mayores | En curso | D2, solo para una tarea | [css-tokens](../odd/done/css-tokens.md) (hecho), [native-tables](../odd/done/native-tables.md) (hecho), [keyboard-accessibility](../odd/tasks/keyboard-accessibility.md), [frontend-bundle](../odd/done/frontend-bundle.md) (hecho), [frontend-major-updates](../odd/tasks/frontend-major-updates.md) (P12) |
+| 1 | Cimientos del frontend: colores en variables, tablas nativas, accesibilidad, tamaño del bundle y actualizaciones mayores | En curso | — | [css-tokens](../odd/done/css-tokens.md) (hecho), [native-tables](../odd/done/native-tables.md) (hecho), [keyboard-accessibility](../odd/tasks/keyboard-accessibility.md), [frontend-bundle](../odd/done/frontend-bundle.md) (hecho), [frontend-major-updates](../odd/tasks/frontend-major-updates.md) (P12) |
 | 2 | Revisión más ágil, sin cambiar el formato `.pwc` | Planificada | — | [review-filters](../odd/tasks/review-filters.md), [undo-ux](../odd/tasks/undo-ux.md), [secret-visibility](../odd/tasks/secret-visibility.md), [export-preview](../odd/tasks/export-preview.md), [compare-resolution](../odd/tasks/compare-resolution.md), [local-strength](../odd/tasks/local-strength.md), [mobile-record-detail](../odd/tasks/mobile-record-detail.md), [audit-layout](../odd/tasks/audit-layout.md) |
 | 3 | Datos de revisión que se guardan en la sesión (`.pwc` v3) | **Bloqueada** | D8, D3 (y D5 para las asociaciones de servicio) | Sin plan detallado (véase [Fase 3](#fase-3--datos-de-revisión-en-la-sesión)) |
 | 4 | Ajustes: tema claro, ayuda, bloqueo por inactividad, idioma | Planificada en parte | D4 (bloqueo), D6 (idioma) | [light-theme](../odd/tasks/light-theme.md), [help-section](../odd/tasks/help-section.md) |
@@ -34,7 +34,7 @@ Fuera de la hoja de ruta, por no ser viable sin un modelo de amenazas: el acceso
 | ID | Pregunta | Estado | Bloquea | Recomendación |
 |---|---|---|---|---|
 | D1 | ¿Mantener PrimeVue (y actualizarlo) o sustituirlo por tablas propias? | **Aprobada** (2026-11-03): tablas HTML nativas con Vue, sin PrimeVue | — | — |
-| D2 | ¿Debe `Esc` cerrar los diálogos de comparación, ficha y sesión? | **Pendiente** | `keyboard-accessibility` T2 | Opción A |
+| D2 | ¿Debe `Esc` cerrar los diálogos de comparación, ficha y sesión? | **Aprobada** (2026-11-09): opción A, `Esc` cierra todos | — | — |
 | D3 | Al pasar a `.pwc` v3, ¿se migran las sesiones v2 o se rechazan, como se hizo con v1? | **Pendiente** | Fase 3 | Decidir después de D8 |
 | D4 | ¿Qué significa «bloquear» por inactividad? | **Pendiente** | Bloqueo por inactividad (Fase 4) | Opción B, como primer paso de la bóveda |
 | D5 | ¿Las credenciales se identifican por su URL o se vinculan a un servicio lógico común? | **Pendiente** | Asociaciones de servicio (Fase 3) y modelo de la bóveda (Fase 6) | Decidir en `vault-discovery` T4 |
@@ -52,7 +52,7 @@ Fuera de la hoja de ruta, por no ser viable sin un modelo de amenazas: el acceso
 | A. `Esc` cierra todos los diálogos | La ficha con cambios sin guardar pide confirmación antes de cerrarse, igual que hoy con «✕»; la comparación y la sesión se cierran directamente | Es lo que espera el patrón de diálogo de WAI-ARIA APG y unifica el comportamiento | En la sesión se pierde la contraseña escrita (no se guarda nada más) |
 | B. Mantener el comportamiento actual | Solo la confirmación se cierra con `Esc` | No cambia nada documentado | Comportamiento distinto según el diálogo, menos predecible con teclado |
 
-Recomendación: A. No se pierden cambios porque reutiliza la confirmación de la ficha. Conviene resolverla antes de `keyboard-accessibility` T2, que trabaja el teclado de esos mismos diálogos.
+**Decisión (2026-11-09): opción A.** No se pierden cambios, porque reutiliza la confirmación de la ficha. Se implementa en `keyboard-accessibility` T2.
 
 ### D3 — Sesiones v2 al pasar a v3
 
@@ -145,7 +145,7 @@ Cerrada el 2026-11-04: P2-P8 integradas en `main`, con las alertas de Dependabot
 |---|---|
 | [css-tokens](../odd/done/css-tokens.md): colores en variables CSS, sin cambio visual. **Hecho** (2026-11-04) | — |
 | [native-tables](../odd/done/native-tables.md): tablas nativas y retirada de PrimeVue (D1); la ordenación se conserva al cambiar de pantalla. **Hecho** (2026-11-09) | `css-tokens` |
-| [keyboard-accessibility](../odd/tasks/keyboard-accessibility.md): revisión de accesibilidad, foco en diálogos, pestañas | `css-tokens`, `native-tables`; T2, de D2 |
+| [keyboard-accessibility](../odd/tasks/keyboard-accessibility.md): revisión de accesibilidad, foco en diálogos, pestañas | `css-tokens`, `native-tables` |
 | [frontend-bundle](../odd/done/frontend-bundle.md): retirar `vue-router` (Pinia se conserva); dividir el código solo si sigue el aviso de 500 kB. **Hecho** (2026-11-09), sin dividir el código | T1: nada; T2-T3: `native-tables` |
 | [frontend-major-updates](../odd/tasks/frontend-major-updates.md): P12, evaluar `pinia` 4, `vite` 8 y `typescript` 7, cada una en su rama | `native-tables`, `frontend-bundle` T1 |
 
@@ -212,3 +212,4 @@ Es un cambio de formato persistido: requerirá verificación independiente y un 
 | 2026-11-06 | `native-tables` retira PrimeVue (D1). El JS del frontend baja de 751 kB a 117 kB (de 173 kB a 43 kB con gzip) y Vite ya no avisa de ningún chunk de más de 500 kB. Con esa medición, `frontend-bundle` no necesitará dividir el código. |
 | 2026-11-09 | `native-tables` está hecho e integrado en `main`, y el usuario acepta las diferencias visuales. |
 | 2026-11-09 | `frontend-bundle` retira `vue-router` y se cierra sin dividir el código: Vite ya no avisa de ningún chunk de más de 500 kB. |
+| 2026-11-09 | El usuario aprueba D2, opción A: `Esc` cierra también los diálogos de comparación, ficha y sesión. Empieza `keyboard-accessibility`. |

@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useDialogFocus } from '../dialogFocus';
 import { MIN_SESSION_PASSPHRASE_LENGTH } from '../limits';
 import type { SessionInput, SessionMode } from '../types';
 
-defineProps<{ mode: SessionMode; busy: boolean }>();
-defineEmits<{ close: []; submit: [input: SessionInput] }>();
+const props = defineProps<{ mode: SessionMode; busy: boolean }>();
+const emit = defineEmits<{ close: []; submit: [input: SessionInput] }>();
+
+const dialog = ref<HTMLElement | null>(null);
+// While a session opens, its result still needs this dialog to show an error in.
+useDialogFocus(dialog, { initial: () => dialog.value?.querySelector('input'), onEscape: () => { if (!props.busy) emit('close'); } });
 
 // Secrets live only in this dialog and vanish when it closes.
 const passphrase = ref('');
@@ -14,7 +19,7 @@ const file = ref<File | null>(null);
 
 <template>
   <div class="overlay modal-overlay" @click.self="$emit('close')">
-    <section class="session-dialog card" role="dialog" aria-modal="true" aria-label="Sesión cifrada">
+    <section ref="dialog" class="session-dialog card" role="dialog" aria-modal="true" aria-label="Sesión cifrada">
       <slot />
       <div class="dialog-content">
       <div class="drawer-top"><h2>{{mode==='save'?'Guardar sesión cifrada':'Abrir sesión anterior'}}</h2><button aria-label="Cerrar" @click="$emit('close')">✕</button></div>

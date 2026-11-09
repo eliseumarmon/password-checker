@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 // The only place that knows how the desktop tables, their headers and their paginator are built,
 // so replacing the table implementation changes this file and not the tests that use it.
@@ -52,4 +52,36 @@ export function pageButtons(table: Locator): Locator {
 /** The number button of the page on screen. */
 export function currentPage(table: Locator): Locator {
   return paginator(table).locator('[aria-current="page"]');
+}
+
+// Fictional credentials only, built in memory.
+export const CHROMIUM_HEADER = 'name,url,username,password,note';
+
+export interface CsvFile { name: string; lines: string[] }
+
+/** Replaces the shared E2E workspace with these files and opens the app.
+ * Safe only because the E2E tests run serially against one backend (playwright.config.ts). */
+export async function seed(page: Page, files: CsvFile[]): Promise<void> {
+  const form = new FormData();
+  for (const file of files) form.append('files', new Blob([file.lines.join('\n')], { type: 'text/csv' }), file.name);
+  const imported = await page.request.post('/api/import', { multipart: form });
+  expect(imported.ok()).toBe(true);
+  await page.goto('/');
+}
+
+export function chromiumRow(name: string, username: string): string {
+  const slug = name.normalize('NFD').replace(/[^\w]+/g, '-').toLowerCase();
+  return `${name},https://${slug}.invalid/,${username},fake-${slug}-secret-1234,`;
+}
+
+/** `count` sites named "<prefix> 00", "<prefix> 01"… with user names "<prefix>-00"… */
+export function numberedRows(prefix: string, count: number): string[] {
+  return Array.from({ length: count }, (_, index) => {
+    const number = String(index).padStart(2, '0');
+    return chromiumRow(`${prefix} ${number}`, `${prefix.toLowerCase()}-${number}`);
+  });
+}
+
+export async function showAllRecords(page: Page, count: number): Promise<void> {
+  await page.getByRole('button', { name: `Todas (${count})` }).click();
 }
