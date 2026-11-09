@@ -12,7 +12,7 @@ Este documento reúne lo que la aplicación todavía no hace: limitaciones conoc
 ## Trabajo pendiente
 
 - Validación con usuarios: no se han realizado entrevistas ni pruebas observadas con personas ni con contraseñas reales (véase [Validación con personas](#validación-con-personas)).
-- Una revisión más amplia de accesibilidad y teclado.
+- Accesibilidad en móvil, hallazgos no aprobados de la [revisión de teclado](../odd/done/keyboard-accessibility.md) (L6 y L8): botones y campos de 36 a 43 px de alto, cuando la guía pide 44, y casilla «Solo pendientes» de 18 px; icono de papelera de 16 px, cuando la guía pide 18-24, y «Guardar» y «Cancelar» fuera de la vista al abrir la ficha o la sesión en pantallas muy bajas. Falta además probar con un lector de pantalla y un teclado virtual reales.
 - Prueba automática de contraste: medir los pares de texto, borde de control y foco en uso, y exigir 4,5:1 al texto y 3:1 a lo demás (WCAG 1.4.3 y 1.4.11), sin fijar los valores exactos de los colores. Antes hay que decidir qué hacer con los seis bordes de control que no llegan a 3:1 ([css-tokens](../odd/done/css-tokens.md), L7); corregirlos es un cambio visual.
 - Dependencias: el endurecimiento está completado ([auditoría de dependencias](auditoria-dependencias.md) y plan en [dependency-hardening](../odd/done/dependency-hardening.md)). Las medidas que quedaban tienen su propio plan, enlazado desde la [hoja de ruta](hoja-de-ruta.md#fase-0--endurecimiento-de-dependencias).
 - Una evaluación local de fortaleza más completa.

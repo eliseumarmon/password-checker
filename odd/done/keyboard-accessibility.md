@@ -2,7 +2,7 @@
 
 Objetivo: hacer la revisión de accesibilidad y teclado que pide `docs/pendiente.md`, y corregir lo que ya se sabe que falta: la gestión del foco en los diálogos de comparación, ficha y sesión, y la semántica de las pestañas y de la navegación.
 Rama: `feat/keyboard-accessibility` desde `main`, después de integrar `css-tokens` y `native-tables` (comparten `style.css` y `App.vue`; el teclado de las tablas se resuelve en `native-tables`). Entrega: `ask-on-risk`, por tramos a `main` (L9): tramo 1, T2 con su documentación; tramo 2, T3 y lo que quede de T4.
-Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso desde el 2026-11-09 (L5). Tramos 1 y 2 integrados en `main` (`e1dd3f5` y `2db587b`); tramo 3 (T5 y T6, L16) hecho y pendiente de integrar.
+Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso desde el 2026-11-09 (L5). **Hecho** (L18). Tramos 1 y 2 integrados en `main` (`e1dd3f5` y `2db587b`); el tramo 3 se integra con esta rama.
 
 ## Specs
 
@@ -117,3 +117,9 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - **`R3-001`:** las pruebas solo avanzaban con `Tab`, así que no demostraban la reserva bajo la cabecera fija. Nuevas pruebas con `Mayús+Tab`, a 640 × 360 y 360 × 640. Fallan si se quita la reserva superior.
   - **`R3-002`:** la comprobación mira también los bordes del control, no solo su centro. **Eso descubrió un fallo real:** el control quedaba pegado a la barra y su contorno de foco, debajo de ella. La reserva sube 8 px por cada lado.
   - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 147 de 147; `python -m unittest discover -s tests`, OK; `ruff check .`, sin avisos. Auditoría de L6: 0 controles tapados, 0 fuera de pantalla y 0 paradas fuera de los diálogos en las 36 combinaciones.
+- **L18 (2026-11-09).** Revisión de `d90fad5` (`review-reliability`, con el consentimiento del usuario): aprobada y confirmada. Cierre del plan. Sus avisos no bloqueaban nada y quedan **pendientes**, sin corregir, igual que `R3-001` (L12) y la sugerencia de L15:
+  - Ninguna prueba comprueba que el contorno de foco queda libre: la comprobación mira dentro del control, y el margen de 8 px no está fijado por ninguna aserción.
+  - Las pruebas de `Tab` por la página solo usan tamaños con tarjetas. La tabla de escritorio la cubre la auditoría de L6, que no está en el repositorio.
+  - Los 96 px reservados para la barra de «Guardar» son una estimación: no se derivan de su altura real, y se aplican también a los diálogos sin esa barra.
+  - **Hallazgos no aprobados, en `docs/pendiente.md`:** H2 (objetivos táctiles de menos de 44 px), H3 (icono de papelera de 16 px) y H4 («Guardar» y «Cancelar» fuera de la vista al abrir en pantallas muy bajas).
+  - **Sin probar:** con un lector de pantalla real y con un teclado virtual real.
