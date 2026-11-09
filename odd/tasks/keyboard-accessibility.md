@@ -33,7 +33,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
 
 ## Tasks
 
-- [ ] T1 — S2: revisión con teclado, zoom al 200 % y pantalla de 360 px; hallazgos en el Log. Ruta: inline. Sin código.
+- [x] T1 — S2: revisión con teclado, zoom al 200 % y pantalla de 360 px; hallazgos en el Log. Ruta: inline. Sin código. Evidencia en L6.
 - [ ] T2 — S3: foco de los diálogos y `Esc`. Ruta: inline.
   - RED primero: E2E de foco inicial, `Tab` que no sale del diálogo, retorno del foco y `Esc`, en cada uno de los tres diálogos.
   - Implementar la función compartida y migrar `ConfirmDialog` a ella.
@@ -56,3 +56,12 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - Ruta: inline en todas las tareas; no aplica el disparador de escritor (las unidades comparten `App.vue`, `style.css` y los E2E).
 - **L4 (2026-11-04).** Petición: «Necesito que documentes todos los planes y que marques las decisiones pendientes.» Con ella, el usuario aporta una revisión externa que recomienda resolver D2 durante la Fase 1, antes del bloque de accesibilidad. Se marca D2 como decisión pendiente en S1 y como dependencia de T2; las opciones están en `docs/hoja-de-ruta.md`.
 - **L5 (2026-11-09).** El usuario resuelve D2: «Opción A». Y aprueba empezar: «Sí», a «¿Empiezo `keyboard-accessibility`?». Rama `feat/keyboard-accessibility`, desde `6f553e4`. Se actualizan S1, S3, S5 y T2. Las dependencias ya están integradas: `css-tokens`, `native-tables`.
+- **L6 (2026-11-09).** T1, revisión con un script fuera del repositorio y datos ficticios. Recorre con `Tab` y mide 36 combinaciones: 9 estados (Duplicados, Todas, Auditoría, Papelera, Ajustes y los diálogos de comparación, ficha, sesión y confirmación) en 4 tamaños (1280 × 720; 640 × 360, equivalente a zoom al 200 %; 360 × 640; y 360 × 340, que simula el teclado virtual abierto). **No sustituye** a probar con un lector de pantalla ni con un teclado virtual real.
+  - **Cumple:** todos los controles que reciben foco tienen contorno visible (3 px); ningún control carece de nombre accesible; no hay desplazamiento horizontal en ningún tamaño; el foco nunca queda fuera de la pantalla; `prefers-reduced-motion` está definido, y `ConfirmDialog` retiene el foco.
+  - **Lo cubre S3:** en comparación, ficha y sesión, `Tab` sale del diálogo hacia la página de detrás.
+  - **Lo cubre S4:** pestañas y navegación.
+  - **Hallazgos que S3 y S4 no cubren** (según S2, pasan a tarea solo si el usuario lo aprueba):
+    - **H1 — Foco tapado por la cabecera fija y la barra inferior** (§8, «Zoom 200 % y teclado | Foco visible, navegación y controles no ocultos»). A 640 × 360, la cabecera (155 px) y la barra (86 px) ocupan 241 de 360 px; en Todas quedan tapadas 41 de 89 paradas de `Tab`, y a 360 × 340, 78 de 89. A 360 × 640 solo quedan tapadas 2 paradas en Duplicados y 2 en Todas. No hay `scroll-padding` definido.
+    - **H2 — Objetivos táctiles de menos de 44 px en móvil** (§2.2): «Editar →», «Comparar →» y «Restaurar», 40 px de alto; papelera, 42 × 40; pestañas, 39 de alto; campos, 43 de alto; casilla «Solo pendientes», 18 × 18; botones del comparador, 36 de alto; cierre «✕», 43 × 40.
+    - **H3 — Icono de papelera de 16 px** (§2.2: 18–24 px). Tiene etiqueta accesible.
+    - **H4 — «Guardar» y «Cancelar» fuera de la vista al abrir** la ficha y la sesión a 640 × 360 y 360 × 340 (§8, «Guardar/cancelar siempre accesible»). En la sesión se llega con `Tab`; en la ficha, el recorrido no llegó a esos botones (tope de 90 pulsaciones) y se comprobará en T2.
