@@ -60,8 +60,11 @@ async function requestClose(): Promise<void> {
   emit('close');
 }
 const dialog = ref<HTMLElement | null>(null);
+const title = ref<HTMLElement | null>(null);
+// On a touch screen, focusing a field would raise the on-screen keyboard over half of the record.
+const startsOnTitle = window.matchMedia('(pointer: coarse)').matches;
 // While a save runs the form still looks dirty: asking to discard it now would leave a confirmation with nothing behind it.
-useDialogFocus(dialog, { initial: () => dialog.value?.querySelector('input'), onEscape: () => { if (!props.busy) void requestClose(); } });
+useDialogFocus(dialog, { initial: () => startsOnTitle ? title.value : dialog.value?.querySelector('input'), onEscape: () => { if (!props.busy) void requestClose(); } });
 // Trash and restore act on the saved record and close the editor, dropping any unsaved edit.
 function confirmDroppingEdits(label: string, danger = false): Promise<boolean> {
   return dirty.value
@@ -91,7 +94,7 @@ async function openSite(url: string): Promise<void> {
     <section ref="dialog" class="editor-dialog card" role="dialog" aria-modal="true" aria-label="Editar credencial">
       <slot />
       <div class="dialog-content">
-      <div class="drawer-top"><h2>Editar credencial</h2><button aria-label="Cerrar" @click="requestClose">✕</button></div>
+      <div class="drawer-top"><h2 ref="title" tabindex="-1">Editar credencial</h2><button aria-label="Cerrar" @click="requestClose">✕</button></div>
       <div class="editor-fields editor-grid">
         <label>Nombre<input v-model="form.name" autocomplete="off" /></label>
         <label>URL o paquete Android<input v-model="form.url" autocomplete="off" spellcheck="false" /></label>

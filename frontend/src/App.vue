@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from 'vue';
 import { api } from './api';
 import { useWorkspace } from './store';
 import TrashIcon from './TrashIcon.vue';
@@ -37,6 +37,12 @@ const mobileNav = ref<HTMLElement | null>(null);
 const headerHeight = ref(0);
 const navHeight = ref(0);
 let layoutObserver: ResizeObserver | undefined;
+// On the root element, so that the page itself can keep focused controls clear of these bars.
+watchEffect(() => {
+  const root = document.documentElement.style;
+  root.setProperty('--header-height', `${headerHeight.value}px`);
+  root.setProperty('--nav-height', `${navHeight.value}px`);
+});
 // Per-viewer convenience only: storage may be unavailable, so failures are ignored.
 const SIDEBAR_KEY = 'pc.sidebarCollapsed';
 const collapsed = ref(readCollapsed());
@@ -173,7 +179,7 @@ onUnmounted(() => layoutObserver?.disconnect());
 </script>
 
 <template>
-  <div class="shell" :style="{ '--header-height': headerHeight + 'px', '--nav-height': navHeight + 'px' }">
+  <div class="shell">
     <aside class="sidebar" :class="{collapsed}" aria-label="Navegación principal">
       <button class="brand" :aria-label="collapsed?'Expandir menú':'Contraer menú'" :title="collapsed?'Expandir menú':'Contraer menú'" :aria-expanded="!collapsed" @click="collapsed=!collapsed"><span class="brand-mark">◇</span><span class="label"><strong>Password Checker</strong><small>Revisión privada de credenciales</small></span></button>
       <nav>

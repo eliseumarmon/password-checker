@@ -119,6 +119,16 @@ test.describe('record dialog', () => {
   });
 });
 
+test.describe('record dialog on a touch screen', () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
+
+  test('starts on its title, so that the on-screen keyboard stays closed', async ({ page }) => {
+    await seedRecords(page, 'Alpha');
+    await page.locator('.mobile-cards .record-card').getByRole('button', { name: 'Editar →' }).tap();
+    await expect(editor(page).getByRole('heading', { name: 'Editar credencial' })).toBeFocused();
+  });
+});
+
 test.describe('comparison dialog', () => {
   test('starts on its title, keeps Tab inside, closes with Escape and returns focus', async ({ page }) => {
     await seedGroups(page, 'Alpha', 'Bravo');

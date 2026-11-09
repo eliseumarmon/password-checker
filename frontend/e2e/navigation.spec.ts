@@ -83,3 +83,56 @@ test('marks the current screen in the mobile navigation', async ({ page }) => {
   await expect(navigation.locator('[aria-current="page"]')).toHaveCount(1);
   await expect(navigation.getByRole('button', { name: 'Ajustes' })).toHaveAttribute('aria-current', 'page');
 });
+
+/** Tabs through the page and returns every control that was hidden behind something when it took the focus. */
+async function coveredWhileTabbing(page: Page, presses: number, key = 'Tab'): Promise<string[]> {
+  const covered: string[] = [];
+  for (let press = 0; press < presses; press++) {
+    await page.keyboard.press(key);
+    const name = await page.evaluate(() => {
+      const element = document.activeElement as HTMLElement;
+      const box = element.getBoundingClientRect();
+      const x = box.left + box.width / 2;
+      // Its centre and both edges, ignoring any part beyond the window: some fields are taller than a small screen.
+      const hidden = [box.top + 1, box.top + box.height / 2, box.bottom - 1].filter(y => y >= 0 && y < innerHeight).some(y => {
+        const top = document.elementFromPoint(x, y);
+        return !top || !(top === element || element.contains(top) || top.contains(element));
+      });
+      return hidden ? element.getAttribute('aria-label') ?? element.textContent : null;
+    });
+    if (name !== null) covered.push(name ?? '');
+  }
+  return covered;
+}
+
+test.describe('focus is never hidden behind a fixed bar', () => {
+  test.beforeEach(async ({ page }) => {
+    await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, ...Array.from({ length: 12 }, (_, index) => chromiumRow(`Site ${index}`, `user-${index}`))] }]);
+    await all(page).click();
+  });
+
+  for (const [label, width, height] of [['with 200% zoom', 640, 360], ['on a phone', 360, 640]] as const) {
+    test(`while tabbing through the records ${label}`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await page.getByRole('textbox', { name: 'Buscar credenciales' }).focus();
+      expect(await coveredWhileTabbing(page, 30)).toEqual([]);
+    });
+
+    test(`while tabbing backwards through the records ${label}`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      // Moving backwards is what brings controls up against the fixed header.
+      await page.locator('.mobile-cards .record-card').last().getByRole('button', { name: 'Mover a la papelera' }).focus();
+      expect(await coveredWhileTabbing(page, 24, 'Shift+Tab')).toEqual([]);
+    });
+  }
+
+  for (const [label, width, height] of [['on a desktop', 1280, 720], ['on a phone', 360, 640]] as const) {
+    test(`while tabbing through the record dialog ${label}`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await page.locator('button:visible', { hasText: 'Editar' }).first().click();
+      const dialog = page.getByRole('dialog', { name: 'Editar credencial' });
+      await expect(dialog.getByLabel('Nombre')).toBeFocused();
+      expect(await coveredWhileTabbing(page, 14)).toEqual([]);
+    });
+  }
+});

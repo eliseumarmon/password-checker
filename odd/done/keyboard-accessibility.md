@@ -2,7 +2,7 @@
 
 Objetivo: hacer la revisión de accesibilidad y teclado que pide `docs/pendiente.md`, y corregir lo que ya se sabe que falta: la gestión del foco en los diálogos de comparación, ficha y sesión, y la semántica de las pestañas y de la navegación.
 Rama: `feat/keyboard-accessibility` desde `main`, después de integrar `css-tokens` y `native-tables` (comparten `style.css` y `App.vue`; el teclado de las tablas se resuelve en `native-tables`). Entrega: `ask-on-risk`, por tramos a `main` (L9): tramo 1, T2 con su documentación; tramo 2, T3 y lo que quede de T4.
-Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso desde el 2026-11-09 (L5). Tramo 1 integrado en `main` (`e1dd3f5`); tramo 2 hecho y pendiente de integrar (L13). Quedan por decidir los hallazgos de L6 y L8.
+Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso desde el 2026-11-09 (L5). **Hecho** (L18). Tramos 1 y 2 integrados en `main` (`e1dd3f5` y `2db587b`); el tramo 3 se integra con esta rama.
 
 ## Specs
 
@@ -26,6 +26,10 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - «Duplicados» y «Todas» siguen el patrón de pestañas de WAI-ARIA APG: `role="tab"`, `aria-selected`, `aria-controls`, el panel con `role="tabpanel"`, y las flechas cambian de pestaña. **Decidido por el usuario (L7):** activación automática al moverse con las flechas.
   - Las E2E que pulsan «Todas (N)» como `button` (unas 13 en `component-events.spec.ts` e `import-warnings.spec.ts`) pasan a seleccionar el rol `tab`; las aserciones no cambian.
   - Navegación lateral e inferior: la pantalla activa lleva `aria-current="page"`.
+- **S6 — Hallazgos aprobados por el usuario (L16).** De los hallazgos de T1, el usuario elige: «Foco tapado (Recomendado), Teclado móvil al abrir (Recomendado)».
+  - **H1:** el control con foco no queda tapado por la cabecera fija, la barra inferior ni la barra de «Guardar» de la ficha.
+  - **Teclado móvil:** en pantallas táctiles, la ficha empieza con el foco en su título, para que no se abra el teclado virtual. La sesión no cambia.
+  - H2, H3 y H4 quedan pendientes.
 - **S5 — Fuera de alcance:**
   - El teclado de las tablas (`native-tables`).
   - Corregir contrastes (`css-tokens`, S3, decisión del usuario).
@@ -43,6 +47,9 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - RED primero: E2E de flechas, `aria-selected` y `aria-current`.
   - Cambio de los selectores de rol en las E2E afectadas.
 - [x] T4 — Documentación: `docs/flujo-usuario.md` (foco de los diálogos, hecho con T2 en L9; teclado en las pestañas, en L13) y, si cambia algún criterio, `docs/guia-visual.md`. Ruta: inline.
+
+- [x] T5 — S6: foco no tapado. RED primero en E2E. Ruta: inline. Evidencia en L16.
+- [x] T6 — S6: la ficha empieza en el título en pantallas táctiles. RED primero en E2E. Ruta: inline. Evidencia en L16.
 
 ## Log
 
@@ -100,3 +107,19 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - **`R3-002`:** la prueba de la parada única de `Tab` comprueba también que esa parada sigue a la pestaña seleccionada.
   - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 140 de 140; `python -m unittest discover -s tests`, OK; `ruff check .`, sin avisos.
 - **L15 (2026-11-09).** Revisión de `a127803` (`review-reliability`, con el consentimiento del usuario): aprobada y confirmada. Su única sugerencia queda **pendiente**, sin corregir: que la prueba de las flechas con modificador compruebe también que el evento no se cancela (`defaultPrevented`) e incluya `ArrowLeft` y `Meta`. Tramo 2 cerrado.
+- **L16 (2026-11-09).** Tramo 2 integrado en `main` (`2db587b`, `--no-ff`; el contenido es idéntico al de `e248de6`), con `Tests` en verde en la rama y en `main`. El usuario elige qué hallazgos de L6 y L8 se arreglan: «Foco tapado (Recomendado), Teclado móvil al abrir (Recomendado)». Se añaden S6, T5 y T6, en un tramo 3.
+  - **RED:** cuatro pruebas de `Tab` en `navigation.spec.ts` (registros a 640 × 360 y 360 × 640; ficha a 1280 × 720 y 360 × 640) y una en `dialogs.spec.ts` (pantalla táctil), que fallaban.
+  - **GREEN, T5:** `--header-height` y `--nav-height` pasan del contenedor `.shell` a la raíz del documento, y `html` usa `scroll-padding-block` con ellas, así que el navegador deja libre ese espacio al mover el foco. `.dialog-content` reserva 96 px para la barra de «Guardar».
+  - **GREEN, T6:** la ficha elige el título como foco inicial cuando `(pointer: coarse)` se cumple. No se ha probado en un móvil real.
+  - **Evidencia:** en la auditoría de L6, los controles tapados en las pantallas pasan de 146 a 0, y ninguna de las 36 combinaciones tiene controles tapados ni fuera de pantalla. Los estilos calculados de los 20 estados solo cambian en `scroll-padding-*`.
+  - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 145 de 145; `python -m unittest discover -s tests`, OK; `ruff check .`, sin avisos. Riesgo: ninguno de los puntos de la lista.
+- **L17 (2026-11-09).** Revisión de `f3fd8f6` (`review-reliability`, con el consentimiento del usuario): aprobada y confirmada. Se aplican sus dos avisos:
+  - **`R3-001`:** las pruebas solo avanzaban con `Tab`, así que no demostraban la reserva bajo la cabecera fija. Nuevas pruebas con `Mayús+Tab`, a 640 × 360 y 360 × 640. Fallan si se quita la reserva superior.
+  - **`R3-002`:** la comprobación mira también los bordes del control, no solo su centro. **Eso descubrió un fallo real:** el control quedaba pegado a la barra y su contorno de foco, debajo de ella. La reserva sube 8 px por cada lado.
+  - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 147 de 147; `python -m unittest discover -s tests`, OK; `ruff check .`, sin avisos. Auditoría de L6: 0 controles tapados, 0 fuera de pantalla y 0 paradas fuera de los diálogos en las 36 combinaciones.
+- **L18 (2026-11-09).** Revisión de `d90fad5` (`review-reliability`, con el consentimiento del usuario): aprobada y confirmada. Cierre del plan. Sus avisos no bloqueaban nada y quedan **pendientes**, sin corregir, igual que `R3-001` (L12) y la sugerencia de L15:
+  - Ninguna prueba comprueba que el contorno de foco queda libre: la comprobación mira dentro del control, y el margen de 8 px no está fijado por ninguna aserción.
+  - Las pruebas de `Tab` por la página solo usan tamaños con tarjetas. La tabla de escritorio la cubre la auditoría de L6, que no está en el repositorio.
+  - Los 96 px reservados para la barra de «Guardar» son una estimación: no se derivan de su altura real, y se aplican también a los diálogos sin esa barra.
+  - **Hallazgos no aprobados, en `docs/pendiente.md`:** H2 (objetivos táctiles de menos de 44 px), H3 (icono de papelera de 16 px) y H4 («Guardar» y «Cancelar» fuera de la vista al abrir en pantallas muy bajas).
+  - **Sin probar:** con un lector de pantalla real y con un teclado virtual real.
