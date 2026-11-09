@@ -76,7 +76,7 @@ Sin vulnerabilidades conocidas en el frontend: `npm audit` da 0 en producción y
 
 **Actualización (2026-11-06):** `primevue` y `@primeuix/themes` ya no son dependencias. Se retiraron al pasar a tablas HTML nativas ([native-tables](../odd/done/native-tables.md), T4). La tabla refleja el momento de la auditoría.
 
-**Actualización (2026-11-09):** `vue-router` tampoco es ya dependencia. Se retiró porque no se usaba ([frontend-bundle](../odd/done/frontend-bundle.md), T1).
+**Actualización (2026-11-09):** `vue-router` tampoco es ya dependencia. Se retiró porque no se usaba ([frontend-bundle](../odd/done/frontend-bundle.md), T1). `pinia` pasa a 4.1.0 y `vite` a 8.3.7; `typescript` 7 sigue bloqueado porque las herramientas de Vue aún no lo admiten ([frontend-major-updates](../odd/tasks/frontend-major-updates.md)).
 
 - **`package-lock.json`:** `lockfileVersion` 3, 119 entradas (74 de desarrollo, 53 opcionales por plataforma; la CI en Linux instala 70). Todas se resuelven desde `https://registry.npmjs.org/` con `integrity` SHA-512; `node_modules` coincide con el lockfile (`npm ls` sin errores).
 - **Scripts de instalación:** solo `esbuild` 0.28.2 (verifica su binario de plataforma) y `fsevents` (opcional, solo macOS). Ambos con firma verificada.
