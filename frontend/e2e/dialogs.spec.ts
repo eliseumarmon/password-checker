@@ -131,6 +131,18 @@ test.describe('comparison dialog', () => {
     await expect(opener).toBeFocused();
   });
 
+  test('closes only the top dialog while Escape is held down', async ({ page }) => {
+    await seedGroups(page, 'Alpha');
+    await openWithKeyboard(page, rowAction(page, 'Alpha', 'Comparar'));
+    await compare(page).getByRole('button', { name: 'Ver / editar' }).first().click();
+    await expect(editor(page)).toBeVisible();
+    await page.keyboard.down('Escape');
+    await page.keyboard.down('Escape');
+    await page.keyboard.up('Escape');
+    await expect(editor(page)).toBeHidden();
+    await expect(compare(page)).toBeVisible();
+  });
+
   test('moves focus to the next group when its group leaves', async ({ page }) => {
     await seedGroups(page, 'Alpha', 'Bravo', 'Charlie');
     await openWithKeyboard(page, rowAction(page, 'Bravo', 'Comparar'));
@@ -152,6 +164,24 @@ test.describe('session dialog', () => {
     await page.keyboard.press('Escape');
     await expect(session(page)).toBeHidden();
     await expect(opener).toBeFocused();
+  });
+
+  test('ignores Escape while opening a session is in flight', async ({ page }) => {
+    await seedRecords(page, 'Alpha');
+    await page.route('**/api/session/load', async route => {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await route.continue();
+    });
+    await page.getByRole('button', { name: 'Ajustes' }).first().click();
+    await page.getByRole('button', { name: 'Abrir', exact: true }).click();
+    await session(page).getByLabel('Archivo cifrado').setInputFiles({ name: 'fictional.pwc', mimeType: 'application/octet-stream', buffer: Buffer.from('not a session') });
+    await session(page).getByLabel(/Contraseña de sesión/).fill('fictional-passphrase');
+    await session(page).getByRole('button', { name: 'Abrir sesión' }).click();
+    await confirmation(page).getByRole('button', { name: 'Abrir sesión' }).click();
+    await expect(confirmation(page)).toBeHidden();
+    await page.keyboard.press('Escape');
+    // The server's answer still has a dialog to appear in.
+    await expect(session(page).getByRole('alert')).toBeVisible();
   });
 
   test('starts on the file field when opening a session', async ({ page }) => {

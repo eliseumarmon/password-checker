@@ -34,7 +34,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
 ## Tasks
 
 - [x] T1 — S2: revisión con teclado, zoom al 200 % y pantalla de 360 px; hallazgos en el Log. Ruta: inline. Sin código. Evidencia en L6.
-- [x] T2 — S3: foco de los diálogos y `Esc`. Ruta: inline. Commit `eddd5f8` y el de L10; evidencia en L8 y L10.
+- [x] T2 — S3: foco de los diálogos y `Esc`. Ruta: inline. Commits `eddd5f8`, `5492194` y el de L11; evidencia en L8, L10 y L11.
   - RED primero: E2E de foco inicial, `Tab` que no sale del diálogo, retorno del foco y `Esc`, en cada uno de los tres diálogos.
   - Implementar la función compartida y migrar `ConfirmDialog` a ella.
   - Comprobación diferencial: las E2E de `ConfirmDialog` dan el mismo resultado antes y después.
@@ -83,3 +83,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - **Cambio de comportamiento en `ConfirmDialog`,** sin efecto visible con sus dos botones: `Tab` recorre todos los controles enfocables y el foco se devuelve tras `nextTick`.
   - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 132 de 132; `python -m unittest discover -s tests`, OK; `ruff check .`, sin avisos.
   - **No probado:** un lector de pantalla real, ni un teclado virtual real. En un móvil, poner el foco en «Nombre» al abrir la ficha puede hacer aparecer el teclado virtual.
+- **L11 (2026-11-09).** Revisión del tramo 1 hasta `5492194` (`review-reliability`, con el consentimiento del usuario): aprobada y confirmada. Se aplican sus dos avisos, que no bloqueaban nada, cada uno con una prueba que fallaba:
+  - **`R3-001`:** `Esc` en la sesión no hace nada mientras se abre un archivo, para que el resultado o el error tengan dónde mostrarse. Al guardar, la aplicación no marca `busy`, así que `Esc` sigue cerrando el diálogo y la descarga continúa, como ya pasaba con «✕»: no se pierde nada.
+  - **`R3-002`:** mantener `Esc` pulsado solo actúa una vez. Antes, cada repetición de la tecla cerraba el siguiente diálogo.
+  - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 134 de 134; `python -m unittest discover -s tests`, OK; `ruff check .`, sin avisos.

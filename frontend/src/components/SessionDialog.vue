@@ -4,11 +4,12 @@ import { useDialogFocus } from '../dialogFocus';
 import { MIN_SESSION_PASSPHRASE_LENGTH } from '../limits';
 import type { SessionInput, SessionMode } from '../types';
 
-defineProps<{ mode: SessionMode; busy: boolean }>();
+const props = defineProps<{ mode: SessionMode; busy: boolean }>();
 const emit = defineEmits<{ close: []; submit: [input: SessionInput] }>();
 
 const dialog = ref<HTMLElement | null>(null);
-useDialogFocus(dialog, { initial: () => dialog.value?.querySelector('input'), onEscape: () => emit('close') });
+// While a session opens, its result still needs this dialog to show an error in.
+useDialogFocus(dialog, { initial: () => dialog.value?.querySelector('input'), onEscape: () => { if (!props.busy) emit('close'); } });
 
 // Secrets live only in this dialog and vanish when it closes.
 const passphrase = ref('');

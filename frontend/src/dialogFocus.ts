@@ -90,7 +90,8 @@ export function useDialogFocus(dialog: Ref<HTMLElement | null>, options: { initi
 
   function onKeydown(event: KeyboardEvent): void {
     if (openDialogs[openDialogs.length - 1] !== self) return;
-    if (event.key === 'Escape') options.onEscape();
+    // A held key repeats: without this check, each repeat would close the next dialog down.
+    if (event.key === 'Escape') { if (!event.repeat) options.onEscape(); }
     else if (event.key === 'Tab' && dialog.value) keepFocusInside(event, dialog.value);
   }
 
