@@ -15,7 +15,7 @@ Comprobaciones por tarea: `npm run build` (incluye `vue-tsc`) y `npm run e2e` en
 P12 proponía una rama por dependencia; el usuario decidió una sola, con un commit por paquete (L5). Este plan sustituye al documento ODD que P12 preveía para cada una.
 
 - [x] T1 — S1-S3: `pinia` 4 (antes `^3.0.0`). Se conserva Pinia: la usa `useWorkspace` en `frontend/src/store.ts`. Ruta: inline. Evidencia en L5. Riesgo: punto 5 (dependencias).
-- [ ] T2 — S1-S3: `vite` 8 (hoy `^7.0.0`). Ruta: inline. Riesgo: punto 5.
+- [x] T2 — S1-S3: `vite` 8 (antes `^7.0.0`). Ruta: inline. Evidencia en L6. Riesgo: punto 5.
 - [ ] T3 — S1-S3: `typescript` 7 (hoy `~5.9.0`). Antes, comprobar que `vue-tsc` (hoy `^3.0.0`) admite esa versión; si no, la tarea espera. **Bloqueada** (L5): `vue-tsc` y `@vue/compiler-sfc` no funcionan con TS 7. Ruta: inline. Riesgo: punto 5.
 - [x] T4 — Registrar en el Log las retiradas, cuando ocurran: `primevue` y `@primeuix/themes` (`native-tables` T4) y `vue-router` (`frontend-bundle` T1). Ruta: inline. Evidencia en L3 y L4.
 
@@ -35,3 +35,7 @@ P12 proponía una rama por dependencia; el usuario decidió una sola, con un com
   - **T1:** `pinia` pasa a `^4.1.0`. Según sus notas, los cambios son ESM y `@vue/devtools-api` como dependencia obligatoria, que npm instala solo (8.2.1). `package-lock.json`: 5 paquetes retirados (`copy-anything`, `mitt`, `rfdc`, `speakingurl` y `superjson`), 1 añadido (`nostics`) y 5 cambiados. `npm audit`: 0 vulnerabilidades.
   - **Bundle** (medido antes de T1, sobre `main`): JS, 120 547 bytes (43 707 con gzip); con `pinia` 4, 120 567 (43 713). No cambia de forma apreciable.
   - Comprobaciones: `npm run build` correcto; `npm run e2e`, 147 de 147. Riesgo: punto 5 (dependencias).
+- **L6 (2026-11-09).** T2: `vite` pasa a `^8.3.7`. `@vitejs/plugin-vue` 6.0.10 ya lo admite y no cambia. `vite.config.ts` no usa ninguna opción de `esbuild` ni de Rollup, así que no hace falta tocarlo. `package-lock.json`: 29 paquetes retirados y 31 añadidos (Rolldown y sus binarios en lugar de esbuild y Rollup). `npm audit`: 0 vulnerabilidades.
+  - **Bundle:** JS, 119 916 bytes (42 624 con gzip), frente a 120 567 (43 713); CSS, 16 430 (4183), frente a 16 463 (4171). La compilación pasa de 1,35 s a 0,34 s. Vite no avisa de ningún chunk de más de 500 kB.
+  - **Estilos calculados** de los 20 estados: las únicas diferencias de presentación son 244 de `background-position` (`0% 0%` a `0px 0px`) en botones sin imagen de fondo, porque el nuevo minificador escribe `background:transparent` de otra forma. No cambia ni el color ni la imagen. El resto de diferencias, en `scroll-padding-*`, son el margen de 8 px de `keyboard-accessibility`, posterior a la captura de referencia.
+  - Comprobaciones: `npm run build` correcto; `npm run e2e`, 147 de 147; `python -m unittest discover -s tests`, OK; `ruff check .`, sin avisos. Riesgo: punto 5 (dependencias); pendiente de verificación independiente.
