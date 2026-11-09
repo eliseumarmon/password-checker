@@ -47,6 +47,23 @@ test('is a single Tab stop, on the selected tab', async ({ page }) => {
   await expect(page.getByRole('textbox', { name: 'Buscar credenciales' })).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await expect(duplicates(page)).toBeFocused();
+
+  // The stop moves with the selection.
+  await all(page).click();
+  await expect(all(page)).toHaveAttribute('tabindex', '0');
+  await expect(duplicates(page)).toHaveAttribute('tabindex', '-1');
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('textbox', { name: 'Buscar credenciales' })).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(all(page)).toBeFocused();
+});
+
+test('leaves arrow keys with a modifier to the browser', async ({ page }) => {
+  await duplicates(page).focus();
+  for (const key of ['Alt+ArrowRight', 'Control+ArrowRight', 'Shift+ArrowRight']) {
+    await page.keyboard.press(key);
+    await expect(duplicates(page)).toHaveAttribute('aria-selected', 'true');
+  }
 });
 
 test('marks the current screen in the side navigation', async ({ page }) => {

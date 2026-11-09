@@ -39,7 +39,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - Implementar la función compartida y migrar `ConfirmDialog` a ella.
   - Comprobación diferencial: las E2E de `ConfirmDialog` dan el mismo resultado antes y después.
   - Riesgo: punto 3 (la lógica de foco de `ConfirmDialog` pasa a ser compartida). Requiere verificación independiente.
-- [x] T3 — S4: pestañas y navegación. Ruta: inline. Evidencia en L13.
+- [x] T3 — S4: pestañas y navegación. Ruta: inline. Commit `a4b5c7d` y el de L14; evidencia en L13 y L14.
   - RED primero: E2E de flechas, `aria-selected` y `aria-current`.
   - Cambio de los selectores de rol en las E2E afectadas.
 - [x] T4 — Documentación: `docs/flujo-usuario.md` (foco de los diálogos, hecho con T2 en L9; teclado en las pestañas, en L13) y, si cambia algún criterio, `docs/guia-visual.md`. Ruta: inline.
@@ -95,3 +95,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - **Sin cambio visual:** los estilos calculados de los 20 estados de `css-tokens` dan 0 diferencias frente a `main`, sin contar el contenedor nuevo.
   - **Documentación:** `docs/flujo-usuario.md`, en «Casos y límites relevantes».
   - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 139 de 139; `python -m unittest discover -s tests`, OK; `ruff check .`, sin avisos. Riesgo: ninguno de los puntos de la lista.
+- **L14 (2026-11-09).** Revisión del tramo 2 hasta `a4b5c7d` (`review-reliability`, con el consentimiento del usuario): aprobada y confirmada. Se aplican sus dos avisos:
+  - **`R3-001`, regresión:** las flechas con un modificador quedaban capturadas, y `Alt+←` y `Alt+→` dejaban de ir atrás y adelante en el navegador. Ahora los modificadores se dejan al navegador. Prueba: `leaves arrow keys with a modifier to the browser`, que fallaba.
+  - **`R3-002`:** la prueba de la parada única de `Tab` comprueba también que esa parada sigue a la pestaña seleccionada.
+  - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 140 de 140; `python -m unittest discover -s tests`, OK; `ruff check .`, sin avisos.

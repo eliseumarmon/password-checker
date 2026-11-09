@@ -89,7 +89,8 @@ async function loadFileList(files: FileList | File[]): Promise<void> {
 }
 // Arrows move between the tabs and show each one at once; Tab leaves the group (WAI-ARIA APG tabs).
 function onTabKey(event: KeyboardEvent): void {
-  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+  // With a modifier the arrows belong to the browser: Alt+Left goes back.
+  if ((event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
   event.preventDefault();
   subtab.value = subtab.value === 'duplicates' ? 'all' : 'duplicates';
   (event.currentTarget as HTMLElement).querySelector<HTMLElement>(`#tab-${subtab.value}`)?.focus();
