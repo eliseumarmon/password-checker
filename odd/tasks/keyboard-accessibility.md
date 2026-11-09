@@ -113,3 +113,7 @@ Comprobaciones por tarea: `npm run build` y `npm run e2e` en `frontend/`; al cer
   - **GREEN, T6:** la ficha elige el título como foco inicial cuando `(pointer: coarse)` se cumple. No se ha probado en un móvil real.
   - **Evidencia:** en la auditoría de L6, los controles tapados en las pantallas pasan de 146 a 0, y ninguna de las 36 combinaciones tiene controles tapados ni fuera de pantalla. Los estilos calculados de los 20 estados solo cambian en `scroll-padding-*`.
   - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 145 de 145; `python -m unittest discover -s tests`, OK; `ruff check .`, sin avisos. Riesgo: ninguno de los puntos de la lista.
+- **L17 (2026-11-09).** Revisión de `f3fd8f6` (`review-reliability`, con el consentimiento del usuario): aprobada y confirmada. Se aplican sus dos avisos:
+  - **`R3-001`:** las pruebas solo avanzaban con `Tab`, así que no demostraban la reserva bajo la cabecera fija. Nuevas pruebas con `Mayús+Tab`, a 640 × 360 y 360 × 640. Fallan si se quita la reserva superior.
+  - **`R3-002`:** la comprobación mira también los bordes del control, no solo su centro. **Eso descubrió un fallo real:** el control quedaba pegado a la barra y su contorno de foco, debajo de ella. La reserva sube 8 px por cada lado.
+  - Comprobaciones: `npm run typecheck` correcto; `npm run e2e`, 147 de 147; `python -m unittest discover -s tests`, OK; `ruff check .`, sin avisos. Auditoría de L6: 0 controles tapados, 0 fuera de pantalla y 0 paradas fuera de los diálogos en las 36 combinaciones.

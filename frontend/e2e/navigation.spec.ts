@@ -85,15 +85,20 @@ test('marks the current screen in the mobile navigation', async ({ page }) => {
 });
 
 /** Tabs through the page and returns every control that was hidden behind something when it took the focus. */
-async function coveredWhileTabbing(page: Page, presses: number): Promise<string[]> {
+async function coveredWhileTabbing(page: Page, presses: number, key = 'Tab'): Promise<string[]> {
   const covered: string[] = [];
   for (let press = 0; press < presses; press++) {
-    await page.keyboard.press('Tab');
+    await page.keyboard.press(key);
     const name = await page.evaluate(() => {
       const element = document.activeElement as HTMLElement;
       const box = element.getBoundingClientRect();
-      const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
-      return top && (top === element || element.contains(top) || top.contains(element)) ? null : element.getAttribute('aria-label') ?? element.textContent;
+      const x = box.left + box.width / 2;
+      // Its centre and both edges, ignoring any part beyond the window: some fields are taller than a small screen.
+      const hidden = [box.top + 1, box.top + box.height / 2, box.bottom - 1].filter(y => y >= 0 && y < innerHeight).some(y => {
+        const top = document.elementFromPoint(x, y);
+        return !top || !(top === element || element.contains(top) || top.contains(element));
+      });
+      return hidden ? element.getAttribute('aria-label') ?? element.textContent : null;
     });
     if (name !== null) covered.push(name ?? '');
   }
@@ -111,6 +116,13 @@ test.describe('focus is never hidden behind a fixed bar', () => {
       await page.setViewportSize({ width, height });
       await page.getByRole('textbox', { name: 'Buscar credenciales' }).focus();
       expect(await coveredWhileTabbing(page, 30)).toEqual([]);
+    });
+
+    test(`while tabbing backwards through the records ${label}`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      // Moving backwards is what brings controls up against the fixed header.
+      await page.locator('.mobile-cards .record-card').last().getByRole('button', { name: 'Mover a la papelera' }).focus();
+      expect(await coveredWhileTabbing(page, 24, 'Shift+Tab')).toEqual([]);
     });
   }
 
