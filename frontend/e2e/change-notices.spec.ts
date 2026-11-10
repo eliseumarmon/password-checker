@@ -236,6 +236,7 @@ for (const [width, height] of [[1280, 720], [390, 760]]) {
 
     // At the top of the list, it floats at the bottom of the visible part of the window.
     await content.evaluate(element => element.scrollTo(0, 0));
+    await expect.poll(() => content.evaluate(element => element.scrollTop)).toBe(0);
     const view = (await content.boundingBox())!;
     const floating = (await toast.boundingBox())!;
     expect(floating.y + floating.height).toBeLessThanOrEqual(view.y + view.height);
@@ -246,12 +247,45 @@ for (const [width, height] of [[1280, 720], [390, 760]]) {
 
     // At the end, the last record's buttons stay above it.
     await content.evaluate(element => element.scrollTo(0, element.scrollHeight));
+    await expect.poll(() => content.evaluate(element => element.scrollTop + element.clientHeight >= element.scrollHeight - 1)).toBe(true);
     const last = (await compare.locator('.compare-card').last().getByRole('button', { name: 'Ver / editar' }).boundingBox())!;
     expect(last.y + last.height).toBeLessThanOrEqual((await toast.boundingBox())!.y);
     await toast.getByRole('button', { name: 'Deshacer', exact: true }).click();
     await expect(toast).toContainText('Se deshizo: «Netflix» en la papelera.');
   });
 }
+
+test('in the comparison, Tab reaches the toast without leaving the dialog, and an error shows above it', async ({ page }) => {
+  await seed(page);
+  await table(page).getByRole('button', { name: 'Comparar' }).first().click();
+  const compare = page.getByRole('dialog', { name: 'Comparar duplicados' });
+  await compare.getByRole('button', { name: 'Descartar' }).first().click();
+  const toast = compare.getByRole('status', { name: 'Último cambio' });
+  await expect(toast).toContainText('en la papelera.');
+
+  // The dialog keeps focus inside: Tab goes round its controls, the toast's among them.
+  const reached = new Set<string>();
+  for (let press = 0; press < 30; press += 1) {
+    await page.keyboard.press('Tab');
+    const focus = await page.evaluate(() => {
+      const active = document.activeElement;
+      return { inDialog: !!active?.closest('.compare-dialog'), inToast: active?.closest('.change') ? active.textContent?.trim() ?? '' : '' };
+    });
+    expect(focus.inDialog).toBe(true);
+    if (focus.inToast) reached.add(focus.inToast);
+  }
+  expect([...reached]).toEqual(expect.arrayContaining(['Deshacer', '×']));
+
+  // A failed operation shows its error at the top of the dialog, above the toast.
+  await page.route('**/api/records/*', route => route.request().method() === 'PATCH'
+    ? route.fulfill({ status: 500, contentType: 'application/json', body: '{"detail":"Fallo ficticio"}' })
+    : route.continue());
+  await compare.getByRole('button', { name: 'Descartar' }).first().click();
+  const error = compare.getByRole('alert');
+  await expect(error).toContainText('Fallo ficticio');
+  await expect(toast).toContainText('en la papelera.');
+  expect((await error.boundingBox())!.y + (await error.boundingBox())!.height).toBeLessThanOrEqual((await toast.boundingBox())!.y);
+});
 
 test('on the page the notice is as wide as its text, and the space beside it lets clicks through', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
