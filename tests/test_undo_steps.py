@@ -97,7 +97,7 @@ class UndoStepTests(unittest.TestCase):
         first = self.last_change()
         self.workspace.trash([self.netflix_old])
         second = self.last_change()
-        self.assertGreater(second['id'], first['id'])
+        self.assertNotEqual(second['id'], first['id'])
         undone = self.workspace.undo()
         self.assertEqual(undone['undone'], second)
         self.assertEqual(undone['last_change'], first)
@@ -115,11 +115,55 @@ class UndoStepTests(unittest.TestCase):
         self.assertIsNone(self.last_change())
         identifier = next(iter(self.workspace._records))
         self.workspace.change(identifier, {'review': 'reviewed'})
-        self.assertGreater(self.last_change()['id'], before)
+        self.assertNotEqual(self.last_change()['id'], before)
         payload = self.workspace.serialize()
         self.workspace.change(identifier, {'review': 'verified'})
         self.workspace.restore(payload)
         self.assertIsNone(self.last_change())
+
+    def test_step_ids_are_never_repeated_not_even_after_a_server_restart(self):
+        ids = []
+        for workspace in (self.workspace, Workspace()):
+            if not workspace._records:
+                workspace._records = dict(self.workspace._records)
+            for review in ('reviewed', 'verified', 'pending'):
+                workspace.change(self.amazon, {'review': review})
+                ids.append(workspace.snapshot()['last_change']['id'])
+        self.assertTrue(all(isinstance(step, str) and step for step in ids))
+        self.assertEqual(len(set(ids)), len(ids))
+
+    def test_undo_of_a_step_that_is_no_longer_the_last_is_refused_and_changes_nothing(self):
+        self.workspace.change(self.amazon, {'review': 'reviewed'})
+        shown = self.last_change()
+        # Another tab trashes a record: the step the first tab shows is no longer the last one.
+        self.workspace.trash([self.netflix_old])
+        before = self.workspace.snapshot()
+        with self.assertRaises(ValueError):
+            self.workspace.undo(shown['id'])
+        self.assertEqual(self.workspace.snapshot(), before)
+        undone = self.workspace.undo(before['last_change']['id'])
+        self.assertEqual(undone['undone'], before['last_change'])
+        self.assertEqual(self.workspace.undo(shown['id'])['undone'], shown)
+
+    def test_a_save_that_also_moves_the_record_is_an_edit_that_names_the_trash(self):
+        self.workspace.change(self.amazon, {'note': 'fictional-note', 'included': False})
+        self.assertEqual(without_id(self.last_change()),
+                         {'action': 'edit', 'count': 1, 'name': 'Amazon', 'fields': ['note', 'included']})
+
+    def test_past_the_thirty_step_cap_each_undo_still_reports_its_own_step(self):
+        ids = []
+        for number in range(1, 32):
+            self.workspace.change(self.amazon, {'name': f'Amazon {number}'})
+            ids.append(self.last_change()['id'])
+        self.assertEqual(len(self.workspace._history), 30)
+        for number in range(31, 1, -1):
+            undone = self.workspace.undo()
+            self.assertEqual(undone['undone']['id'], ids[number - 1])
+            self.assertEqual(undone['undone']['name'], f'Amazon {number}')
+            name = next(r['name'] for r in undone['records'] if r['id'] == self.amazon)
+            self.assertEqual(name, f'Amazon {number - 1}')
+        self.assertIsNone(self.last_change())
+        self.assertFalse(self.workspace.snapshot()['can_undo'])
 
 
 class UndoStepAPITests(unittest.TestCase):
@@ -143,6 +187,21 @@ class UndoStepAPITests(unittest.TestCase):
         self.assertEqual(undone.json()['undone'], change)
         self.assertIsNone(undone.json()['last_change'])
         self.assertNotIn('undone', self.client.get('/api/workspace').json())
+
+    def test_undo_refuses_a_step_that_is_no_longer_the_last_one(self):
+        csv = b'name,url,username,password,note\nSite,https://site.invalid/,alice,fictional-secret-123,\n'
+        identifier = self.client.post('/api/import', files=[('files', ('chrome.csv', csv, 'text/csv'))]).json()['records'][0]['id']
+        shown = self.client.patch('/api/records/' + identifier, json={'review': 'verified'}).json()['last_change']
+        last = self.client.patch('/api/records/' + identifier, json={'note': 'fictional-note'}).json()['last_change']
+        before = self.client.get('/api/workspace').json()
+        refused = self.client.post('/api/undo', json={'step': shown['id']})
+        self.assertEqual(refused.status_code, 409, refused.text)
+        self.assertEqual(refused.json()['detail'], 'El último cambio ya no es el que se muestra en pantalla')
+        self.assertEqual(self.client.get('/api/workspace').json(), before)
+        self.assertEqual(self.client.post('/api/undo', json={'step': 'x', 'other': 1}).status_code, 422)
+        accepted = self.client.post('/api/undo', json={'step': last['id']})
+        self.assertEqual(accepted.status_code, 200, accepted.text)
+        self.assertEqual(accepted.json()['undone'], last)
 
 
 if __name__ == '__main__':

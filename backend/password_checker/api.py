@@ -152,10 +152,15 @@ def merge_exact():
         raise HTTPException(422, str(error)) from None
 
 
+class UndoRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    step: str = Field(min_length=1, max_length=64)
+
+
 @app.post('/api/undo')
-def undo():
+def undo(request: UndoRequest | None = None):
     try:
-        return workspace.undo()
+        return workspace.undo(request.step if request else None)
     except ValueError as error:
         raise HTTPException(409, str(error)) from None
 

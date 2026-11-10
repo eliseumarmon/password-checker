@@ -5,7 +5,7 @@ No HTTP, file or encryption dependencies: the API adapter reads and writes those
 """
 from __future__ import annotations
 
-import itertools
+import secrets
 import threading
 import unicodedata
 from collections import defaultdict
@@ -53,13 +53,13 @@ class Workspace:
         self._files: list[dict[str, Any]] = []
         # Each undo step: the records as they were before a change, and what that change did.
         self._history: list[tuple[dict[str, Candidate], dict[str, Any]]] = []
-        # Never reset, so a step from before an import or a session never shares an id with a later one.
-        self._step_ids = itertools.count(1)
 
     def _checkpoint(self, action: str, touched: Sequence[Candidate], fields: Sequence[str] = ()) -> None:
         """Save the records before a change, described by record and field names only, never values."""
         names = {r.name for r in touched}
-        change = {'id': next(self._step_ids), 'action': action, 'count': len(touched),
+        # Random, so a step never shares its id with another, not even after an import, a session
+        # or a server restart: a page can name the step it shows and undo only that one.
+        change = {'id': secrets.token_hex(8), 'action': action, 'count': len(touched),
                   'name': names.pop() if len(names) == 1 else None, 'fields': list(fields)}
         self._history.append((self._records.copy(), change))
         if len(self._history) > 30:
@@ -180,10 +180,13 @@ class Workspace:
             self._records = records
             return self.snapshot()
 
-    def undo(self) -> dict[str, Any]:
+    def undo(self, step: str | None = None) -> dict[str, Any]:
+        """Undo the last step; with a step id, only while that step is still the last one."""
         with self._lock:
             if not self._history:
                 raise ValueError('No hay cambios que deshacer')
+            if step is not None and self._history[-1][1]['id'] != step:
+                raise ValueError('El último cambio ya no es el que se muestra en pantalla')
             self._records, undone = self._history.pop()
             # What was undone travels only in this response, never in the workspace snapshot.
             return {**self.snapshot(), 'undone': undone}

@@ -32,7 +32,8 @@ export interface WorkspaceState {
 }
 /** What an undo step changed: record and field names only, never values. */
 export interface UndoStep {
-  id: number;
+  /** Never repeated, not even after a server restart. */
+  id: string;
   action: 'edit' | 'trash' | 'restore' | 'merge';
   count: number;
   /** The name the affected records share, or null when they do not share one. */
