@@ -61,6 +61,9 @@ const headerHeight = ref(0);
 const navHeight = ref(0);
 // The notice stack covers the bottom of the page: the page keeps that much room below its content.
 const noticesHeight = ref(0);
+// The comparison's toast floats over its list: the list keeps that much room when it scrolls a control into view.
+const compareNotice = ref<InstanceType<typeof ChangeNotice> | null>(null);
+const compareToastHeight = ref(0);
 let layoutObserver: ResizeObserver | undefined;
 // On the root element, so that the page itself can keep focused controls clear of these bars.
 watchEffect(() => {
@@ -68,6 +71,7 @@ watchEffect(() => {
   root.setProperty('--header-height', `${headerHeight.value}px`);
   root.setProperty('--nav-height', `${navHeight.value}px`);
   root.setProperty('--notices-height', `${noticesHeight.value}px`);
+  root.setProperty('--compare-toast-height', `${compareToastHeight.value}px`);
 });
 // Per-viewer convenience only: storage may be unavailable, so failures are ignored.
 const SIDEBAR_KEY = 'pc.sidebarCollapsed';
@@ -247,6 +251,12 @@ async function submitSession({ passphrase, confirmation, file }: SessionInput): 
 
 
 watch(screen, () => { selected.value = null; compareIds.value = null; });
+// The comparison's toast comes and goes too.
+watch(() => compareNotice.value?.$el as HTMLElement | undefined, (element, previous) => {
+  if (previous) layoutObserver?.unobserve(previous);
+  if (element) layoutObserver?.observe(element);
+  else compareToastHeight.value = 0;
+});
 // The stack comes and goes with its notices.
 watch(pageNotices, (element, previous) => {
   if (previous) layoutObserver?.unobserve(previous);
@@ -259,6 +269,7 @@ onMounted(async () => {
     headerHeight.value = stickyHead.value?.offsetHeight ?? 0;
     navHeight.value = mobileNav.value?.offsetHeight ?? 0;
     noticesHeight.value = pageNotices.value?.offsetHeight ?? 0;
+    compareToastHeight.value = (compareNotice.value?.$el as HTMLElement | undefined)?.offsetHeight ?? 0;
   });
   if (stickyHead.value) layoutObserver.observe(stickyHead.value);
   if (mobileNav.value) layoutObserver.observe(mobileNav.value);
@@ -323,7 +334,7 @@ onUnmounted(() => {
 
     <CompareDialog v-if="compareIds" :group="compareGroup" :rows="compareRows" :busy="store.busy" @close="compareIds=null" @edit="openRecord" @trash="moveToTrash" @restore="restore">
       <ErrorNotice v-if="errorHost==='compare'" :message="store.error" @close="store.error=''" />
-      <template #toast><ChangeNotice v-if="noticeHost==='compare' && changeNotice" :text="changeNotice.text" :show-undo="!!changeNotice.step" :can-undo="noticeUndoable && !store.busy" @undo="undoShown" @close="changeNotice=null" /></template>
+      <template #toast><ChangeNotice v-if="noticeHost==='compare' && changeNotice" ref="compareNotice" :text="changeNotice.text" :show-undo="!!changeNotice.step" :can-undo="noticeUndoable && !store.busy" @undo="undoShown" @close="changeNotice=null" /></template>
     </CompareDialog>
     <EditorDialog v-if="selected" :record="selected" :busy="store.busy" @close="closeEditor" @save="save" @trash="moveToTrash" @restore="restore">
       <ErrorNotice v-if="errorHost==='editor'" :message="store.error" @close="store.error=''" />

@@ -299,3 +299,31 @@ test('on the page the notice is as wide as its text, and the space beside it let
   const inStack = await page.evaluate(({ x, y }) => !!document.elementFromPoint(x, y)?.closest('.page-notices'), point);
   expect(inStack).toBe(false);
 });
+
+for (const [width, height] of [[1280, 720], [390, 760], [320, 640]]) {
+  test(`in the comparison the toast never covers the focused control, at ${width} px`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    const variants = Array.from({ length: 10 }, (_, n) => `Netflix,https://netflix.invalid/,ana,fictional-variant-${n}00,`);
+    const imported = await page.request.post('/api/import', {
+      multipart: { files: { name: 'variants.csv', mimeType: 'text/csv', buffer: Buffer.from(['name,url,username,password,note', ...variants].join('\n')) } },
+    });
+    expect(imported.ok()).toBe(true);
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Comparar/ }).first().click();
+    const compare = page.getByRole('dialog', { name: 'Comparar duplicados' });
+    await compare.getByRole('button', { name: 'Descartar' }).first().click();
+    await expect(compare.getByRole('status', { name: 'Último cambio' })).toContainText('en la papelera.');
+    for (let press = 0; press < 40; press += 1) {
+      await page.keyboard.press('Tab');
+      const overlap = await page.evaluate(() => {
+        const active = document.activeElement as HTMLElement | null;
+        const toast = document.querySelector('.compare-dialog .change');
+        if (!active || !toast || toast.contains(active)) return 0;
+        const a = active.getBoundingClientRect();
+        const t = toast.getBoundingClientRect();
+        return Math.max(0, Math.min(a.bottom, t.bottom) - Math.max(a.top, t.top));
+      });
+      expect(overlap).toBe(0);
+    }
+  });
+}
