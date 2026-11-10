@@ -1,4 +1,4 @@
-import type { CredentialDetail, ImportResponse, RecordEdit, WorkspaceState } from './types';
+import type { CredentialDetail, ImportResponse, RecordEdit, UndoResponse, WorkspaceState } from './types';
 
 /** The server's reason when it sends one as text; validation errors (lists) keep the fallback. */
 async function failure(response: Response, fallback: string): Promise<Error> {
@@ -34,7 +34,10 @@ export const api = {
     method: 'POST', headers: jsonHeaders, body: JSON.stringify({ ids }),
   }).then(parse<WorkspaceState>),
   mergeExact: () => fetch('/api/merge-exact', { method: 'POST' }).then(parse<WorkspaceState>),
-  undo: () => fetch('/api/undo', { method: 'POST' }).then(parse<WorkspaceState>),
+  /** With a step id, the server undoes only while that step is still the last one. */
+  undo: (step?: string) => fetch('/api/undo', step === undefined ? { method: 'POST' } : {
+    method: 'POST', headers: jsonHeaders, body: JSON.stringify({ step }),
+  }).then(parse<UndoResponse>),
   saveSession: (passphrase: string) => downloadFrom('/api/session/save', {
     method: 'POST', headers: jsonHeaders, body: JSON.stringify({ passphrase }),
   }, 'password-checker-session.pwc', 'No se pudo guardar la sesión'),

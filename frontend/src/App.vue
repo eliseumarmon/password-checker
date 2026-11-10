@@ -4,6 +4,7 @@ import { api } from './api';
 import { useWorkspace } from './store';
 import TrashIcon from './TrashIcon.vue';
 import ErrorNotice from './components/ErrorNotice.vue';
+import ChangeNotice from './components/ChangeNotice.vue';
 import WarningNotice from './components/WarningNotice.vue';
 import ConfirmDialog from './components/ConfirmDialog.vue';
 import CompareDialog from './components/CompareDialog.vue';
@@ -17,10 +18,11 @@ import AuditView from './components/AuditView.vue';
 import TrashView from './components/TrashView.vue';
 import SettingsView from './components/SettingsView.vue';
 import { confirmAction, pendingConfirm, settleConfirm } from './confirm';
-import { labelReview, REVIEWS, SCREENS } from './labels';
+import { hasOpenDialog } from './dialogFocus';
+import { describeStep, labelReview, REVIEWS, SCREENS } from './labels';
 import { MIN_SESSION_PASSPHRASE_LENGTH } from './limits';
 import { resetTablePages } from './tableState';
-import type { CredentialDetail, CredentialSummary, DuplicateGroup, FilterReview, FilterType, RecordEdit, Review, Screen, SessionInput, SessionMode } from './types';
+import type { CredentialDetail, CredentialSummary, DuplicateGroup, FilterReview, FilterType, RecordEdit, Review, Screen, SessionInput, SessionMode, UndoStep, WorkspaceState } from './types';
 
 const store = useWorkspace();
 const screen = ref<Screen>('credentials');
@@ -54,14 +56,18 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const sessionMode = ref<SessionMode | null>(null);
 const stickyHead = ref<HTMLElement | null>(null);
 const mobileNav = ref<HTMLElement | null>(null);
+const pageNotices = ref<HTMLElement | null>(null);
 const headerHeight = ref(0);
 const navHeight = ref(0);
+// The notice stack covers the bottom of the page: the page keeps that much room below its content.
+const noticesHeight = ref(0);
 let layoutObserver: ResizeObserver | undefined;
 // On the root element, so that the page itself can keep focused controls clear of these bars.
 watchEffect(() => {
   const root = document.documentElement.style;
   root.setProperty('--header-height', `${headerHeight.value}px`);
   root.setProperty('--nav-height', `${navHeight.value}px`);
+  root.setProperty('--notices-height', `${noticesHeight.value}px`);
 });
 // Per-viewer convenience only: storage may be unavailable, so failures are ignored.
 const SIDEBAR_KEY = 'pc.sidebarCollapsed';
@@ -93,6 +99,13 @@ const compareRows = computed(() => (compareIds.value ?? []).flatMap(id => recByI
 // a group with records from outside the comparison is another group, not this one.
 const compareGroup = computed(() => groups.value.find(g => g.members.every(m => compareIds.value?.includes(m.id))) ?? null);
 const progress = computed(() => data.value?.stats.total ? Math.round(100 * data.value.stats.reviewed / data.value.stats.total) : 0);
+// The notice of the last change (undo-ux S2): one at a time, each replacing the one before, as in a mail app.
+// An undo notice has no step. A step's Deshacer works only while that step is still the last one this page knows.
+const changeNotice = ref<{ text: string; step: string | null } | null>(null);
+const noticeUndoable = computed(() => !!changeNotice.value?.step && changeNotice.value.step === data.value?.last_change?.id);
+// The editor closes after every change, so the notice shows in the comparison or on the page.
+const noticeHost = computed<'compare' | 'page' | null>(() => !changeNotice.value ? null : compareIds.value ? 'compare' : 'page');
+const undoTitle = computed(() => data.value?.last_change ? `Deshacer: ${describeStep(data.value.last_change)}` : 'Deshacer último cambio');
 // The error notice lives in the topmost open layer: session > editor > comparison > page.
 const errorHost = computed<'session' | 'editor' | 'compare' | 'page' | null>(() => {
   if (!store.error) return null;
@@ -109,6 +122,14 @@ function matches(row: CredentialSummary | DuplicateGroup): boolean {
   return !term || [row.name, row.url, row.username].some(v => v.toLocaleLowerCase().includes(term));
 }
 
+/** Runs an operation that may add an undo step: a new step replaces the notice with its own. */
+async function runChange(action: () => Promise<WorkspaceState>): Promise<void> {
+  const before = data.value?.last_change?.id;
+  await store.execute(action);
+  const step = data.value?.last_change;
+  if (!store.error && step && step.id !== before) changeNotice.value = { text: describeStep(step), step: step.id };
+}
+
 function errorMessage(error: unknown): void {
   store.error = error instanceof Error ? error.message : 'No se pudo completar la acción';
 }
@@ -119,6 +140,8 @@ async function loadFileList(files: FileList | File[]): Promise<void> {
   if (!selectedFiles.length) { store.error = 'Selecciona archivos CSV'; return; }
   if (data.value?.stats.total && !await confirmAction('Importar reemplazará la sesión actual sin guardar. ¿Continuar?', 'Importar')) return;
   await store.importFiles(selectedFiles);
+  // A successful import empties the undo history, so the last change no longer applies.
+  if (!store.error) changeNotice.value = null;
   resetTablePages();
   compareIds.value = null; selected.value = null; subtab.value = 'duplicates'; screen.value = 'credentials';
 }
@@ -138,24 +161,24 @@ async function openRecord(id: string): Promise<void> {
 }
 async function save(form: RecordEdit): Promise<void> {
   if (!selected.value) return;
-  await store.execute(() => api.edit(selected.value!.id, form));
+  await runChange(() => api.edit(selected.value!.id, form));
   if (!store.error) selected.value = null;
 }
 async function quickEdit(id: string, payload: RecordEdit): Promise<void> {
-  await store.execute(() => api.edit(id, payload));
+  await runChange(() => api.edit(id, payload));
   if (!store.error && selected.value?.id === id) selected.value = null;
 }
 function closeEditor(): void { selected.value = null; }
 function moveToTrash(id: string): Promise<void> { return quickEdit(id, { included: false }); }
 async function trashGroup(group: DuplicateGroup): Promise<void> {
   if (!await confirmAction(`Se moverán ${group.count} registros de «${group.name}» a la papelera. Podrás restaurarlos. ¿Continuar?`, 'Mover a la papelera', true)) return;
-  await store.execute(() => api.trash(group.members.map(member => member.id)));
+  await runChange(() => api.trash(group.members.map(member => member.id)));
   compareIds.value = null;
 }
 function restore(id: string): Promise<void> { return quickEdit(id, { included: true }); }
 async function merge(): Promise<void> {
   if (!await confirmAction('Las copias idénticas por URL, usuario y contraseña irán a la papelera. Las notas se combinarán. ¿Continuar?', 'Fusionar', true)) return;
-  await store.execute(api.mergeExact);
+  await runChange(api.mergeExact);
   compareIds.value = null;
 }
 async function exportNow(): Promise<void> {
@@ -163,6 +186,34 @@ async function exportNow(): Promise<void> {
   const unresolved = data.value.groups.filter(g => g.kind === 'conflict').length;
   if (!await confirmAction(`Se exportarán ${data.value.stats.included} credenciales. ${unresolved} grupos presentan contraseñas conflictivas. Bitwarden no eliminará duplicados automáticamente. ¿Generar CSV?`, 'Generar CSV')) return;
   try { await api.exportCsv(); } catch (error) { errorMessage(error); }
+}
+// The header button and Ctrl/Cmd+Z undo the step this page shows. When another tab already moved past it,
+// the server refuses: the page catches up and keeps the reason on screen.
+async function undoShown(): Promise<void> {
+  const result: { undone?: UndoStep } = {};
+  await store.execute(async () => {
+    const { undone, ...state } = await api.undo(data.value?.last_change?.id);
+    result.undone = undone;
+    return state;
+  });
+  if (result.undone) {
+    changeNotice.value = { text: `Se deshizo: ${describeStep(result.undone)}`, step: null };
+    return;
+  }
+  if (!store.error) return;
+  const reason = store.error;
+  await store.execute(api.state);
+  if (!store.error) store.error = reason;
+}
+function isTextField(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement && (target.isContentEditable || target.matches('input, textarea'));
+}
+// Inside a text field the browser keeps its own undo; a held key undoes one step, not one per repeat.
+function onUndoKey(event: KeyboardEvent): void {
+  if (event.key.toLowerCase() !== 'z' || !(event.ctrlKey || event.metaKey) || event.shiftKey || event.altKey || event.repeat) return;
+  if (isTextField(event.target) || hasOpenDialog() || !data.value?.can_undo || store.busy) return;
+  event.preventDefault();
+  void undoShown();
 }
 function closeSession(): void { sessionMode.value = null; }
 function showSession(mode: SessionMode): void { sessionMode.value = mode; }
@@ -182,8 +233,9 @@ async function submitSession({ passphrase, confirmation, file }: SessionInput): 
       if (data.value?.stats.total && !await confirmAction('Abrir otra sesión reemplazará los cambios que estén en memoria. ¿Continuar?', 'Abrir sesión')) return;
       await store.execute(() => api.loadSession(file, passphrase));
       if (store.error) return;
-      // Only a session that really opened replaces what the warnings described.
+      // Only a session that really opened replaces what the warnings and the last change described.
       store.warnings = [];
+      changeNotice.value = null;
       resetTablePages();
       screen.value = 'credentials';
       subtab.value = 'duplicates';
@@ -195,16 +247,27 @@ async function submitSession({ passphrase, confirmation, file }: SessionInput): 
 
 
 watch(screen, () => { selected.value = null; compareIds.value = null; });
+// The stack comes and goes with its notices.
+watch(pageNotices, (element, previous) => {
+  if (previous) layoutObserver?.unobserve(previous);
+  if (element) layoutObserver?.observe(element);
+  else noticesHeight.value = 0;
+});
 onMounted(async () => {
+  document.addEventListener('keydown', onUndoKey);
   layoutObserver = new ResizeObserver(() => {
     headerHeight.value = stickyHead.value?.offsetHeight ?? 0;
     navHeight.value = mobileNav.value?.offsetHeight ?? 0;
+    noticesHeight.value = pageNotices.value?.offsetHeight ?? 0;
   });
   if (stickyHead.value) layoutObserver.observe(stickyHead.value);
   if (mobileNav.value) layoutObserver.observe(mobileNav.value);
   await store.execute(api.state);
 });
-onUnmounted(() => layoutObserver?.disconnect());
+onUnmounted(() => {
+  layoutObserver?.disconnect();
+  document.removeEventListener('keydown', onUndoKey);
+});
 </script>
 
 <template>
@@ -223,7 +286,7 @@ onUnmounted(() => layoutObserver?.disconnect());
         <div><h1>{{ SCREENS.find(s => s.id === screen)?.title }}</h1><p>Los originales no se modifican · Las contraseñas permanecen ocultas</p></div>
         <div class="top-actions">
           <button v-if="data?.stats.total" @click="showSession('save')">Guardar sesión cifrada</button>
-          <button :disabled="!data?.can_undo || store.busy" @click="store.execute(api.undo)" title="Deshacer último cambio">↶ Deshacer</button>
+          <button :disabled="!data?.can_undo || store.busy" @click="undoShown" :title="undoTitle">↶ Deshacer</button>
           <button class="primary" :disabled="!data?.stats.included || store.busy" @click="exportNow">Exportar Bitwarden</button>
         </div>
       </header>
@@ -260,13 +323,15 @@ onUnmounted(() => layoutObserver?.disconnect());
 
     <CompareDialog v-if="compareIds" :group="compareGroup" :rows="compareRows" :busy="store.busy" @close="compareIds=null" @edit="openRecord" @trash="moveToTrash" @restore="restore">
       <ErrorNotice v-if="errorHost==='compare'" :message="store.error" @close="store.error=''" />
+      <ChangeNotice v-if="noticeHost==='compare' && changeNotice" :text="changeNotice.text" :show-undo="!!changeNotice.step" :can-undo="noticeUndoable && !store.busy" @undo="undoShown" @close="changeNotice=null" />
     </CompareDialog>
     <EditorDialog v-if="selected" :record="selected" :busy="store.busy" @close="closeEditor" @save="save" @trash="moveToTrash" @restore="restore">
       <ErrorNotice v-if="errorHost==='editor'" :message="store.error" @close="store.error=''" />
     </EditorDialog>
-    <!-- Page-layer notice stack: below every dialog overlay, error on top of the warning. -->
-    <div v-if="store.warnings.length || errorHost==='page'" class="page-notices">
+    <!-- Page-layer notice stack: below every dialog overlay; error, then last change, then import warning. -->
+    <div v-if="store.warnings.length || errorHost==='page' || noticeHost==='page'" ref="pageNotices" class="page-notices">
       <ErrorNotice v-if="errorHost==='page'" :message="store.error" @close="store.error=''" />
+      <ChangeNotice v-if="noticeHost==='page' && changeNotice" :text="changeNotice.text" :show-undo="!!changeNotice.step" :can-undo="noticeUndoable && !store.busy" @undo="undoShown" @close="changeNotice=null" />
       <WarningNotice v-if="store.warnings.length" :warnings="store.warnings" @close="store.warnings=[]" />
     </div>
     <SessionDialog v-if="sessionMode" :mode="sessionMode" :busy="store.busy" @close="closeSession" @submit="submitSession">

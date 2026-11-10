@@ -121,7 +121,7 @@ test('keeps the workspace and undo history after cancelling an import and reload
   await expect(replacementRow).toContainText('Replacement reviewed');
   await expect(table).toContainText('carol');
   await expect(table).not.toContainText('alice');
-  await page.getByRole('button', { name: /Deshacer/ }).click();
+  await page.getByRole('button', { name: '↶ Deshacer' }).click();
   await expect(replacementRow).toContainText('Replacement');
   await expect(replacementRow).not.toContainText('Replacement reviewed');
   await expect(table).toContainText('carol');

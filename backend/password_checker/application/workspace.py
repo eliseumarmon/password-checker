@@ -5,6 +5,7 @@ No HTTP, file or encryption dependencies: the API adapter reads and writes those
 """
 from __future__ import annotations
 
+import secrets
 import threading
 import unicodedata
 from collections import defaultdict
@@ -19,6 +20,9 @@ from . import limits
 from .candidate import ALLOWED_REVIEW, Candidate, identity, merged_totp
 from .review_state import detail, review_state
 from .session_snapshot import from_payload, session_fit, to_payload
+
+# What an edit may change, in the editor's order: an undo step names the changed ones in this order.
+EDIT_FIELDS = ('name', 'url', 'username', 'password', 'totp', 'note', 'review', 'included')
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -47,10 +51,17 @@ class Workspace:
         self._lock = threading.RLock()
         self._records: dict[str, Candidate] = {}
         self._files: list[dict[str, Any]] = []
-        self._history: list[dict[str, Candidate]] = []
+        # Each undo step: the records as they were before a change, and what that change did.
+        self._history: list[tuple[dict[str, Candidate], dict[str, Any]]] = []
 
-    def _checkpoint(self) -> None:
-        self._history.append(self._records.copy())
+    def _checkpoint(self, action: str, touched: Sequence[Candidate], fields: Sequence[str] = ()) -> None:
+        """Save the records before a change, described by record and field names only, never values."""
+        names = {r.name for r in touched}
+        # Random, so a step never shares its id with another, not even after an import, a session
+        # or a server restart: a page can name the step it shows and undo only that one.
+        change = {'id': secrets.token_hex(8), 'action': action, 'count': len(touched),
+                  'name': names.pop() if len(names) == 1 else None, 'fields': list(fields)}
+        self._history.append((self._records.copy(), change))
         if len(self._history) > 30:
             self._history.pop(0)
 
@@ -86,7 +97,7 @@ class Workspace:
     def snapshot(self) -> dict[str, Any]:
         with self._lock:
             return review_state(list(self._records.values()), self._files,
-                                bool(self._history))
+                                self._history[-1][1] if self._history else None)
 
     def get(self, identifier: str) -> dict[str, Any]:
         with self._lock:
@@ -96,8 +107,7 @@ class Workspace:
             return detail(row)
 
     def change(self, identifier: str, changes: dict[str, Any]) -> dict[str, Any]:
-        allowed = {'name', 'url', 'username', 'password', 'note', 'totp', 'included', 'review'}
-        if not changes or not set(changes).issubset(allowed):
+        if not changes or not set(changes).issubset(EDIT_FIELDS):
             raise ValueError('Cambios vacíos o campos no permitidos')
         if 'review' in changes and changes['review'] not in ALLOWED_REVIEW:
             raise ValueError('Estado de revisión no válido')
@@ -115,7 +125,12 @@ class Workspace:
                 return self.snapshot()
             records = {**self._records, identifier: updated}
             self._ensure_restorable(records, self._files)
-            self._checkpoint()
+            changed = [key for key in EDIT_FIELDS if getattr(before, key) != getattr(updated, key)]
+            # Moving one record in or out of the trash is its own action, not a save.
+            if changed == ['included']:
+                self._checkpoint('trash' if not updated.included else 'restore', [updated])
+            else:
+                self._checkpoint('edit', [updated], changed)
             self._records = records
             return self.snapshot()
 
@@ -134,7 +149,7 @@ class Workspace:
                 return self.snapshot()
             records = {**self._records, **{i: replace(self._records[i], included=False) for i in pending}}
             self._ensure_restorable(records, self._files)
-            self._checkpoint()
+            self._checkpoint('trash', [self._records[i] for i in pending])
             self._records = records
             return self.snapshot()
 
@@ -161,16 +176,20 @@ class Workspace:
                 for r in group[1:]:
                     records[r.id] = replace(r, included=False)
             self._ensure_restorable(records, self._files)
-            self._checkpoint()
+            self._checkpoint('merge', [r for group, _ in groups for r in group[1:]])
             self._records = records
             return self.snapshot()
 
-    def undo(self) -> dict[str, Any]:
+    def undo(self, step: str | None = None) -> dict[str, Any]:
+        """Undo the last step; with a step id, only while that step is still the last one."""
         with self._lock:
             if not self._history:
                 raise ValueError('No hay cambios que deshacer')
-            self._records = self._history.pop()
-            return self.snapshot()
+            if step is not None and self._history[-1][1]['id'] != step:
+                raise ValueError('El último cambio ya no es el que se muestra en pantalla')
+            self._records, undone = self._history.pop()
+            # What was undone travels only in this response, never in the workspace snapshot.
+            return {**self.snapshot(), 'undone': undone}
 
     def export_records(self) -> list[Candidate]:
         with self._lock:

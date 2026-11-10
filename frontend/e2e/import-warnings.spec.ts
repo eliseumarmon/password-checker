@@ -124,7 +124,7 @@ test('keeps the warning across screens, dialogs, edits and undo', async ({ page 
   await expect(notice).toBeVisible();
   await expect(page.locator('.desktop-table')).toContainText('Alice editada');
   expect(await topAtWarningCenter(page)).toBe('warning');
-  await page.getByRole('button', { name: /Deshacer/ }).click();
+  await page.getByRole('button', { name: '↶ Deshacer' }).click();
   // Undo is async: wait until the edit is really reverted before checking the warning.
   await expect(page.locator('.desktop-table')).not.toContainText('Alice editada');
   // Both original alpha rows are back, named after the site again (the fixture has no name column).
