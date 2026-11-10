@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import {
-  EXTRA_ORDERS, NO_SORT, setTableSort, SORT_COLUMNS, tableSort, UNSORTED_LABEL, type ExtraOrder, type SortDirection, type TableKey,
+  EXTRA_ORDERS, NO_SORT, setTableSort, SORT_COLUMNS, tableSort, UNSORTED_LABEL, type DirectionWords, type ExtraOrder, type SortDirection,
+  type TableKey,
 } from '../tableState';
 
 // Sets the same order as the column headers, and is the only way to sort on a phone, where the
@@ -10,7 +11,7 @@ import {
 const props = defineProps<{ table: TableKey }>();
 
 const UNSORTED = '';
-const DIRECTIONS: ExtraOrder['directions'] = [['ascending', 'ascendente'], ['descending', 'descendente']];
+const DIRECTIONS: DirectionWords = [['ascending', 'ascendente'], ['descending', 'descendente']];
 
 const options = computed(() => [
   ...[...SORT_COLUMNS[props.table], ...EXTRA_ORDERS[props.table]].flatMap((order: ExtraOrder) => (

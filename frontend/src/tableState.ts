@@ -87,8 +87,11 @@ export const SORT_COLUMNS = {
   trash: [{ field: 'name', label: 'Sitio / App' }, { field: 'username', label: 'Usuario' }, { field: 'source', label: 'Origen' }],
 } as const satisfies Record<TableKey, readonly SortColumn[]>;
 
+/** The directions a selector option offers, in its order, each with the words that name it. */
+export type DirectionWords = readonly (readonly [SortDirection, string])[];
+
 /** An order only the selector offers, since no column shows it, with the words for each direction it lists. */
-export interface ExtraOrder { field: string; label: string; directions?: readonly (readonly [SortDirection, string])[] }
+export interface ExtraOrder { field: string; label: string; directions?: DirectionWords }
 
 /** The table that lists them must give each one a derived order to `useTable`. */
 export const EXTRA_ORDERS: Record<TableKey, readonly ExtraOrder[]> = {
@@ -161,13 +164,20 @@ export function resetTablePages(): void {
   for (const entry of memory.values()) entry.requested.value = 1;
 }
 
+/**
+ * F is a column the headers sort by. The current order may also name a derived order, such as «risk»,
+ * so it stays a plain string. Every order in EXTRA_ORDERS for this table needs its entry in `derived`.
+ */
 export function useTable<T, F extends keyof T & string = keyof T & string>(
   key: TableKey, rows: MaybeRefOrGetter<readonly T[]>, derived: DerivedOrders<T> = {},
 ) {
+  // Without its derived order, a selector-only order would quietly sort by a row property with that name.
+  const missing = EXTRA_ORDERS[key].filter(order => !Object.hasOwn(derived, order.field)).map(order => order.field);
+  if (missing.length) throw new Error(`useTable('${key}') has no derived order for: ${missing.join(', ')}`);
   // The page asked for is kept apart from the page shown: while a filter hides the paginator, the page
   // asked for survives and comes back when the filter is cleared.
   const stored = remembered(key);
-  const sort = stored.sort as Ref<SortState<F>>;
+  const { sort } = stored;
   const { requested } = stored;
   const sorted = computed(() => sortRows(toValue(rows), sort.value, derived));
   const pages = computed(() => pageCount(sorted.value.length));

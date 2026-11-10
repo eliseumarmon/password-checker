@@ -30,8 +30,8 @@ Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m 
 - [x] T2 — S2: orden único entre el selector y las cabeceras, con las columnas actuales, y tarjetas del móvil en el mismo orden. RED primero en E2E. Ruta: inline. RED y GREEN en L14. Commit `d479515`. Verificador independiente: S2 y S4 PASS, suite 160 de 160 en copia limpia (L16). Evaluación: riesgo alto (punto 3 elevado a mano), revisión debida.
 - [x] T2b — S2: selector de orden en la papelera, y el estado «sin orden» como constante compartida (L17, L18). RED primero en E2E. Ruta: inline. RED y GREEN en L19. Commit `afeb615`. Verificador independiente: PASS, suite 160 de 160 y 143 estados idénticos (L20). Revisión: aprobada y confirmada (L20).
 - [x] T3 — S2: orden por riesgo y por URL en «Todas», reutilizando el comparador de `native-tables`. RED primero en E2E con datos ficticios de riesgo conocido. Ruta: inline. RED y GREEN en L21. Commit `60eee2d`. Verificador independiente: PASS (L22). Revisión: aprobada y confirmada (L22).
-- [ ] T3b — S2: observaciones de la revisión de T3 (L22): comprobación de que cada orden extra tiene su orden derivado, tipos más honestos y prueba de que el riesgo se recalcula al editar. Ruta: inline.
-- [ ] T4 — S3: continuidad. RED primero en E2E (recargar conserva tipo, estado y orden, pero no la búsqueda), con almacenamiento no disponible incluido. Riesgo: posible punto 2, por guardar datos en el navegador; commit propio. Ruta: inline. RED y GREEN en L23.
+- [ ] T3b — S2 y S3: observaciones de la revisión de T3 (L22), del verificador de T4 (L24) y de la revisión de T4 (L26): comprobación de que cada orden extra tiene su orden derivado, tipos más honestos, y pruebas del riesgo recalculado al editar, de lo que se guarda y de cómo se lee. Ruta: inline. Detalle en L25 y L26.
+- [x] T4 — S3: continuidad. RED primero en E2E (recargar conserva tipo, estado y orden, pero no la búsqueda), con almacenamiento no disponible incluido. Riesgo: posible punto 2, por guardar datos en el navegador; commit propio. Ruta: inline. RED y GREEN en L23. Commit `3fb8aa9`. Verificador independiente: PASS (L24). Revisión: aprobada y confirmada (L26).
 - [ ] T5 — Documentación: `docs/flujo-usuario.md`, `docs/pendiente.md` (S5 y lo que esta rama resuelve) y `docs/hoja-de-ruta.md`. Ruta: inline.
 
 ## Log
@@ -98,3 +98,21 @@ Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m 
   - RED: «keeps the type, the state and the order of each table, but not the search» falla («Expected: "web", Received: "all"»). Las otras dos pruebas (valores desconocidos y almacenamiento bloqueado) ya pasaban: fijan lo que hoy funciona.
   - GREEN: `tableState.ts` guarda el orden de cada tabla en `pc.tableSort.<tabla>` al cambiarlo y lo lee al crear su memoria. Descarta lo que no reconoce: un campo que no sea una columna ni un orden extra de esa tabla, una dirección desconocida o un JSON roto. `App.vue` guarda el tipo y el estado en `pc.reviewFilters`. La búsqueda no se guarda, y la prueba comprueba que el texto buscado no aparece en el almacenamiento. Si el navegador no deja leer ni guardar, se ignora el error y no se recuerda nada, sin errores en la página. `vue-tsc` pasa, el archivo da 19 de 19 y la suite entera 166 de 166.
   - Riesgo: punto 2, porque guarda datos en el navegador junto a una regla de seguridad (no guardar credenciales). Lleva verificador independiente y revisión propia con la lente de riesgo.
+- **L24 (2026-11-10).** Verificador independiente de T4 (`3fb8aa9` contra `60eee2d`): PASS. `vue-tsc` limpio y la suite da 166 de 166.
+  - Solo se escriben en `localStorage` `pc.reviewFilters`, `pc.tableSort.groups`, `pc.tableSort.records` y `pc.tableSort.trash`, además de `pc.sidebarCollapsed`, que ya existía; todas tienen valores cerrados. `sessionStorage`, IndexedDB y Cache Storage quedan vacíos.
+  - Se recorrieron búsqueda, filtros, todos los órdenes, ficha, papelera, comparación, sesión cifrada, reimportación y recarga: no se guarda ningún usuario, sitio, contraseña ni identificador.
+  - 11 casos de valores guardados dañados o de otra tabla vuelven a los de por defecto, sin errores. Con almacenamiento bloqueado o lleno, la aplicación funciona igual. 89 estados de la sesión son idénticos al código anterior.
+  - Observación atendida en T3b: la prueba exige ahora que solo existan esas claves y con valores cerrados, no solo que falte el usuario buscado.
+- **L25 (2026-11-10).** T3b, escrito y probado sin commitear: hay que revisar antes T4, porque la revisión cubre lo commiteado hasta `HEAD`.
+  - `useTable` falla al montar la tabla si un orden de `EXTRA_ORDERS` no tiene su orden derivado.
+  - El tipo `DirectionWords` sustituye al tipo opcional en `SortSelect.vue`.
+  - `useTable` deja de prometer que el campo de orden es una columna.
+  - Prueba nueva: al quitar con la ficha la única alerta de Bravo, sube en el orden por riesgo sin recargar.
+  - `e2e/filters.spec.ts` da 20 de 20.
+- **L26 (2026-11-10).** Revisión de T4 (`3fb8aa9`, lentes de riesgo y fiabilidad, con consentimiento del usuario): aprobada y confirmada; el punto de partida pasa a `3fb8aa9`. Dos observaciones sobre las pruebas, atendidas en T3b:
+  - La prueba de valores desconocidos guardaba un campo desconocido con una dirección también inválida, que se rechaza antes, así que no comprobaba el campo. Tampoco se probaba recuperar un «sin orden» guardado.
+    - Ahora hay casos separados: campo desconocido con dirección válida; campo válido con dirección inválida; JSON roto; el orden de otra tabla («risk» en grupos); y un «sin orden» guardado, que se recupera.
+    - Comprobación de mutación: sin `fields.includes(field)`, la prueba falla.
+  - Solo se probaba recordar un orden elegido en el selector. Las cabeceras ya pasan por `setTableSort`, y ahora una prueba lo fija: el orden elegido con dos pulsaciones en «Usuario» sobrevive a la recarga.
+  - Con todo T3b, `e2e/filters.spec.ts` da 23 de 23 y la suite entera 170 de 170.
+  - Riesgo de T3b: punto 3, porque `useTable`, que usan las tres tablas, falla ahora al montar si falta un orden derivado.

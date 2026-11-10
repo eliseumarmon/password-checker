@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
-  cardNames, CHROMIUM_HEADER, chromiumRow, column, columnHeader, currentPage, desktopTable, goToPage, numberedRows, seed,
+  bodyRows, cardNames, CHROMIUM_HEADER, chromiumRow, column, columnHeader, currentPage, desktopTable, goToPage, numberedRows, seed,
   showAllRecords, sortBy,
 } from './tables';
 
@@ -215,19 +215,21 @@ for (const width of [320, 390]) {
   });
 }
 
+// Alerts as «Auditoría» counts them. Hotel and India share a common password: weak and reused, 2 each.
+// Kilo has no user and a common password: incomplete and weak, 2. A record without a user never counts
+// as reused, because the server cannot tell whose account it is. Bravo: weak, 1. Delta: no user, 1.
+// Alfa and Zulu: none.
+const RISK_ROWS = [
+  CHROMIUM_HEADER,
+  'Zulu,https://zulu.invalid/,zulu,fake-zulu-secret-1234,', 'Kilo,https://kilo.invalid/,,qwerty,',
+  'Hotel,https://hotel.invalid/,hotel,abc123,', 'Alfa,https://alfa.invalid/,alfa,fake-alfa-secret-1234,',
+  'Delta,https://delta.invalid/,,fake-delta-secret-1234,', 'India,https://india.invalid/,india,abc123,',
+  'Bravo,https://bravo.invalid/,bravo,password,',
+];
+
 test.describe('risk and URL order in «Todas»', () => {
   test('puts the records with more audit alerts first, and ties by name', async ({ page }) => {
-    // Alerts as «Auditoría» counts them. Hotel and India share a common password: weak and reused, 2 each.
-    // Kilo has no user and a common password: incomplete and weak, 2. A record without a user never counts
-    // as reused, because the server cannot tell whose account it is. Bravo: weak, 1. Delta: no user, 1.
-    // Alfa and Zulu: none.
-    await seed(page, [{ name: 'chrome.csv', lines: [
-      CHROMIUM_HEADER,
-      'Zulu,https://zulu.invalid/,zulu,fake-zulu-secret-1234,', 'Kilo,https://kilo.invalid/,,qwerty,',
-      'Hotel,https://hotel.invalid/,hotel,abc123,', 'Alfa,https://alfa.invalid/,alfa,fake-alfa-secret-1234,',
-      'Delta,https://delta.invalid/,,fake-delta-secret-1234,', 'India,https://india.invalid/,india,abc123,',
-      'Bravo,https://bravo.invalid/,bravo,password,',
-    ] }]);
+    await seed(page, [{ name: 'chrome.csv', lines: RISK_ROWS }]);
     await showAllRecords(page, 7);
     const table = desktopTable(page);
     await orderSelect(page).selectOption({ label: 'Riesgo (más alertas primero)' });
@@ -235,6 +237,21 @@ test.describe('risk and URL order in «Todas»', () => {
     await expect(table.locator('th[aria-sort]')).toHaveCount(0);
     await orderSelect(page).selectOption({ label: 'Riesgo (menos alertas primero)' });
     await expect(column(table, 1)).toHaveText(['Alfa', 'Zulu', 'Bravo', 'Delta', 'Hotel', 'India', 'Kilo']);
+  });
+
+  test('moves a record as soon as an edit changes its alerts', async ({ page }) => {
+    await seed(page, [{ name: 'chrome.csv', lines: RISK_ROWS }]);
+    await showAllRecords(page, 7);
+    const table = desktopTable(page);
+    await orderSelect(page).selectOption({ label: 'Riesgo (más alertas primero)' });
+    await expect(column(table, 1)).toHaveText(['Hotel', 'India', 'Kilo', 'Bravo', 'Delta', 'Alfa', 'Zulu']);
+    // A long, unique password takes away Bravo's only alert.
+    await bodyRows(table).filter({ hasText: 'Bravo' }).getByRole('button', { name: 'Editar' }).click();
+    const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+    await editor.getByRole('textbox', { name: /^Contraseña/ }).fill('fake-bravo-secret-1234');
+    await editor.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(editor).toBeHidden();
+    await expect(column(table, 1)).toHaveText(['Hotel', 'India', 'Kilo', 'Delta', 'Alfa', 'Bravo', 'Zulu']);
   });
 
   test('keeps the records of one site together, by host and then by the whole URL', async ({ page }) => {
@@ -298,15 +315,22 @@ test.describe('after a reload', () => {
     await expect(chosenOrder(page)).toHaveText('Riesgo (más alertas primero)');
     await trashScreen(page).click();
     await expect(chosenOrder(page)).toHaveText('Usuario (descendente)');
-    const stored = await page.evaluate(() => Object.keys(localStorage).map(key => `${key}=${localStorage.getItem(key)}`).join('\n'));
-    expect(stored).not.toContain('bravo');
+    // Only view preferences with closed values are stored: no search, name, URL, user or id.
+    const stored = await page.evaluate(() => Object.keys(localStorage).map(key => [key, localStorage.getItem(key) ?? ''] as const));
+    expect(stored.map(([key]) => key).sort()).toEqual(['pc.reviewFilters', 'pc.tableSort.groups', 'pc.tableSort.records', 'pc.tableSort.trash']);
+    for (const [key, value] of stored) {
+      if (key === 'pc.reviewFilters') expect(value).toBe('{"type":"web","review":"reviewed"}');
+      else expect(value).toMatch(/^\{"field":("[a-z]+"|null),"direction":"(ascending|descending)"\}$/);
+    }
   });
 
   test('falls back to the defaults for stored values it does not know', async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem('pc.reviewFilters', '{"type":"desktop","review":"lost"}');
-      localStorage.setItem('pc.tableSort.records', '{"field":"password","direction":"sideways"}');
-      localStorage.setItem('pc.tableSort.groups', 'not json');
+      // A field that is not one of this table's orders, with a valid direction.
+      localStorage.setItem('pc.tableSort.records', '{"field":"password","direction":"ascending"}');
+      // A valid field with an unknown direction.
+      localStorage.setItem('pc.tableSort.groups', '{"field":"count","direction":"sideways"}');
     });
     await seedReviewed(page);
     await expect(typeFilter(page)).toHaveValue('all');
@@ -315,6 +339,40 @@ test.describe('after a reload', () => {
     await showAllRecords(page, STATES.length);
     await expect(chosenOrder(page)).toHaveText('Sitio / App (ascendente)');
     await expect(column(desktopTable(page), 2)).toHaveText(['alfa', 'bravo', 'charlie', 'delta', 'dos-a', 'dos-b', 'uno-a', 'uno-b']);
+  });
+
+  test('falls back to the defaults for stored values that are not JSON, or another table\'s order', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('pc.reviewFilters', 'not json');
+      // «risk» exists only in «Todas».
+      localStorage.setItem('pc.tableSort.groups', '{"field":"risk","direction":"descending"}');
+      localStorage.setItem('pc.tableSort.records', 'not json');
+    });
+    await seedReviewed(page);
+    await expect(typeFilter(page)).toHaveValue('all');
+    await expect(reviewFilter(page)).toHaveValue('all');
+    await expect(chosenOrder(page)).toHaveText('Sitio (ascendente)');
+    await showAllRecords(page, STATES.length);
+    await expect(chosenOrder(page)).toHaveText('Sitio / App (ascendente)');
+  });
+
+  test('restores a stored order without sorting', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('pc.tableSort.groups', '{"field":null,"direction":"ascending"}'));
+    await seedReviewed(page);
+    await expect(chosenOrder(page)).toHaveText('Contraseñas diferentes primero');
+    await expect(desktopTable(page).locator('th[aria-sort]')).toHaveCount(0);
+  });
+
+  test('keeps an order chosen with a column header', async ({ page }) => {
+    await seed(page, [{ name: 'chrome.csv', lines: THREE }]);
+    await showAllRecords(page, 3);
+    const table = desktopTable(page);
+    await sortBy(table, 'Usuario');
+    await sortBy(table, 'Usuario');
+    await page.reload();
+    await showAllRecords(page, 3);
+    await expect(chosenOrder(page)).toHaveText('Usuario (descendente)');
+    await expect(column(table, 2)).toHaveText(['dave', 'carol', 'bob']);
   });
 
   test('works the same without browser storage, remembering nothing', async ({ page }) => {
