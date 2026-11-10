@@ -196,3 +196,24 @@ test('the notice and its buttons fit a 320 px screen', async ({ page }) => {
   await notice(page).getByRole('button', { name: 'Deshacer', exact: true }).click();
   await expect(notice(page)).toContainText('Se deshizo:');
 });
+
+for (const [width, height] of [[320, 640], [1280, 720]]) {
+  test(`the last record can scroll clear of the notice at ${width} px`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    const rows = Array.from({ length: 14 }, (_, n) => `Sitio ${String(n + 1).padStart(2, '0')},https://site-${n + 1}.invalid/,ana,fictional-pass-${n + 1}00,`);
+    const imported = await page.request.post('/api/import', {
+      multipart: { files: { name: 'many.csv', mimeType: 'text/csv', buffer: Buffer.from(['name,url,username,password,note', ...rows].join('\n')) } },
+    });
+    expect(imported.ok()).toBe(true);
+    await page.goto('/');
+    await page.getByRole('tab', { name: 'Todas (14)' }).click();
+    const list = width > 760 ? page.locator('.desktop-table tbody tr') : page.locator('.mobile-cards > article');
+    await list.first().getByRole('button', { name: 'Mover a la papelera' }).click();
+    await expect(notice(page)).toBeVisible();
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    const last = list.last().getByRole('button', { name: 'Mover a la papelera' });
+    const box = (await last.boundingBox())!;
+    const top = (await page.locator('.page-notices').boundingBox())!.y;
+    expect(box.y + box.height).toBeLessThanOrEqual(top);
+  });
+}

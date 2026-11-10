@@ -43,3 +43,8 @@
 .change>button{padding:0 8px;border:0;background:transparent;color:inherit;flex-shrink:0}
 .change .notice-action{min-height:32px;padding:4px 12px}
 .compare-dialog>.change{flex:none;margin:16px 16px 0}
+
+/* Room below the content for the page notice stack, so the last rows can scroll clear of it. */
+.main{padding-bottom:calc(60px + var(--notices-height,0px))}
+@media(max-width:760px){.main{padding-bottom:calc(104px + var(--notices-height,0px))}}
+html{scroll-padding-block-end:calc(var(--nav-height,0px) + var(--notices-height,0px) + 8px)}

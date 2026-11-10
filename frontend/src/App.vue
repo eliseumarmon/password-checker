@@ -56,14 +56,18 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const sessionMode = ref<SessionMode | null>(null);
 const stickyHead = ref<HTMLElement | null>(null);
 const mobileNav = ref<HTMLElement | null>(null);
+const pageNotices = ref<HTMLElement | null>(null);
 const headerHeight = ref(0);
 const navHeight = ref(0);
+// The notice stack covers the bottom of the page: the page keeps that much room below its content.
+const noticesHeight = ref(0);
 let layoutObserver: ResizeObserver | undefined;
 // On the root element, so that the page itself can keep focused controls clear of these bars.
 watchEffect(() => {
   const root = document.documentElement.style;
   root.setProperty('--header-height', `${headerHeight.value}px`);
   root.setProperty('--nav-height', `${navHeight.value}px`);
+  root.setProperty('--notices-height', `${noticesHeight.value}px`);
 });
 // Per-viewer convenience only: storage may be unavailable, so failures are ignored.
 const SIDEBAR_KEY = 'pc.sidebarCollapsed';
@@ -243,11 +247,18 @@ async function submitSession({ passphrase, confirmation, file }: SessionInput): 
 
 
 watch(screen, () => { selected.value = null; compareIds.value = null; });
+// The stack comes and goes with its notices.
+watch(pageNotices, (element, previous) => {
+  if (previous) layoutObserver?.unobserve(previous);
+  if (element) layoutObserver?.observe(element);
+  else noticesHeight.value = 0;
+});
 onMounted(async () => {
   document.addEventListener('keydown', onUndoKey);
   layoutObserver = new ResizeObserver(() => {
     headerHeight.value = stickyHead.value?.offsetHeight ?? 0;
     navHeight.value = mobileNav.value?.offsetHeight ?? 0;
+    noticesHeight.value = pageNotices.value?.offsetHeight ?? 0;
   });
   if (stickyHead.value) layoutObserver.observe(stickyHead.value);
   if (mobileNav.value) layoutObserver.observe(mobileNav.value);
@@ -318,7 +329,7 @@ onUnmounted(() => {
       <ErrorNotice v-if="errorHost==='editor'" :message="store.error" @close="store.error=''" />
     </EditorDialog>
     <!-- Page-layer notice stack: below every dialog overlay; error, then last change, then import warning. -->
-    <div v-if="store.warnings.length || errorHost==='page' || noticeHost==='page'" class="page-notices">
+    <div v-if="store.warnings.length || errorHost==='page' || noticeHost==='page'" ref="pageNotices" class="page-notices">
       <ErrorNotice v-if="errorHost==='page'" :message="store.error" @close="store.error=''" />
       <ChangeNotice v-if="noticeHost==='page' && changeNotice" :text="changeNotice.text" :show-undo="!!changeNotice.step" :can-undo="noticeUndoable && !store.busy" @undo="undoShown" @close="changeNotice=null" />
       <WarningNotice v-if="store.warnings.length" :warnings="store.warnings" @close="store.warnings=[]" />
