@@ -315,11 +315,15 @@ test.describe('after a reload', () => {
     await expect(chosenOrder(page)).toHaveText('Riesgo (más alertas primero)');
     await trashScreen(page).click();
     await expect(chosenOrder(page)).toHaveText('Usuario (descendente)');
-    // Only view preferences with closed values are stored: no search, name, URL, user or id.
+    // Only view preferences with closed values are stored: no search, name, URL, user or id. The collapsed
+    // sidebar key is allowed too, although this flow does not write it.
     const stored = await page.evaluate(() => Object.keys(localStorage).map(key => [key, localStorage.getItem(key) ?? ''] as const));
-    expect(stored.map(([key]) => key).sort()).toEqual(['pc.reviewFilters', 'pc.tableSort.groups', 'pc.tableSort.records', 'pc.tableSort.trash']);
+    const written = ['pc.reviewFilters', 'pc.tableSort.groups', 'pc.tableSort.records', 'pc.tableSort.trash'];
+    expect(stored.map(([key]) => key)).toEqual(expect.arrayContaining(written));
     for (const [key, value] of stored) {
+      expect([...written, 'pc.sidebarCollapsed']).toContain(key);
       if (key === 'pc.reviewFilters') expect(value).toBe('{"type":"web","review":"reviewed"}');
+      else if (key === 'pc.sidebarCollapsed') expect(value).toMatch(/^[01]$/);
       else expect(value).toMatch(/^\{"field":("[a-z]+"|null),"direction":"(ascending|descending)"\}$/);
     }
   });
