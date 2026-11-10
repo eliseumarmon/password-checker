@@ -9,6 +9,11 @@ const FOCUSABLE = 'button:not([disabled]),input:not([disabled]):not([type="hidde
 // Open dialogs, topmost last: only the top one reacts to the keyboard.
 const openDialogs: object[] = [];
 
+/** Whether any modal dialog is open: page-wide shortcuts stay off while one is. */
+export function hasOpenDialog(): boolean {
+  return openDialogs.length > 0;
+}
+
 interface Origin {
   opener: HTMLElement | null;
   /** The list holding the row the opener belongs to, and that row's place in it. */

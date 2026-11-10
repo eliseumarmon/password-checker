@@ -17,6 +17,7 @@ import AuditView from './components/AuditView.vue';
 import TrashView from './components/TrashView.vue';
 import SettingsView from './components/SettingsView.vue';
 import { confirmAction, pendingConfirm, settleConfirm } from './confirm';
+import { hasOpenDialog } from './dialogFocus';
 import { labelReview, REVIEWS, SCREENS } from './labels';
 import { MIN_SESSION_PASSPHRASE_LENGTH } from './limits';
 import { resetTablePages } from './tableState';
@@ -164,6 +165,25 @@ async function exportNow(): Promise<void> {
   if (!await confirmAction(`Se exportarán ${data.value.stats.included} credenciales. ${unresolved} grupos presentan contraseñas conflictivas. Bitwarden no eliminará duplicados automáticamente. ¿Generar CSV?`, 'Generar CSV')) return;
   try { await api.exportCsv(); } catch (error) { errorMessage(error); }
 }
+// The header button and Ctrl/Cmd+Z undo the step this page shows. When another tab already moved past it,
+// the server refuses: the page catches up and keeps the reason on screen.
+async function undoShown(): Promise<void> {
+  await store.execute(() => api.undo(data.value?.last_change?.id));
+  if (!store.error) return;
+  const reason = store.error;
+  await store.execute(api.state);
+  if (!store.error) store.error = reason;
+}
+function isTextField(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement && (target.isContentEditable || target.matches('input, textarea'));
+}
+// Inside a text field the browser keeps its own undo; a held key undoes one step, not one per repeat.
+function onUndoKey(event: KeyboardEvent): void {
+  if (event.key.toLowerCase() !== 'z' || !(event.ctrlKey || event.metaKey) || event.shiftKey || event.altKey || event.repeat) return;
+  if (isTextField(event.target) || hasOpenDialog() || !data.value?.can_undo || store.busy) return;
+  event.preventDefault();
+  void undoShown();
+}
 function closeSession(): void { sessionMode.value = null; }
 function showSession(mode: SessionMode): void { sessionMode.value = mode; }
 async function submitSession({ passphrase, confirmation, file }: SessionInput): Promise<void> {
@@ -196,6 +216,7 @@ async function submitSession({ passphrase, confirmation, file }: SessionInput): 
 
 watch(screen, () => { selected.value = null; compareIds.value = null; });
 onMounted(async () => {
+  document.addEventListener('keydown', onUndoKey);
   layoutObserver = new ResizeObserver(() => {
     headerHeight.value = stickyHead.value?.offsetHeight ?? 0;
     navHeight.value = mobileNav.value?.offsetHeight ?? 0;
@@ -204,7 +225,10 @@ onMounted(async () => {
   if (mobileNav.value) layoutObserver.observe(mobileNav.value);
   await store.execute(api.state);
 });
-onUnmounted(() => layoutObserver?.disconnect());
+onUnmounted(() => {
+  layoutObserver?.disconnect();
+  document.removeEventListener('keydown', onUndoKey);
+});
 </script>
 
 <template>
@@ -223,7 +247,7 @@ onUnmounted(() => layoutObserver?.disconnect());
         <div><h1>{{ SCREENS.find(s => s.id === screen)?.title }}</h1><p>Los originales no se modifican · Las contraseñas permanecen ocultas</p></div>
         <div class="top-actions">
           <button v-if="data?.stats.total" @click="showSession('save')">Guardar sesión cifrada</button>
-          <button :disabled="!data?.can_undo || store.busy" @click="store.execute(api.undo)" title="Deshacer último cambio">↶ Deshacer</button>
+          <button :disabled="!data?.can_undo || store.busy" @click="undoShown" title="Deshacer último cambio">↶ Deshacer</button>
           <button class="primary" :disabled="!data?.stats.included || store.busy" @click="exportNow">Exportar Bitwarden</button>
         </div>
       </header>
