@@ -93,7 +93,7 @@ test('does nothing while a dialog is open', async ({ page }) => {
 });
 
 test('ignores Shift, Alt and a held key: each press undoes one step', async ({ page }) => {
-  const first = await seedWithOneStep(page);
+  await seedWithOneStep(page);
   const amazon = (await workspace(page)).records.find((r: { name: string }) => r.name === 'Amazon');
   expect((await page.request.patch(`/api/records/${amazon.id}`, { data: { review: 'reviewed' } })).ok()).toBe(true);
   const calls = countUndoCalls(page);
@@ -102,14 +102,19 @@ test('ignores Shift, Alt and a held key: each press undoes one step', async ({ p
   await page.keyboard.press('Control+Shift+z');
   await page.keyboard.press('Control+Alt+z');
 
+  // Each wait is on the page, not the server: while the page still handles a response it is busy,
+  // and a press then would be ignored for being busy instead of for repeating.
+  const notice = page.getByRole('status', { name: 'Último cambio' });
   await page.keyboard.down('Control');
   await page.keyboard.down('z');
-  await expect.poll(async () => (await workspace(page)).last_change?.id).toBe(first);
+  await expect(notice).toContainText('Se deshizo: «Amazon» guardada.');
+  await expect(page.getByRole('button', { name: '↶ Deshacer' })).toBeEnabled();
   await page.keyboard.down('z'); // the key repeats while held
   await page.keyboard.up('z');
   await page.keyboard.press('z'); // a new press undoes the next step
   await page.keyboard.up('Control');
-  await expect.poll(async () => (await workspace(page)).can_undo).toBe(false);
+  await expect(notice).toContainText('Se deshizo: «Netflix (renamed)» guardada.');
+  expect((await workspace(page)).can_undo).toBe(false);
   expect(calls).toHaveLength(2);
 });
 
