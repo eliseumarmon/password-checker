@@ -1,6 +1,6 @@
 # Hoja de ruta
 
-Este documento reúne en un solo sitio las fases de trabajo de Password Checker, el plan de cada funcionalidad y las decisiones que siguen abiertas, para que la hoja de ruta no dependa de conversaciones. **Es una propuesta:** solo están aprobadas las decisiones D1, D2 y D9, y la planificación de la Fase 1. Las ideas de origen están en el [trabajo pendiente](pendiente.md); el funcionamiento actual, en el [flujo de usuario](flujo-usuario.md).
+Este documento reúne en un solo sitio las fases de trabajo de Password Checker, el plan de cada funcionalidad y las decisiones que siguen abiertas, para que la hoja de ruta no dependa de conversaciones. **Es una propuesta:** solo están aprobadas las decisiones D1, D2 y D9, la planificación de la Fase 1 y el orden de la Fase 2, cuyos planes confirman sus supuestos al empezar. Las ideas de origen están en el [trabajo pendiente](pendiente.md); el funcionamiento actual, en el [flujo de usuario](flujo-usuario.md).
 
 ## Resumen
 
@@ -9,7 +9,7 @@ Este documento reúne en un solo sitio las fases de trabajo de Password Checker,
 | 0 | Endurecer dependencias y cadena de suministro | **Cerrada** (2026-11-04), con P10 integrada el mismo día | — | [dependency-hardening](../odd/done/dependency-hardening.md), [actions-sha-pinning](../odd/done/actions-sha-pinning.md) (P10) |
 | — | Correcciones independientes: «Abrir sitio» y normalización de URL | En curso | — | [site-link-navigation](../odd/tasks/site-link-navigation.md) |
 | 1 | Cimientos del frontend: colores en variables, tablas nativas, accesibilidad, tamaño del bundle y actualizaciones mayores | En curso | — | [css-tokens](../odd/done/css-tokens.md) (hecho), [native-tables](../odd/done/native-tables.md) (hecho), [keyboard-accessibility](../odd/done/keyboard-accessibility.md) (hecho), [frontend-bundle](../odd/done/frontend-bundle.md) (hecho), [frontend-major-updates](../odd/tasks/frontend-major-updates.md) (P12) |
-| 2 | Revisión más ágil, sin cambiar el formato `.pwc` | En curso | — | [review-filters](../odd/done/review-filters.md) (hecho), [undo-ux](../odd/tasks/undo-ux.md), [secret-visibility](../odd/tasks/secret-visibility.md), [export-preview](../odd/tasks/export-preview.md), [compare-resolution](../odd/tasks/compare-resolution.md), [local-strength](../odd/tasks/local-strength.md), [mobile-record-detail](../odd/tasks/mobile-record-detail.md), [audit-layout](../odd/tasks/audit-layout.md) |
+| 2 | Revisión más ágil, sin cambiar el formato `.pwc` | En curso | — | [review-filters](../odd/done/review-filters.md) (hecho), [undo-ux](../odd/tasks/undo-ux.md), [audit-layout](../odd/tasks/audit-layout.md), [local-strength](../odd/tasks/local-strength.md), [export-preview](../odd/tasks/export-preview.md), [mobile-record-detail](../odd/tasks/mobile-record-detail.md), [secret-visibility](../odd/tasks/secret-visibility.md), [compare-resolution](../odd/tasks/compare-resolution.md) |
 | 3 | Datos de revisión que se guardan en la sesión (`.pwc` v3) | **Bloqueada** | D8, D3 (y D5 para las asociaciones de servicio) | Sin plan detallado (véase [Fase 3](#fase-3--datos-de-revisión-en-la-sesión)) |
 | 4 | Ajustes: tema claro, ayuda, bloqueo por inactividad, idioma | Planificada en parte | D4 (bloqueo), D6 (idioma) | [light-theme](../odd/tasks/light-theme.md), [help-section](../odd/tasks/help-section.md) |
 | 5 | Validación con personas | Planificada | — | [user-validation](../odd/tasks/user-validation.md) |
@@ -151,19 +151,19 @@ Cerrada el 2026-11-04: P2-P8 integradas en `main`, con las alertas de Dependabot
 
 ### Fase 2 — Revisión más ágil
 
-Nada de esta fase cambia el formato `.pwc`.
+Nada de esta fase cambia el formato `.pwc`. El orden lo aprobó el usuario el 2026-11-10 («Pequeños primero»): lo pequeño e independiente al principio, y la comparación, lo más grande y arriesgado, al final. Cada plan confirma sus supuestos justo antes de empezar.
 
-| Plan | Depende de |
-|---|---|
-| [review-filters](../odd/done/review-filters.md): filtro por estado, un solo orden por tabla entre las cabeceras y un selector (también en la papelera), orden por riesgo y por URL, continuidad de filtros y de la ordenación al recargar. **Hecho** (2026-11-10) | `native-tables` |
-| [undo-ux](../odd/tasks/undo-ux.md): `Ctrl/Cmd+Z` y aviso tras guardar con «Deshacer» | — |
-| [secret-visibility](../odd/tasks/secret-visibility.md): «Ocultar todo», revelar contraseñas en la comparación, copiar contraseña | — |
-| [export-preview](../odd/tasks/export-preview.md): ventana de exportación con incluidos, excluidos y conflictos | `keyboard-accessibility` (foco en diálogos) |
-| [compare-resolution](../odd/tasks/compare-resolution.md), Etapa A: agrupar por sitio y usuario, claves A/B/C sin mostrarlas, indicador de nota, estado en una línea | `keyboard-accessibility` |
-| [compare-resolution](../odd/tasks/compare-resolution.md), Etapa B: conservar A, B o ambas, fusionar notas, editar el candidato final | Etapa A, `secret-visibility`, `keyboard-accessibility` |
-| [audit-layout](../odd/tasks/audit-layout.md): cuadrícula 2×2 ampliable en escritorio, acordeón en móvil | `css-tokens`, `keyboard-accessibility` |
-| [local-strength](../odd/tasks/local-strength.md): evaluación local de fortaleza más completa | — |
-| [mobile-record-detail](../odd/tasks/mobile-record-detail.md): ficha móvil a pantalla completa, acciones rápidas de revisión, «Buscar en tienda» | `keyboard-accessibility` |
+| Orden | Plan | Depende de |
+|---|---|---|
+| — | [review-filters](../odd/done/review-filters.md): filtro por estado, un solo orden por tabla entre las cabeceras y un selector (también en la papelera), orden por riesgo y por URL, continuidad de filtros y de la ordenación al recargar. **Hecho** (2026-11-10) | `native-tables` |
+| 1 | [undo-ux](../odd/tasks/undo-ux.md): `Ctrl/Cmd+Z` y aviso tras guardar con «Deshacer» | — |
+| 2 | [audit-layout](../odd/tasks/audit-layout.md): cuadrícula 2×2 ampliable en escritorio, acordeón en móvil | `css-tokens`, `keyboard-accessibility` |
+| 3 | [local-strength](../odd/tasks/local-strength.md): evaluación local de fortaleza más completa | — |
+| 4 | [export-preview](../odd/tasks/export-preview.md): ventana de exportación con incluidos, excluidos y conflictos | `keyboard-accessibility` (foco en diálogos) |
+| 5 | [mobile-record-detail](../odd/tasks/mobile-record-detail.md): ficha móvil a pantalla completa, acciones rápidas de revisión, «Buscar en tienda» | `keyboard-accessibility` |
+| 6 | [secret-visibility](../odd/tasks/secret-visibility.md): «Ocultar todo», revelar contraseñas en la comparación, copiar contraseña | — |
+| 7 | [compare-resolution](../odd/tasks/compare-resolution.md), Etapa A: agrupar por sitio y usuario, claves A/B/C sin mostrarlas, indicador de nota, estado en una línea | `keyboard-accessibility` |
+| 8 | [compare-resolution](../odd/tasks/compare-resolution.md), Etapa B: conservar A, B o ambas, fusionar notas, editar el candidato final | Etapa A, `secret-visibility`, `keyboard-accessibility` |
 
 ### Fase 3 — Datos de revisión en la sesión
 
@@ -216,3 +216,4 @@ Es un cambio de formato persistido: requerirá verificación independiente y un 
 | 2026-11-09 | `keyboard-accessibility` está hecho: foco y `Esc` en todos los diálogos, pestañas con flechas, y foco nunca tapado por las barras fijas. Los hallazgos no aprobados quedan en el [trabajo pendiente](pendiente.md#trabajo-pendiente). |
 | 2026-11-09 | P12: `pinia` 4 y `vite` 8 actualizados en una sola rama, por decisión del usuario. `typescript` 7 queda bloqueado: `vue-tsc` y el compilador de Vue no funcionan con él. |
 | 2026-11-10 | Empieza la Fase 2 con `review-filters`, y está hecho. Decisiones del usuario: <ul><li>un solo orden por tabla, que se cambia desde las cabeceras y desde un selector, también en la papelera;</li><li>el filtro de estado sustituye a la casilla «Solo pendientes»;</li><li>el riesgo cuenta solo las tres alertas de «Auditoría», y las de URL (`http` sin cifrar y credenciales dentro de la URL) quedan en el [trabajo pendiente](pendiente.md#trabajo-pendiente);</li><li>se recuerdan el tipo, el estado y el orden, pero no la búsqueda.</li></ul> |
+| 2026-11-10 | Se planifica el resto de la Fase 2. El usuario aprueba el orden («Pequeños primero»): `undo-ux`, `audit-layout`, `local-strength`, `export-preview`, `mobile-record-detail`, `secret-visibility` y `compare-resolution`, Etapa A y luego B. Los supuestos de cada plan se preguntan justo antes de empezarlo. Cada plan recoge en su registro lo que había quedado desfasado tras la Fase 1 y `review-filters`. |

@@ -5,8 +5,8 @@ Objetivo: que la comparación se entienda y permita decidir, en dos etapas (L4).
 - **Etapa B, resolución:** convertir la comparación en un panel de decisión. Muestra cada registro con sus datos originales y permite conservar A, B o ambos, fusionar notas y editar el candidato final en una sola operación reversible (S1-S4).
 
 La Etapa A va primero y no mezcla la legibilidad con las operaciones delicadas sobre credenciales.
-Rama: `feat/compare-resolution` desde `main`. Fase 2. Depende de: `keyboard-accessibility` (foco en diálogos); la Etapa B, además, de `secret-visibility` (revelado y endpoint de solo contraseña). Entrega: `ask-on-risk`, previsión ~600 líneas, por encima de ~400: se preguntará la estrategia de encadenado. T1 va en un commit propio por riesgo.
-Comprobaciones: `python -m unittest discover -s tests`, `ruff check .`, `npm run build` y `npm run e2e`. Estado: planificado, sin empezar.
+Ramas: `feat/compare-resolution-a` (Etapa A) y `feat/compare-resolution-b` (Etapa B), cada una desde `main` (L5). Fase 2. Depende de: `keyboard-accessibility` (foco en diálogos); la Etapa B, además, de `secret-visibility` (revelado y endpoint de solo contraseña). Entrega: `ask-on-risk`, previsión ~600 líneas, por encima de ~400: se preguntará la estrategia de encadenado. T1 va en un commit propio por riesgo.
+Comprobaciones: `python -m unittest discover -s tests`, `ruff check .`, `npm run build` y `npm run e2e`. Estado: planificado; orden aprobado (n.º 7 (Etapa A) y 8 (Etapa B) de 8, L5); supuestos pendientes, se preguntan al empezar.
 
 ## Specs
 
@@ -75,3 +75,7 @@ Etapa B:
   - Nada de esto cambia el formato `.pwc`. No depende de ninguna decisión pendiente; los supuestos de S2 y S3 se confirman al aprobar el plan.
   - Ruta: inline.
 - **L4 (2026-11-04).** Anotaciones del usuario sobre una conversación externa, pegada en la sesión, para añadirlas a la hoja de ruta. La conversación recomendaba: «actualizar compare-resolution.md con estos criterios antes de aprobar su implementación», con una «Etapa A — Comprensión de los datos» y una «Etapa B — Resolución de conflictos». Se añaden S5-S7 y T5-T7 (Etapa A, va primero); T1-T4 pasan a ser la Etapa B. Las capturas de la conversación tenían identificadores reales; no se copian. Comprobado en `main` (`ec8d167`): los chips y el aviso citados en S5, `CredentialSummary` sin notas y `<span class="status">` con «En la papelera».
+- **L5 (2026-11-10).** Revisión del plan contra `main` (`af881a5`), tras la Fase 1 y `review-filters`, a petición del usuario: «Planifica el resto de la fase2». Orden aprobado: «Pequeños primero (Recomendado)»; este plan es el n.º 7 (Etapa A) y 8 (Etapa B) de 8. Supuestos: «Justo antes de cada uno (Recomendado)», así que los supuestos y las decisiones pendientes se preguntan al empezar.
+  - Etapa A: T5 sustituye `match_url`, `match_username` y `match_password` (`review_state.py:69-71`, `GroupMember` en `types.ts`), lo que cambia la respuesta de `/api/workspace`. Las pruebas de la comparación sobre `.compare-flags` (`e2e/review.spec.ts:542`, `:553` y `:580`) se reescriben, no solo se amplían, y cambia el componente 2 de la guía («Chip de coincidencia»). Lo demás de S5-S7 sigue siendo cierto.
+  - Decisiones pendientes nuevas de la Etapa A: cómo se muestra un 2FA distinto; qué significan las letras A/B/C cuando un sitio tiene varios usuarios; las secciones desplegables del móvil frente a «no esconder la razón del conflicto» (`docs/guia-visual.md:95`).
+  - Entrega: cada etapa en su rama, `feat/compare-resolution-a` y `feat/compare-resolution-b`; la Etapa A, ~250-300 líneas.
