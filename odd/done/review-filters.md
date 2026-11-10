@@ -2,7 +2,7 @@
 
 Objetivo: añadir el filtro por estado y el selector de orden junto a la búsqueda, ordenar «Todas» por riesgo y por URL, y conservar los filtros entre visitas.
 Rama: `feat/review-filters` desde `main`. Fase 2. Depende de: `native-tables` (reutiliza su módulo de ordenación). Entrega: `single-pr`, una sola integración a `main` al final, con un commit por tarea (L12); previsión ~580 líneas. Solo frontend.
-Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso.
+Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: hecho (2026-11-10).
 
 ## Specs
 
@@ -30,9 +30,9 @@ Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m 
 - [x] T2 — S2: orden único entre el selector y las cabeceras, con las columnas actuales, y tarjetas del móvil en el mismo orden. RED primero en E2E. Ruta: inline. RED y GREEN en L14. Commit `d479515`. Verificador independiente: S2 y S4 PASS, suite 160 de 160 en copia limpia (L16). Evaluación: riesgo alto (punto 3 elevado a mano), revisión debida.
 - [x] T2b — S2: selector de orden en la papelera, y el estado «sin orden» como constante compartida (L17, L18). RED primero en E2E. Ruta: inline. RED y GREEN en L19. Commit `afeb615`. Verificador independiente: PASS, suite 160 de 160 y 143 estados idénticos (L20). Revisión: aprobada y confirmada (L20).
 - [x] T3 — S2: orden por riesgo y por URL en «Todas», reutilizando el comparador de `native-tables`. RED primero en E2E con datos ficticios de riesgo conocido. Ruta: inline. RED y GREEN en L21. Commit `60eee2d`. Verificador independiente: PASS (L22). Revisión: aprobada y confirmada (L22).
-- [ ] T3b — S2 y S3: observaciones de la revisión de T3 (L22), del verificador de T4 (L24) y de la revisión de T4 (L26): comprobación de que cada orden extra tiene su orden derivado, tipos más honestos, y pruebas del riesgo recalculado al editar, de lo que se guarda y de cómo se lee. Ruta: inline. Detalle en L25 y L26.
+- [x] T3b — S2 y S3: observaciones de la revisión de T3 (L22), del verificador de T4 (L24) y de la revisión de T4 (L26): comprobación de que cada orden extra tiene su orden derivado, tipos más honestos, y pruebas del riesgo recalculado al editar, de lo que se guarda y de cómo se lee. Ruta: inline. Detalle en L25 y L26. Commit `a5bc70e`. Verificador independiente: PASS (L27). Revisión: aprobada y confirmada; su sugerencia sobre la clave de la barra lateral, en `fc2efbe` (L27).
 - [x] T4 — S3: continuidad. RED primero en E2E (recargar conserva tipo, estado y orden, pero no la búsqueda), con almacenamiento no disponible incluido. Riesgo: posible punto 2, por guardar datos en el navegador; commit propio. Ruta: inline. RED y GREEN en L23. Commit `3fb8aa9`. Verificador independiente: PASS (L24). Revisión: aprobada y confirmada (L26).
-- [ ] T5 — Documentación: `docs/flujo-usuario.md`, `docs/pendiente.md` (S5 y lo que esta rama resuelve) y `docs/hoja-de-ruta.md`. Ruta: inline.
+- [x] T5 — Documentación: `docs/flujo-usuario.md`, `docs/pendiente.md` (S5 y lo que esta rama resuelve) y `docs/hoja-de-ruta.md`. Ruta: inline. También `docs/guia-visual.md` (L28). Commit de cierre.
 
 ## Log
 
@@ -116,3 +116,17 @@ Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m 
   - Solo se probaba recordar un orden elegido en el selector. Las cabeceras ya pasan por `setTableSort`, y ahora una prueba lo fija: el orden elegido con dos pulsaciones en «Usuario» sobrevive a la recarga.
   - Con todo T3b, `e2e/filters.spec.ts` da 23 de 23 y la suite entera 170 de 170.
   - Riesgo de T3b: punto 3, porque `useTable`, que usan las tres tablas, falla ahora al montar si falta un orden derivado.
+- **L27 (2026-11-10).** T3b verificada y revisada.
+  - Verificador independiente (`a5bc70e` contra `3fb8aa9`): PASS, suite 170 de 170.
+    - En una copia sin el orden derivado «url», «Todas» no se monta y la consola muestra `useTable('records') has no derived order for: url`; en la aplicación real no salta nunca, en escritorio ni a 390 px.
+    - 108 estados de las tres tablas, recarga incluida, son idénticos antes y después.
+  - Revisión (lentes de legibilidad y fiabilidad, con consentimiento del usuario): aprobada y confirmada; el punto de partida pasa a `a5bc70e`. Dos sugerencias:
+    - La prueba de almacenamiento exigía exactamente cuatro claves, aunque la barra lateral contraída también se guarda, con un valor cerrado. Arreglado en `fc2efbe`: esa clave está permitida sin ser obligatoria, y su valor debe ser `0` o `1`.
+    - Que ninguna prueba ejercita la comprobación de `useTable` (también lo dijo el verificador). Sin cambios: si faltara un orden derivado, «Todas» no se montaría y fallarían muchas pruebas; si además se quitara la comprobación, fallaría la prueba de «URL», porque ordenar por la URL tal cual pone primero el registro de Android. El frontend no tiene ejecutor de pruebas unitarias.
+- **L28 (2026-11-10).** T5 y cierre.
+  - El usuario: «Terminamos review filters con t5. Lanzamos el revisor rdd como siempre miramos si se necesita cambiar algo. Luego te lanzaré con función plan directamente.»
+  - `docs/flujo-usuario.md`: el filtro de estado, el orden único, «Riesgo» y «URL», y qué se recuerda al recargar; el `.pwc` sigue sin guardar filtros.
+  - `docs/pendiente.md`: fuera lo ya hecho y la casilla «Solo pendientes» de los hallazgos de accesibilidad; dentro, las alertas de URL (S5); la última funcionalidad completada es esta.
+  - `docs/guia-visual.md` §7: qué guarda `localStorage`, todo preferencias de vista sin datos de credenciales.
+  - `docs/hoja-de-ruta.md`: la Fase 2 pasa a «En curso» con `review-filters` hecho, y una entrada en el registro de cambios con las decisiones del usuario.
+  - El plan pasa a `odd/done/`.
