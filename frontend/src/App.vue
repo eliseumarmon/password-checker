@@ -20,14 +20,33 @@ import { confirmAction, pendingConfirm, settleConfirm } from './confirm';
 import { labelReview, REVIEWS, SCREENS } from './labels';
 import { MIN_SESSION_PASSPHRASE_LENGTH } from './limits';
 import { resetTablePages } from './tableState';
-import type { CredentialDetail, CredentialSummary, DuplicateGroup, FilterReview, FilterType, RecordEdit, Screen, SessionInput, SessionMode } from './types';
+import type { CredentialDetail, CredentialSummary, DuplicateGroup, FilterReview, FilterType, RecordEdit, Review, Screen, SessionInput, SessionMode } from './types';
 
 const store = useWorkspace();
 const screen = ref<Screen>('credentials');
 const subtab = ref<'duplicates' | 'all'>('duplicates');
-const filterType = ref<FilterType>('all');
+// The type and state filters survive a reload (review-filters S3); the search does not, because it may hold
+// a user name and credentials never go to browser storage (docs/guia-visual.md §7).
+const FILTERS_KEY = 'pc.reviewFilters';
+const storedFilters = readFilters();
+const filterType = ref<FilterType>(storedFilters.type);
 const query = ref('');
-const filterReview = ref<FilterReview>('all');
+const filterReview = ref<FilterReview>(storedFilters.review);
+function readFilters(): { type: FilterType; review: FilterReview } {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(FILTERS_KEY) ?? 'null');
+    const { type, review } = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>;
+    return {
+      type: type === 'web' || type === 'android' ? type : 'all',
+      review: REVIEWS.includes(review as Review) ? review as Review : 'all',
+    };
+  } catch {
+    return { type: 'all', review: 'all' };
+  }
+}
+watch([filterType, filterReview], ([type, review]) => {
+  try { localStorage.setItem(FILTERS_KEY, JSON.stringify({ type, review })); } catch { /* ignore */ }
+});
 // Members fixed when the comparison opens, so it outlives the group when one is discarded.
 const compareIds = ref<string[] | null>(null);
 const selected = ref<CredentialDetail | null>(null);

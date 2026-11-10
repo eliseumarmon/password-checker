@@ -108,13 +108,36 @@ export const UNSORTED_LABEL: Record<TableKey, string> = {
 const INITIAL_SORT: SortState<string> = { field: 'name', direction: 'ascending' };
 interface TableMemory { sort: Ref<SortState<string>>; requested: Ref<number> }
 
-// Outlives the components, which unmount when the screen or the tab changes. A reload clears it.
+// Outlives the components, which unmount when the screen or the tab changes. A reload clears it; the
+// orders then come back from storage, the pages start again at 1.
 const memory = new Map<TableKey, TableMemory>();
+
+// Each table's order also survives a reload (review-filters S3). A per-viewer convenience only: storage may
+// be unavailable or hold values this version does not know, so failures are ignored and unknown values dropped.
+const STORAGE_PREFIX = 'pc.tableSort.';
+
+function storedSort(key: TableKey): SortState<string> | null {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(STORAGE_PREFIX + key) ?? 'null');
+    if (typeof value !== 'object' || value === null) return null;
+    const { field, direction } = value as Record<string, unknown>;
+    if (direction !== 'ascending' && direction !== 'descending') return null;
+    if (field === null) return NO_SORT;
+    const fields = [...SORT_COLUMNS[key], ...EXTRA_ORDERS[key]].map(order => order.field);
+    return typeof field === 'string' && fields.includes(field) ? { field, direction } : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeSort(key: TableKey, { field, direction }: SortState<string>): void {
+  try { localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify({ field, direction })); } catch { /* ignore */ }
+}
 
 function remembered(key: TableKey): TableMemory {
   let entry = memory.get(key);
   if (!entry) {
-    entry = { sort: ref({ ...INITIAL_SORT }), requested: ref(1) };
+    entry = { sort: ref(storedSort(key) ?? { ...INITIAL_SORT }), requested: ref(1) };
     memory.set(key, entry);
   }
   return entry;
@@ -130,6 +153,7 @@ export function setTableSort(key: TableKey, sort: SortState<string>): void {
   const entry = remembered(key);
   entry.sort.value = sort;
   entry.requested.value = 1;
+  storeSort(key, sort);
 }
 
 /** A new workspace has other rows, so the previous page numbers mean nothing there; the chosen sort stays. */

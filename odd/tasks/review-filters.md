@@ -29,8 +29,9 @@ Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m 
 - [x] T1 — S1: filtro por estado. RED primero en E2E (cada estado en «Todas» y en «Duplicados»). Ruta: inline. RED: las 3 pruebas de `e2e/filters.spec.ts` fallan esperando el selector «Filtrar estado»; GREEN: 3 de 3, y la suite entera 150 de 150 (L13). Commit `9be6d70`; evaluación de revisión: riesgo medio, `under_budget`. Revisada como tramo propio antes de T2 (lente de fiabilidad): aprobada y confirmada (L15).
 - [x] T2 — S2: orden único entre el selector y las cabeceras, con las columnas actuales, y tarjetas del móvil en el mismo orden. RED primero en E2E. Ruta: inline. RED y GREEN en L14. Commit `d479515`. Verificador independiente: S2 y S4 PASS, suite 160 de 160 en copia limpia (L16). Evaluación: riesgo alto (punto 3 elevado a mano), revisión debida.
 - [x] T2b — S2: selector de orden en la papelera, y el estado «sin orden» como constante compartida (L17, L18). RED primero en E2E. Ruta: inline. RED y GREEN en L19. Commit `afeb615`. Verificador independiente: PASS, suite 160 de 160 y 143 estados idénticos (L20). Revisión: aprobada y confirmada (L20).
-- [ ] T3 — S2: orden por riesgo y por URL en «Todas», reutilizando el comparador de `native-tables`. RED primero en E2E con datos ficticios de riesgo conocido. Ruta: inline. RED y GREEN en L21.
-- [ ] T4 — S3: continuidad. RED primero en E2E (recargar conserva tipo, estado y orden, pero no la búsqueda), con almacenamiento no disponible incluido. Riesgo: posible punto 2, por guardar datos en el navegador; commit propio. Ruta: inline.
+- [x] T3 — S2: orden por riesgo y por URL en «Todas», reutilizando el comparador de `native-tables`. RED primero en E2E con datos ficticios de riesgo conocido. Ruta: inline. RED y GREEN en L21. Commit `60eee2d`. Verificador independiente: PASS (L22). Revisión: aprobada y confirmada (L22).
+- [ ] T3b — S2: observaciones de la revisión de T3 (L22): comprobación de que cada orden extra tiene su orden derivado, tipos más honestos y prueba de que el riesgo se recalcula al editar. Ruta: inline.
+- [ ] T4 — S3: continuidad. RED primero en E2E (recargar conserva tipo, estado y orden, pero no la búsqueda), con almacenamiento no disponible incluido. Riesgo: posible punto 2, por guardar datos en el navegador; commit propio. Ruta: inline. RED y GREEN en L23.
 - [ ] T5 — Documentación: `docs/flujo-usuario.md`, `docs/pendiente.md` (S5 y lo que esta rama resuelve) y `docs/hoja-de-ruta.md`. Ruta: inline.
 
 ## Log
@@ -84,3 +85,16 @@ Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m 
   - GREEN: `sortRows` acepta órdenes derivados (`DerivedOrder`): valores que se comparan por turno en la dirección elegida y un desempate opcional siempre ascendente, calculados una vez por fila. `EXTRA_ORDERS` da al selector «Riesgo (más alertas primero)», «Riesgo (menos alertas primero)», «URL (ascendente)» y «URL (descendente)» solo en «Todas». `RecordsTable.vue` define el riesgo (alertas, desempate por nombre) y la URL (`host` y URL completa), y `App.vue` cuenta las alertas a partir de `audit`. `vue-tsc` pasa, el archivo da 16 de 16 y la suite entera 163 de 163.
   - La prueba de la barra de filtros mira ahora las dos pestañas, porque las opciones nuevas son más largas. Medido: «Ordenar» ocupa 266 px en «Todas» y 268 en «Duplicados», y nada se sale a 320, 390 ni 414 px.
   - Riesgo: punto 3, porque cambia `sortRows`, que ordenan las tres tablas.
+- **L22 (2026-11-10).** T3 verificada y revisada.
+  - Verificador independiente (`60eee2d` contra `afeb615`): PASS. `vue-tsc` limpio y la suite da 163 de 163.
+    - Con 41 registros ficticios variados, los cuatro órdenes nuevos coinciden, en escritorio y en el móvil, con lo que el verificador calculó por su cuenta desde `audit`, `host` y `url`.
+    - Al editar un registro sin recargar, el orden por riesgo se recalcula.
+    - 78 estados de columnas de las tres tablas son idénticos antes y después.
+    - `Object.hasOwn` está soportado por el objetivo ES2022.
+  - Revisión (lentes de legibilidad y fiabilidad, con consentimiento del usuario): aprobada y confirmada; el punto de partida pasa a `60eee2d`. Observaciones, que atiende T3b:
+    - Aviso: `EXTRA_ORDERS` y los órdenes derivados de `RecordsTable.vue` solo se unen por el nombre. Si faltara el de «url», el selector ordenaría por la URL tal cual sin que nada avisara.
+    - Sugerencias: `DIRECTIONS` en `SortSelect.vue` está tipado como opcional; `useTable` sigue prometiendo que el campo de orden es una columna, y «risk» no lo es; ninguna prueba fija que el riesgo se recalcula al editar.
+- **L23 (2026-11-10).** T4.
+  - RED: «keeps the type, the state and the order of each table, but not the search» falla («Expected: "web", Received: "all"»). Las otras dos pruebas (valores desconocidos y almacenamiento bloqueado) ya pasaban: fijan lo que hoy funciona.
+  - GREEN: `tableState.ts` guarda el orden de cada tabla en `pc.tableSort.<tabla>` al cambiarlo y lo lee al crear su memoria. Descarta lo que no reconoce: un campo que no sea una columna ni un orden extra de esa tabla, una dirección desconocida o un JSON roto. `App.vue` guarda el tipo y el estado en `pc.reviewFilters`. La búsqueda no se guarda, y la prueba comprueba que el texto buscado no aparece en el almacenamiento. Si el navegador no deja leer ni guardar, se ignora el error y no se recuerda nada, sin errores en la página. `vue-tsc` pasa, el archivo da 19 de 19 y la suite entera 166 de 166.
+  - Riesgo: punto 2, porque guarda datos en el navegador junto a una regla de seguridad (no guardar credenciales). Lleva verificador independiente y revisión propia con la lente de riesgo.

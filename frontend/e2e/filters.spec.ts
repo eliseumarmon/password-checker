@@ -261,3 +261,77 @@ test.describe('risk and URL order in «Todas»', () => {
     await expect(orderSelect(page).locator('option', { hasText: /^(Riesgo|URL) / })).toHaveCount(4);
   });
 });
+
+test.describe('after a reload', () => {
+  function typeFilter(page: Page) {
+    return page.getByRole('combobox', { name: 'Filtrar tipo' });
+  }
+  function search(page: Page) {
+    return page.getByRole('textbox', { name: 'Buscar credenciales' });
+  }
+  function trashScreen(page: Page) {
+    return page.getByRole('complementary', { name: 'Navegación principal' }).getByRole('button', { name: /Papelera/ });
+  }
+
+  test('keeps the type, the state and the order of each table, but not the search', async ({ page }) => {
+    await seedReviewed(page);
+    const { records } = await (await page.request.get('/api/workspace')).json() as { records: { id: string; name: string }[] };
+    const ids = records.filter(r => r.name === 'Delta').map(r => r.id);
+    expect((await page.request.post('/api/records/trash', { data: { ids } })).ok()).toBe(true);
+    await page.reload();
+
+    await typeFilter(page).selectOption('web');
+    await reviewFilter(page).selectOption({ label: 'Revisada' });
+    await orderSelect(page).selectOption({ label: 'Copias (descendente)' });
+    await showAllRecords(page, STATES.length - 1);
+    await orderSelect(page).selectOption({ label: 'Riesgo (más alertas primero)' });
+    await search(page).fill('bravo');
+    await trashScreen(page).click();
+    await orderSelect(page).selectOption({ label: 'Usuario (descendente)' });
+    await page.reload();
+
+    await expect(typeFilter(page)).toHaveValue('web');
+    await expect(reviewFilter(page)).toHaveValue('reviewed');
+    await expect(search(page)).toHaveValue('');
+    await expect(chosenOrder(page)).toHaveText('Copias (descendente)');
+    await showAllRecords(page, STATES.length - 1);
+    await expect(chosenOrder(page)).toHaveText('Riesgo (más alertas primero)');
+    await trashScreen(page).click();
+    await expect(chosenOrder(page)).toHaveText('Usuario (descendente)');
+    const stored = await page.evaluate(() => Object.keys(localStorage).map(key => `${key}=${localStorage.getItem(key)}`).join('\n'));
+    expect(stored).not.toContain('bravo');
+  });
+
+  test('falls back to the defaults for stored values it does not know', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('pc.reviewFilters', '{"type":"desktop","review":"lost"}');
+      localStorage.setItem('pc.tableSort.records', '{"field":"password","direction":"sideways"}');
+      localStorage.setItem('pc.tableSort.groups', 'not json');
+    });
+    await seedReviewed(page);
+    await expect(typeFilter(page)).toHaveValue('all');
+    await expect(reviewFilter(page)).toHaveValue('all');
+    await expect(chosenOrder(page)).toHaveText('Sitio (ascendente)');
+    await showAllRecords(page, STATES.length);
+    await expect(chosenOrder(page)).toHaveText('Sitio / App (ascendente)');
+    await expect(column(desktopTable(page), 2)).toHaveText(['alfa', 'bravo', 'charlie', 'delta', 'dos-a', 'dos-b', 'uno-a', 'uno-b']);
+  });
+
+  test('works the same without browser storage, remembering nothing', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.addInitScript(() => {
+      Object.defineProperty(window, 'localStorage', { configurable: true, get() { throw new DOMException('blocked', 'SecurityError'); } });
+    });
+    await seedReviewed(page);
+    await reviewFilter(page).selectOption({ label: 'Pendiente' });
+    await expect(column(desktopTable(page), 1)).toHaveText(['Grupo Uno']);
+    await orderSelect(page).selectOption({ label: 'Sitio (descendente)' });
+    await reviewFilter(page).selectOption({ label: 'Todos los estados' });
+    await expect(column(desktopTable(page), 1)).toHaveText(['Grupo Uno', 'Grupo Dos']);
+    await page.reload();
+    await expect(reviewFilter(page)).toHaveValue('all');
+    await expect(chosenOrder(page)).toHaveText('Sitio (ascendente)');
+    expect(errors).toEqual([]);
+  });
+});
