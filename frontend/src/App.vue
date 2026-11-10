@@ -323,7 +323,7 @@ onUnmounted(() => {
 
     <CompareDialog v-if="compareIds" :group="compareGroup" :rows="compareRows" :busy="store.busy" @close="compareIds=null" @edit="openRecord" @trash="moveToTrash" @restore="restore">
       <ErrorNotice v-if="errorHost==='compare'" :message="store.error" @close="store.error=''" />
-      <ChangeNotice v-if="noticeHost==='compare' && changeNotice" :text="changeNotice.text" :show-undo="!!changeNotice.step" :can-undo="noticeUndoable && !store.busy" @undo="undoShown" @close="changeNotice=null" />
+      <template #toast><ChangeNotice v-if="noticeHost==='compare' && changeNotice" :text="changeNotice.text" :show-undo="!!changeNotice.step" :can-undo="noticeUndoable && !store.busy" @undo="undoShown" @close="changeNotice=null" /></template>
     </CompareDialog>
     <EditorDialog v-if="selected" :record="selected" :busy="store.busy" @close="closeEditor" @save="save" @trash="moveToTrash" @restore="restore">
       <ErrorNotice v-if="errorHost==='editor'" :message="store.error" @close="store.error=''" />
