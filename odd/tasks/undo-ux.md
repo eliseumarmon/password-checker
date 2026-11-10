@@ -1,26 +1,38 @@
-# Deshacer: atajo de teclado y aviso tras guardar
+# Deshacer: atajo de teclado y aviso de cada cambio
 
-Objetivo: permitir el «Deshacer» de la aplicación con `Ctrl/Cmd+Z` y, al guardar una ficha, mostrar qué cambió con una opción de deshacer.
-Rama: `feat/undo-ux` desde `main`. Fase 2. No depende de otros planes; toca `App.vue`, así que conviene hacerlo después de los bloques de la Fase 1 que también lo modifican. Entrega: `ask-on-risk`, previsión ~200 líneas. Solo frontend.
-Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: planificado; orden aprobado (n.º 1 de 8, L4); supuestos pendientes, se preguntan al empezar.
+Objetivo: permitir el «Deshacer» de la aplicación con `Ctrl/Cmd+Z` y, tras cada operación que cambia datos, mostrar qué cambió con una opción de deshacer que siempre deshace eso mismo.
+Rama: `feat/undo-ux` desde `main`. Fase 2. No depende de otros planes. Entrega: una sola, previsión ~400 líneas con pruebas (L5). Frontend y backend.
+Comprobaciones: `npm run build` y `npm run e2e`; `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso (L5); supuestos resueltos.
 
 ## Specs
 
 - **S1 — Atajo.** `docs/pendiente.md`: «atajo `Ctrl/Cmd+Z` para el «Deshacer» de la aplicación (hoy solo funciona el deshacer nativo dentro de los campos de texto)».
-  - `Ctrl+Z` (o `Cmd+Z` en macOS) ejecuta el mismo «Deshacer» que el botón de la cabecera cuando: el foco no está en un campo editable, no hay ningún diálogo abierto, hay algo que deshacer (`can_undo`) y no hay otra operación en curso.
+  - `Ctrl+Z` (o `Cmd+Z` en macOS) ejecuta el mismo «Deshacer» que el botón de la cabecera cuando: el foco no está en un campo de texto (`input`, `textarea` o contenido editable), no hay ningún diálogo abierto (ficha, comparación, sesión o confirmación), hay algo que deshacer y no hay otra operación en curso.
+  - Con `Shift` o `Alt`, o si la tecla se repite al mantenerla pulsada, no hace nada: cada pulsación deshace un solo paso.
   - Dentro de un campo de texto, el deshacer nativo del navegador sigue funcionando igual.
-- **S2 — Aviso tras guardar.** `docs/pendiente.md`, ficha: «aviso de edición con deshacer e indicación de qué cambió».
-  - Al guardar una ficha con cambios, un aviso nombra los campos cambiados («Nombre», «URL», «Usuario», «Contraseña», «Código 2FA», «Notas», «Estado de revisión») y nunca sus valores.
-  - Incluye un botón «Deshacer» que llama a `/api/undo`.
-  - **Supuesto:** como el historial de deshacer es único para toda la aplicación, el botón del aviso se desactiva en cuanto ocurre otra operación que cambia datos; así nunca deshace algo distinto de lo que anuncia.
-  - **Supuesto:** el aviso se cierra con «×» o al guardar otra ficha, igual que los avisos actuales.
-- **S3 — Sin cambios en el backend.** Se usan `/api/undo` y `can_undo`, que ya existen.
+- **S2 — Un aviso por operación, que sustituye al anterior (L5).** Como al borrar correos: solo se puede deshacer lo último, y el aviso visible siempre habla de lo último que pasó.
+  - Cada operación que crea un paso de deshacer muestra un aviso con «Deshacer», que sustituye al aviso anterior:
+    - guardar una ficha: «‹Nombre› guardada. Cambió: ‹campos›.» Nombra los campos que cambiaron («Nombre», «URL», «Usuario», «Contraseña», «Código 2FA», «Notas», «Estado de revisión»), nunca sus valores;
+    - papelera, desde la fila, la ficha, la comparación o el grupo: «‹Nombre› en la papelera.», o «‹n› registros de ‹Nombre› en la papelera.» si son varios;
+    - restaurar: «‹Nombre› restaurada.»;
+    - fusionar: «Copias exactas fusionadas: ‹n› registros a la papelera.»
+  - Deshacer, desde el aviso, la cabecera o el atajo, muestra «Se deshizo: ‹descripción›.», sin botón (no hay «rehacer»). La descripción la da el servidor, así que también es correcta en el segundo «Deshacer» seguido o tras recargar.
+  - El botón del aviso solo está activo mientras su paso sea el último del servidor (por su identificador). Así nunca deshace algo distinto de lo que anuncia, ni siquiera con dos pestañas abiertas.
+  - Una operación que no crea paso (guardar sin cambios) no muestra aviso.
+  - El aviso se cierra con «×», al sustituirlo otro o al importar o abrir una sesión. No desaparece solo (L5). Se muestra en la capa superior abierta (comparación o página), debajo del aviso de error si lo hay.
+  - El botón «↶ Deshacer» de la cabecera dice en su título qué deshará: «Deshacer: ‹descripción›».
+- **S3 — Descripción de cada paso en el servidor (L5; sustituye a «sin cambios en el backend»).**
+  - Cada paso de la pila guarda, junto a la copia de las fichas, una descripción: `{id, action, count, name, fields}`. `action` es `edit`, `trash`, `restore` o `merge`. `name` es el nombre común de las fichas afectadas, o `null` si no comparten uno. `fields` son los campos cambiados en `edit`. Solo nombres de fichas y de campos, nunca valores.
+  - `/api/workspace` añade `last_change`: la descripción del último paso, o `null` si no hay nada que deshacer. `can_undo` se mantiene.
+  - `/api/undo` añade `undone`: la descripción del paso que acaba de deshacer. Como los avisos de importación, solo viaja en esa respuesta.
+  - La pila sigue igual: hasta 30 pasos, copias completas, y la vacían importar y abrir una sesión.
 
 ## Tasks
 
-- [ ] T1 — S1: atajo. RED primero en E2E: el atajo deshace fuera de los campos; dentro de un campo se mantiene el deshacer nativo; no hace nada con un diálogo abierto. Ruta: inline.
-- [ ] T2 — S2: aviso tras guardar. RED primero en E2E: el aviso nombra los campos y no muestra valores; «Deshacer» restaura el registro; tras otra operación queda desactivado. Ruta: inline.
-- [ ] T3 — Documentación en `docs/flujo-usuario.md` (atajo y aviso). Ruta: inline.
+- [ ] T1 — S3: descripción de cada paso. RED primero en `tests/`: cada operación deja su descripción, guardar sin cambios no la cambia, deshacer devuelve `undone` y deja la anterior, importar y abrir sesión la vacían. Riesgo alto (contrato de `/api/workspace` y `/api/undo`): verificador y revisión. Ruta: inline.
+- [ ] T2 — S1: atajo. RED primero en E2E: el atajo deshace fuera de los campos; dentro de un campo se mantiene el deshacer nativo; no hace nada con un diálogo abierto, con `Shift` ni al repetir la tecla. Ruta: inline.
+- [ ] T3 — S2: avisos. RED primero en E2E: el aviso de cada operación y su texto, sin valores; la sustitución; «Deshacer» del aviso restaura y muestra «Se deshizo»; el botón se desactiva si su paso ya no es el último; sin aviso al guardar sin cambios; el título de la cabecera. Ruta: inline.
+- [ ] T4 — Documentación: `docs/flujo-usuario.md` (atajo y avisos); `docs/pendiente.md` (retirar lo hecho; ideas futuras de L5: ajuste para que el aviso desaparezca solo, y conservar el historial de deshacer en la futura bóveda). Ruta: inline.
 
 ## Log
 
@@ -33,3 +45,11 @@ Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m 
   - Guardar sin cambios no crea paso de deshacer (`workspace.py:114-115`): en ese caso el aviso no debe ofrecer «Deshacer».
   - La pila de deshacer es global (hasta 30 instantáneas) y la vacían importar y abrir sesión. Desactivar «Deshacer» tras otra operación (supuesto de S2) se lleva en el frontend, porque el servidor solo da `can_undo`.
   - Decisión pendiente nueva: las acciones rápidas (papelera y restaurar desde la tabla, `App.vue:144-155`) también crean pasos de deshacer y no muestran aviso; ¿deben mostrarlo?
+- **L5 (2026-11-10).** Inicio en `feat/undo-ux` desde `main` `6b6ac62`. Petición: «Sí, borrala. Empieza con undo.ux». Supuestos y decisiones, con las palabras del usuario:
+  - Sobre el supuesto de desactivar el botón tras otra operación: «No hay una pila de deshacer? No se pueden deshacer dos cosas seguidas?». Se comprobó que la pila guarda hasta 30 pasos, pero cada «Deshacer» quita siempre el último (`workspace.py:52-55`, `undo()`). «La cuestión de fondo es si guardar una ficha es un cambio atómico o varios pasos»: es atómico, una petición (`api.ts:30`) y una sola copia (`workspace.py:117`).
+  - Deshacer por acción (selectivo): «Es una opción, pero es mucho más versatil para el usuario, que el deshacer vaya ligado a la accion que ha hecho». Se explicó con ejemplos que choca cuando una acción posterior tocó la misma ficha (guardar la contraseña buena y después fusionar), y que obliga a cambiar el modelo de la pila. No se eligió.
+  - Modelo elegido (S2): «Y si cada notificación reemplaza la anterior y solo se puede deshacer lo último? Eso pasa cuando borras correos electrónicos por ejemplo». Resuelve la decisión de L4: las acciones rápidas también tienen aviso. Confirmado de forma explícita al preguntar por ella: «Ah vale, genial. Entonces sí, es lo que habíamos acordado».
+  - Descripción en el servidor (S3): «Y guardar el registro de lo que era el cambio anterior? Para recuperar el mensaje?»; elegida la opción del servidor frente a la memoria del navegador: «Sí, de hecho eso abre la puerta a la persistencia de acciones que se pueden deshacer en la base de datos tras recuperar una sesión en el futuro no?». Sobre cambiar S3: «Pero el plan contempla que se definan especificaciones al inicio de cada tarea».
+  - Futuro, fuera de este plan: «Me refiero a cuando haya base de datos, el archivo pwc puede ser únicamente un mecanismo de copia de seguridad cifrado de tus contraseñas y no el corazón de la sesión». Coincide con la bóveda de la Fase 6 (`docs/pendiente.md:59-60`). Se anota en T4, con la cuestión de conservar valores anteriores (contraseñas viejas) en el historial.
+  - Cierre del aviso: solo con «×», sin temporizador. «Vamos con lo que tenemos y más adelante cuando metamos opciones de configuracion vemos si ponemos algo para alternar ambos métodos a gusto del usuario». Se anota en T4.
+  - Decisiones técnicas: `can_undo` se mantiene y `last_change` se añade, para no romper las pruebas que lo usan (`tests/test_api.py`, `test_workspace.py`, `test_session_limits.py`, `test_totp_duplicates.py`, `e2e/component-events.spec.ts`). Los cuatro diálogos usan `useDialogFocus`, así que basta con exponer si la pila de diálogos está vacía. La previsión sube a ~400 líneas con pruebas; si T3 la supera claramente, se pregunta antes de seguir.
