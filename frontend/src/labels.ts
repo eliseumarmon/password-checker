@@ -9,6 +9,9 @@ export const SCREENS: { id: Screen; icon: ScreenIcon; label: string; title: stri
   { id: 'settings', icon: { kind: 'glyph', text: '⚙' }, label: 'Ajustes', title: 'Ajustes', showCount: false },
 ];
 
+/** Every review state, in the order the review moves through them. */
+export const REVIEWS: readonly Review[] = ['pending', 'reviewed', 'verified', 'incorrect'];
+
 export function labelReview(review: Review): string {
   return ({ pending: 'Pendiente', reviewed: 'Revisada', verified: 'Verificada', incorrect: 'No funciona' })[review];
 }

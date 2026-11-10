@@ -1,32 +1,36 @@
 # Filtros y orden de la revisión
 
 Objetivo: añadir el filtro por estado y el selector de orden junto a la búsqueda, ordenar «Todas» por riesgo y por URL, y conservar los filtros entre visitas.
-Rama: `feat/review-filters` desde `main`. Fase 2. Depende de: `native-tables` (reutiliza su módulo de ordenación). Entrega: `ask-on-risk`, previsión ~250 líneas. Solo frontend.
-Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: planificado, sin empezar.
+Rama: `feat/review-filters` desde `main`. Fase 2. Depende de: `native-tables` (reutiliza su módulo de ordenación). Entrega: `single-pr`, una sola integración a `main` al final, con un commit por tarea (L12); previsión ~580 líneas. Solo frontend.
+Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: en curso.
 
 ## Specs
 
 - **S1 — Filtro por estado.** `docs/pendiente.md`: «filtro por estado y selector de orden junto a la búsqueda».
   - Un selector con «Todos», «Pendiente», «Revisada», «Verificada» y «No funciona» (las etiquetas de `labelReview`), junto a la búsqueda y al filtro de tipo.
   - En «Duplicados», un grupo cumple el filtro si alguno de sus miembros tiene ese estado. Hoy «Solo pendientes» ya funciona así con `pending`.
-  - **Supuesto, a confirmar:** el selector sustituye la casilla «Solo pendientes», que equivale a elegir «Pendiente».
-- **S2 — Orden.** `docs/pendiente.md`: «en «Todas», orden por riesgo y por URL, con los grupos de una misma URL contiguos».
-  - El selector de orden ofrece «Nombre» (el actual), «Riesgo» y «URL».
-  - Riesgo: **supuesto** — más alertas de auditoría primero (reutilizada, poco segura, incompleta, según `audit` de la respuesta) y, a igualdad, por nombre. Nunca se usa la contraseña en el navegador para calcularlo.
-  - URL: por host y después por ruta, de modo que los registros de una misma URL quedan contiguos.
-  - **Supuesto:** el selector fija el orden de partida; pulsar una cabecera de la tabla lo sustituye, como hoy.
+  - **Confirmado (L7):** el selector sustituye la casilla «Solo pendientes»; elegir «Pendiente» equivale a marcarla.
+- **S2 — Orden único.** `docs/pendiente.md`: «en «Todas», orden por riesgo y por URL, con los grupos de una misma URL contiguos».
+  - **Confirmado (L6):** cada tabla tiene un solo orden, que se cambia desde dos sitios: el selector de orden junto a la búsqueda y las cabeceras de las columnas. El selector muestra siempre el orden actual, y pulsar una cabecera lo cambia también.
+  - Las cabeceras siguen como hoy: cada pulsación pasa por ascendente, descendente y el orden de importación.
+  - El selector ofrece el orden de importación, cada columna de la tabla activa en las dos direcciones y, en «Todas», también «Riesgo» y «URL». **Decisión de diseño:** un solo selector cuyas opciones nombran la dirección, para que un lector de pantalla lea el orden completo en un único control.
+  - Las tarjetas del móvil siguen el mismo orden que la tabla. Hoy salen en el orden de importación (`RecordsTable.vue:46`, `GroupsTable.vue:47`, `TrashView.vue:44`). La papelera no tiene selector, pero sus tarjetas también siguen el orden de su tabla.
+  - Riesgo (**confirmado, L8**): cada registro suma una alerta por cada lista de «Auditoría» en la que aparece (reutilizada, poco segura, incompleta), según `audit` de la respuesta. Primero, más alertas; a igualdad, por nombre. Nunca se usa la contraseña en el navegador para calcularlo. No cuentan la URL `http` sin cifrar ni el usuario y la contraseña dentro de la URL (ver S5).
+  - URL: por `host` y después por la URL completa, de modo que los registros de una misma URL quedan contiguos. En Android, `host` es el paquete (`backend/password_checker/domain/urls.py:38-46`). Las URL vacías van al final, como cualquier valor vacío.
 - **S3 — Continuidad.** `docs/pendiente.md`: «continuidad de filtros».
-  - El tipo, el estado y el orden se recuerdan entre recargas en `localStorage`, con el mismo tratamiento de errores que la barra lateral contraída (`App.vue`).
+  - **Confirmado (L9):** el tipo, el estado y el orden de cada tabla se recuerdan entre recargas en `localStorage`, con el mismo tratamiento de errores que la barra lateral contraída (`App.vue`): si el navegador no deja guardar, la aplicación funciona igual y no recuerda nada.
   - **Ampliado en L4:** también se recuerda la ordenación de columna de cada tabla, que `native-tables` (S8) ya conserva al cambiar de pantalla.
-  - **Supuesto:** el texto de búsqueda no se guarda, porque puede contener usuarios y la guía (§7) pide: «No guardar credenciales en `localStorage`, `sessionStorage`, `IndexedDB` ni cachés del navegador».
+  - **Confirmado (L9):** el texto de búsqueda no se guarda, porque puede contener usuarios y la guía (`docs/guia-visual.md`, §7) pide: «No guardar credenciales en `localStorage`, `sessionStorage`, `IndexedDB` ni cachés del navegador».
 - **S4 — Sin cambios en el backend.** Todo se calcula con el estado que ya recibe el frontend (`records`, `groups`, `audit`).
+- **S5 — Alertas de URL, pendientes (L8).** Anotar en `docs/pendiente.md` que «Auditoría» debe mostrar la URL `http` sin cifrar y el usuario y la contraseña dentro de la URL (`http` y `embedded_auth` de cada registro), y que, cuando se muestren, entrarán en el riesgo. No se implementa en esta rama.
 
 ## Tasks
 
-- [ ] T1 — S1: filtro por estado. RED primero en E2E (cada estado en «Todas» y en «Duplicados»). Ruta: inline.
-- [ ] T2 — S2: selector de orden por riesgo y por URL, reutilizando el comparador de `native-tables`. RED primero en E2E con datos ficticios de riesgo conocido. Ruta: inline.
-- [ ] T3 — S3: continuidad. RED primero en E2E (recargar conserva tipo, estado y orden, pero no la búsqueda), con almacenamiento no disponible incluido. Ruta: inline.
-- [ ] T4 — Documentación en `docs/flujo-usuario.md`. Ruta: inline.
+- [x] T1 — S1: filtro por estado. RED primero en E2E (cada estado en «Todas» y en «Duplicados»). Ruta: inline. RED: las 3 pruebas de `e2e/filters.spec.ts` fallan esperando el selector «Filtrar estado»; GREEN: 3 de 3, y la suite entera 150 de 150 (L13).
+- [ ] T2 — S2: orden único entre el selector y las cabeceras, con las columnas actuales, y tarjetas del móvil en el mismo orden. RED primero en E2E. Ruta: inline.
+- [ ] T3 — S2: orden por riesgo y por URL en «Todas», reutilizando el comparador de `native-tables`. RED primero en E2E con datos ficticios de riesgo conocido. Ruta: inline.
+- [ ] T4 — S3: continuidad. RED primero en E2E (recargar conserva tipo, estado y orden, pero no la búsqueda), con almacenamiento no disponible incluido. Riesgo: posible punto 2, por guardar datos en el navegador; commit propio. Ruta: inline.
+- [ ] T5 — Documentación: `docs/flujo-usuario.md`, `docs/pendiente.md` (S5 y lo que esta rama resuelve) y `docs/hoja-de-ruta.md`. Ruta: inline.
 
 ## Log
 
@@ -34,3 +38,12 @@ Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m 
 - **L2 (2026-11-04).** «Necesito que documentes todos los planes y que marques las decisiones pendientes.» «No empieces ninguna implementación.» El plan viene del informe de viabilidad del 2026-11-03, recogido en `docs/hoja-de-ruta.md`.
 - **L3 (2026-11-04).** Análisis en `main`: los filtros viven en `App.vue` (`filterType`, `query`, `pendingOnly`) y se aplican con `matches()`; `audit` ya trae los ids de reutilizadas, poco seguras e incompletas. No depende de ninguna decisión pendiente. Ruta: inline.
 - **L4 (2026-11-04).** Anotaciones del usuario sobre una conversación externa, pegada en la sesión, para añadirlas a la hoja de ruta. S3 se amplía con la ordenación de columna de cada tabla. La conversación lo proponía así: «La continuidad después de recargar la página podría completarse en review-filters.md, que ya contempla guardar preferencias en localStorage.» T3 cubre también este caso.
+- **L5 (2026-11-10).** Inicio aprobado: «Sí, estoy de acuerdo. Antes de empezar limpieza de ramas». Antes de crear la rama se borraron las ramas ya integradas en `main`, locales y remotas.
+- **L6 (2026-11-10).** El plan es anterior a `native-tables`, que añadió cabeceras ordenables; con el selector del plan habría dos mandos para el mismo orden. Se propone un orden único por tabla, controlado desde el selector y desde las cabeceras. Respuesta: «Claro, orden único.» Hallazgo del análisis: las tarjetas del móvil no siguen ningún orden.
+- **L7 (2026-11-10).** Sobre sustituir la casilla «Solo pendientes» por el selector: «Sí, el selector refleja mejor los estados reales».
+- **L8 (2026-11-10).** Sobre el riesgo, el usuario pregunta: «cuando ves el registro desde fuera no se ve pero si entras si sí que se ve la url no?». Comprobado: la URL se ve en la ficha (`EditorDialog.vue:100`) y bajo el nombre en la tabla de escritorio (`RecordsTable.vue:35`), no en las tarjetas del móvil; lo que no se ve en ningún sitio es un aviso de `http` o de usuario y contraseña dentro de la URL. Propuesta: contar solo las tres alertas de «Auditoría» y anotar las dos de URL como pendientes. Respuesta: «De acuerdo». Origen de S5.
+- **L9 (2026-11-10).** Sobre guardar tipo, estado y orden, pero no la búsqueda, y funcionar sin almacenamiento: «Si».
+- **L10 (2026-11-10).** Análisis en `main` (`39805fd`): el orden vive en `tableState.ts` (`memory`, una entrada por tabla), y su valor inicial se pasa desde cada componente; para que el selector lo lea antes de montar la tabla, el orden inicial pasa a `tableState.ts`. `CredentialSummary` trae `host`. `e2e/review.spec.ts` usa la casilla «Solo pendientes» una vez. La sesión sobrevive a la recarga (`e2e/import-warnings.spec.ts`), así que recargar sí conserva los datos.
+- **L11 (2026-11-10).** Previsión por tarea: T1 ~80, T2 ~200, T3 ~120, T4 ~140 y T5 ~40 líneas, unas 580 en total. Supera las 400, así que `ask-on-risk` pide elegir la estrategia de cadena antes del primer commit.
+- **L12 (2026-11-10).** Estrategia de entrega: «Hazlo entero se pasa por poco el límite». Se entrega con `single-pr`: una sola integración a `main` al final, manteniendo un commit por tarea en la rama.
+- **L13 (2026-11-10).** T1 hecho. La primera opción se llama «Todos los estados» en vez de «Todos», porque con el desplegable cerrado «Todos» no dice de qué. El grupo se muestra si algún miembro tiene el estado elegido; con «Pendiente» da lo mismo que la casilla, porque el servidor calcula `pending` con los mismos miembros (`review_state.py:73`). La casilla era la única de la aplicación: se quitan las reglas `.check` de `style.css`, que ya no usa nadie, y la comprobación de su tamaño en `e2e/review.spec.ts` («uses compact cards and rows»). Riesgo: ninguno.

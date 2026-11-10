@@ -461,14 +461,12 @@ test('opens the editor centred on the screen', async ({ page }) => {
   expect(Math.abs(box!.x + box!.width / 2 - viewport.width / 2)).toBeLessThan(10);
 });
 
-test('uses compact cards and rows and normal-sized checkboxes', async ({ page }) => {
+test('uses compact cards and rows', async ({ page }) => {
   for (const card of await page.locator('.metric').all()) {
     expect((await card.boundingBox())!.height).toBeLessThanOrEqual(76);
   }
   const row = (await page.locator('.desktop-table tbody tr').first().boundingBox())!;
   expect(row.height).toBeLessThanOrEqual(56);
-  const checkbox = (await page.getByRole('checkbox', { name: 'Solo pendientes' }).boundingBox())!;
-  expect(Math.max(checkbox.width, checkbox.height)).toBeLessThanOrEqual(20);
 });
 
 test('collapses the sidebar to icons and remembers it', async ({ page }) => {
