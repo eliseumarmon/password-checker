@@ -20,11 +20,31 @@ export function compareValues(a: unknown, b: unknown, direction: SortDirection):
   return order * (x < y ? -1 : x > y ? 1 : 0);
 }
 
-/** A stable sort: tied rows keep their original order in both directions. */
-export function sortRows<T, F extends keyof T & string>(rows: readonly T[], sort: SortState<F>): T[] {
+/**
+ * An order that no column shows (review-filters S2): the values it compares in turn, all in the chosen
+ * direction, and an optional tie-break that always goes ascending.
+ */
+export interface DerivedOrder<T> { values: (row: T) => readonly unknown[]; tieBreak?: (row: T) => unknown }
+export type DerivedOrders<T> = Readonly<Record<string, DerivedOrder<T>>>;
+
+function compareInTurn(a: readonly unknown[], b: readonly unknown[], direction: SortDirection): number {
+  for (let index = 0; index < Math.max(a.length, b.length); index++) {
+    const result = compareValues(a[index], b[index], direction);
+    if (result) return result;
+  }
+  return 0;
+}
+
+/** A stable sort: tied rows keep their original order in both directions. A derived order wins over a column. */
+export function sortRows<T>(rows: readonly T[], sort: SortState<string>, derived: DerivedOrders<T> = {}): T[] {
   const { field, direction } = sort;
   if (!field) return [...rows];
-  return [...rows].sort((a, b) => compareValues(a[field], b[field], direction));
+  const order = Object.hasOwn(derived, field) ? derived[field] : undefined;
+  if (!order) return [...rows].sort((a, b) => compareValues((a as Record<string, unknown>)[field], (b as Record<string, unknown>)[field], direction));
+  // Each row's values are worked out once, not on every comparison.
+  const keyed = rows.map(row => ({ row, values: order.values(row), tie: order.tieBreak?.(row) }));
+  keyed.sort((a, b) => compareInTurn(a.values, b.values, direction) || compareValues(a.tie, b.tie, 'ascending'));
+  return keyed.map(item => item.row);
 }
 
 /** No sort: rows keep the order the server sends them in. The headers and the order selector both use it. */
@@ -67,6 +87,19 @@ export const SORT_COLUMNS = {
   trash: [{ field: 'name', label: 'Sitio / App' }, { field: 'username', label: 'Usuario' }, { field: 'source', label: 'Origen' }],
 } as const satisfies Record<TableKey, readonly SortColumn[]>;
 
+/** An order only the selector offers, since no column shows it, with the words for each direction it lists. */
+export interface ExtraOrder { field: string; label: string; directions?: readonly (readonly [SortDirection, string])[] }
+
+/** The table that lists them must give each one a derived order to `useTable`. */
+export const EXTRA_ORDERS: Record<TableKey, readonly ExtraOrder[]> = {
+  records: [
+    { field: 'risk', label: 'Riesgo', directions: [['descending', 'más alertas primero'], ['ascending', 'menos alertas primero']] },
+    { field: 'url', label: 'URL' },
+  ],
+  groups: [],
+  trash: [],
+};
+
 /** Unsorted rows keep the order the server sends: records as imported, groups with different passwords first. */
 export const UNSORTED_LABEL: Record<TableKey, string> = {
   records: 'Orden de importación', groups: 'Contraseñas diferentes primero', trash: 'Orden de importación',
@@ -104,13 +137,15 @@ export function resetTablePages(): void {
   for (const entry of memory.values()) entry.requested.value = 1;
 }
 
-export function useTable<T, F extends keyof T & string = keyof T & string>(key: TableKey, rows: MaybeRefOrGetter<readonly T[]>) {
+export function useTable<T, F extends keyof T & string = keyof T & string>(
+  key: TableKey, rows: MaybeRefOrGetter<readonly T[]>, derived: DerivedOrders<T> = {},
+) {
   // The page asked for is kept apart from the page shown: while a filter hides the paginator, the page
   // asked for survives and comes back when the filter is cleared.
   const stored = remembered(key);
   const sort = stored.sort as Ref<SortState<F>>;
   const { requested } = stored;
-  const sorted = computed(() => sortRows(toValue(rows), sort.value));
+  const sorted = computed(() => sortRows(toValue(rows), sort.value, derived));
   const pages = computed(() => pageCount(sorted.value.length));
   const paginated = computed(() => sorted.value.length > PAGE_SIZE);
   const page = computed(() => Math.min(requested.value, pages.value));

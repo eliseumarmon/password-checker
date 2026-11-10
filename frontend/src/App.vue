@@ -58,6 +58,13 @@ const groups = computed(() => data.value?.groups ?? []);
 const recById = computed(() => new Map(records.value.map(r => [r.id, r])));
 const activeRecords = computed(() => records.value.filter(r => r.included));
 const trashed = computed(() => records.value.filter(r => !r.included));
+// The risk order counts one alert for each audit list a record is in; the server sends the lists.
+const alertsById = computed(() => {
+  const counts = new Map<string, number>();
+  const audit = data.value?.audit;
+  for (const id of audit ? [...audit.reused.flat(), ...audit.weak, ...audit.incomplete] : []) counts.set(id, (counts.get(id) ?? 0) + 1);
+  return counts;
+});
 const visibleRows = computed(() => activeRecords.value.filter(r => matches(r)));
 // A group shows while any of its members is in the chosen state.
 const visibleGroups = computed(() => groups.value.filter(g => matches(g)
@@ -223,7 +230,7 @@ onUnmounted(() => layoutObserver?.disconnect());
           <div id="credentials-panel" role="tabpanel" :aria-labelledby="`tab-${subtab}`">
           <div class="filters"><input v-model="query" aria-label="Buscar credenciales" placeholder="Buscar por nombre, URL o usuario" /><select v-model="filterType" aria-label="Filtrar tipo"><option value="all">Web y Android</option><option value="web">Solo web</option><option value="android">Solo Android</option></select><select v-model="filterReview" aria-label="Filtrar estado"><option value="all">Todos los estados</option><option v-for="review in REVIEWS" :key="review" :value="review">{{labelReview(review)}}</option></select><SortSelect :table="subtab==='duplicates' ? 'groups' : 'records'" /></div>
           <GroupsTable v-if="subtab==='duplicates'" :groups="visibleGroups" :busy="store.busy" @open="openGroup" @trash="trashGroup" />
-          <RecordsTable v-else :rows="visibleRows" :busy="store.busy" @edit="openRecord" @trash="moveToTrash" />
+          <RecordsTable v-else :rows="visibleRows" :busy="store.busy" :alerts="alertsById" @edit="openRecord" @trash="moveToTrash" />
           </div>
         </section>
         <AuditView v-else-if="screen==='audit'" :audit="data.audit" :records="recById" @review="openRecord" />

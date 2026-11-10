@@ -28,8 +28,8 @@ Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m 
 
 - [x] T1 — S1: filtro por estado. RED primero en E2E (cada estado en «Todas» y en «Duplicados»). Ruta: inline. RED: las 3 pruebas de `e2e/filters.spec.ts` fallan esperando el selector «Filtrar estado»; GREEN: 3 de 3, y la suite entera 150 de 150 (L13). Commit `9be6d70`; evaluación de revisión: riesgo medio, `under_budget`. Revisada como tramo propio antes de T2 (lente de fiabilidad): aprobada y confirmada (L15).
 - [x] T2 — S2: orden único entre el selector y las cabeceras, con las columnas actuales, y tarjetas del móvil en el mismo orden. RED primero en E2E. Ruta: inline. RED y GREEN en L14. Commit `d479515`. Verificador independiente: S2 y S4 PASS, suite 160 de 160 en copia limpia (L16). Evaluación: riesgo alto (punto 3 elevado a mano), revisión debida.
-- [ ] T2b — S2: selector de orden en la papelera, y el estado «sin orden» como constante compartida (L17, L18). RED primero en E2E. Ruta: inline. RED y GREEN en L19.
-- [ ] T3 — S2: orden por riesgo y por URL en «Todas», reutilizando el comparador de `native-tables`. RED primero en E2E con datos ficticios de riesgo conocido. Ruta: inline.
+- [x] T2b — S2: selector de orden en la papelera, y el estado «sin orden» como constante compartida (L17, L18). RED primero en E2E. Ruta: inline. RED y GREEN en L19. Commit `afeb615`. Verificador independiente: PASS, suite 160 de 160 y 143 estados idénticos (L20). Revisión: aprobada y confirmada (L20).
+- [ ] T3 — S2: orden por riesgo y por URL en «Todas», reutilizando el comparador de `native-tables`. RED primero en E2E con datos ficticios de riesgo conocido. Ruta: inline. RED y GREEN en L21.
 - [ ] T4 — S3: continuidad. RED primero en E2E (recargar conserva tipo, estado y orden, pero no la búsqueda), con almacenamiento no disponible incluido. Riesgo: posible punto 2, por guardar datos en el navegador; commit propio. Ruta: inline.
 - [ ] T5 — Documentación: `docs/flujo-usuario.md`, `docs/pendiente.md` (S5 y lo que esta rama resuelve) y `docs/hoja-de-ruta.md`. Ruta: inline.
 
@@ -73,3 +73,14 @@ Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m 
   - GREEN: `TrashView.vue` muestra `SortSelect` en una barra `.filters` encima de la tabla, y `NO_SORT` (congelada) en `tableState.ts` es el estado «sin orden» que devuelven `nextSort` y el selector. `vue-tsc` pasa; `filters.spec.ts` y `tables.spec.ts` dan 45 de 45, y la suite entera 160 de 160.
   - Capturas a 1280, 390 y 320 px: en escritorio el selector va encima de la tabla con su anchura natural; en el móvil ocupa la fila, sin salirse a 320 px.
   - Riesgo: punto 3, porque `nextSort`, que usan todas las cabeceras, devuelve ahora la constante compartida.
+- **L20 (2026-11-10).** T2b verificada y revisada.
+  - Verificador independiente (`afeb615` contra `d479515`): PASS. `vue-tsc` limpio y la suite da 160 de 160. 143 estados de escritorio de las tres tablas (1 a 4 pulsaciones por cabecera, página 2 y vuelta de otra pantalla) son idénticos byte a byte. En la papelera, el selector falta si está vacía y, si no, sigue a las cabeceras y al revés.
+  - Revisión (lente de fiabilidad, con consentimiento del usuario): aprobada y confirmada; el punto de partida pasa a `afeb615`. Dos sugerencias:
+    - Que la constante congelada fallaría si alguien la modificara: nadie la modifica, y el ciclo de cuatro pulsaciones lo cubre `e2e/tables.spec.ts`. Sin cambios.
+    - Que la prueba de la papelera no comprueba qué muestra el selector: añadidas esas dos comprobaciones con T3.
+- **L21 (2026-11-10).** T3.
+  - RED: las 3 pruebas nuevas de `e2e/filters.spec.ts` y la de las opciones de «Todas» fallan (no hay opciones «Riesgo» ni «URL»).
+  - Hallazgo al pasar a GREEN: el servidor no tiene en cuenta los registros sin usuario o sin URL al buscar contraseñas reutilizadas, porque no sabe de qué cuenta son (`origin_account` devuelve `None`; `domain/reuse.py`, `domain/accounts.py:25`). Por eso un registro incompleto nunca cuenta como reutilizado, y el máximo real son 2 alertas. Los datos de la prueba suponían 3 y se corrigieron; la aplicación mostraba bien las listas del servidor.
+  - GREEN: `sortRows` acepta órdenes derivados (`DerivedOrder`): valores que se comparan por turno en la dirección elegida y un desempate opcional siempre ascendente, calculados una vez por fila. `EXTRA_ORDERS` da al selector «Riesgo (más alertas primero)», «Riesgo (menos alertas primero)», «URL (ascendente)» y «URL (descendente)» solo en «Todas». `RecordsTable.vue` define el riesgo (alertas, desempate por nombre) y la URL (`host` y URL completa), y `App.vue` cuenta las alertas a partir de `audit`. `vue-tsc` pasa, el archivo da 16 de 16 y la suite entera 163 de 163.
+  - La prueba de la barra de filtros mira ahora las dos pestañas, porque las opciones nuevas son más largas. Medido: «Ordenar» ocupa 266 px en «Todas» y 268 en «Duplicados», y nada se sale a 320, 390 ni 414 px.
+  - Riesgo: punto 3, porque cambia `sortRows`, que ordenan las tres tablas.

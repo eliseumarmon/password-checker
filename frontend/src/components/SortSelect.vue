@@ -1,19 +1,21 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { NO_SORT, setTableSort, SORT_COLUMNS, tableSort, UNSORTED_LABEL, type SortDirection, type TableKey } from '../tableState';
+import {
+  EXTRA_ORDERS, NO_SORT, setTableSort, SORT_COLUMNS, tableSort, UNSORTED_LABEL, type ExtraOrder, type SortDirection, type TableKey,
+} from '../tableState';
 
 // Sets the same order as the column headers, and is the only way to sort on a phone, where the
-// tables become cards without headers. Each option names its direction, so the whole order is read
-// from one control.
+// tables become cards without headers. It also offers orders that no column shows. Each option names
+// its direction, so the whole order is read from one control.
 const props = defineProps<{ table: TableKey }>();
 
 const UNSORTED = '';
-const DIRECTIONS: [SortDirection, string][] = [['ascending', 'ascendente'], ['descending', 'descendente']];
+const DIRECTIONS: ExtraOrder['directions'] = [['ascending', 'ascendente'], ['descending', 'descendente']];
 
 const options = computed(() => [
-  ...SORT_COLUMNS[props.table].flatMap(column => DIRECTIONS.map(([direction, word]) => (
-    { value: `${column.field}:${direction}`, label: `${column.label} (${word})` }
-  ))),
+  ...[...SORT_COLUMNS[props.table], ...EXTRA_ORDERS[props.table]].flatMap((order: ExtraOrder) => (
+    (order.directions ?? DIRECTIONS).map(([direction, words]) => ({ value: `${order.field}:${direction}`, label: `${order.label} (${words})` }))
+  )),
   { value: UNSORTED, label: UNSORTED_LABEL[props.table] },
 ]);
 

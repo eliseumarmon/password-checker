@@ -85,7 +85,9 @@ function chosenOrder(page: Page) {
 const RECORD_ORDERS = [
   'Sitio / App (ascendente)', 'Sitio / App (descendente)', 'Usuario (ascendente)', 'Usuario (descendente)',
   'Tipo (ascendente)', 'Tipo (descendente)', 'Origen (ascendente)', 'Origen (descendente)',
-  'Revisión (ascendente)', 'Revisión (descendente)', 'Orden de importación',
+  'Revisión (ascendente)', 'Revisión (descendente)',
+  'Riesgo (más alertas primero)', 'Riesgo (menos alertas primero)', 'URL (ascendente)', 'URL (descendente)',
+  'Orden de importación',
 ];
 const GROUP_ORDERS = [
   'Sitio (ascendente)', 'Sitio (descendente)', 'Usuario (ascendente)', 'Usuario (descendente)',
@@ -188,8 +190,10 @@ test.describe('on a phone', () => {
     await page.getByRole('navigation', { name: 'Navegación móvil' }).getByRole('button', { name: /Papelera/ }).click();
     await expect(cardNames(page)).toHaveText(['Alpha', 'Bravo', 'Charlie']);
     await expect(orderSelect(page).locator('option')).toHaveText(TRASH_ORDERS);
+    await expect(chosenOrder(page)).toHaveText('Sitio / App (ascendente)');
     await orderSelect(page).selectOption({ label: 'Orden de importación' });
     await expect(cardNames(page)).toHaveText(['Charlie', 'Alpha', 'Bravo']);
+    await expect(chosenOrder(page)).toHaveText('Orden de importación');
   });
 });
 
@@ -197,13 +201,63 @@ for (const width of [320, 390]) {
   test(`keeps every filter control inside the panel at ${width} px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 800 });
     await seedReviewed(page);
-    const panel = (await page.getByRole('tabpanel').boundingBox())!;
-    const controls = page.getByRole('tabpanel').locator('.filters').locator('input, select');
-    await expect(controls).toHaveCount(4);
-    for (const control of await controls.all()) {
-      const box = (await control.boundingBox())!;
-      expect(box.x).toBeGreaterThanOrEqual(panel.x);
-      expect(box.x + box.width).toBeLessThanOrEqual(panel.x + panel.width);
+    for (const tab of ['Duplicados', 'Todas']) {
+      await page.getByRole('tab', { name: new RegExp(`^${tab}`) }).click();
+      const panel = (await page.getByRole('tabpanel').boundingBox())!;
+      const controls = page.getByRole('tabpanel').locator('.filters').locator('input, select');
+      await expect(controls).toHaveCount(4);
+      for (const control of await controls.all()) {
+        const box = (await control.boundingBox())!;
+        expect(box.x).toBeGreaterThanOrEqual(panel.x);
+        expect(box.x + box.width).toBeLessThanOrEqual(panel.x + panel.width);
+      }
     }
   });
 }
+
+test.describe('risk and URL order in «Todas»', () => {
+  test('puts the records with more audit alerts first, and ties by name', async ({ page }) => {
+    // Alerts as «Auditoría» counts them. Hotel and India share a common password: weak and reused, 2 each.
+    // Kilo has no user and a common password: incomplete and weak, 2. A record without a user never counts
+    // as reused, because the server cannot tell whose account it is. Bravo: weak, 1. Delta: no user, 1.
+    // Alfa and Zulu: none.
+    await seed(page, [{ name: 'chrome.csv', lines: [
+      CHROMIUM_HEADER,
+      'Zulu,https://zulu.invalid/,zulu,fake-zulu-secret-1234,', 'Kilo,https://kilo.invalid/,,qwerty,',
+      'Hotel,https://hotel.invalid/,hotel,abc123,', 'Alfa,https://alfa.invalid/,alfa,fake-alfa-secret-1234,',
+      'Delta,https://delta.invalid/,,fake-delta-secret-1234,', 'India,https://india.invalid/,india,abc123,',
+      'Bravo,https://bravo.invalid/,bravo,password,',
+    ] }]);
+    await showAllRecords(page, 7);
+    const table = desktopTable(page);
+    await orderSelect(page).selectOption({ label: 'Riesgo (más alertas primero)' });
+    await expect(column(table, 1)).toHaveText(['Hotel', 'India', 'Kilo', 'Bravo', 'Delta', 'Alfa', 'Zulu']);
+    await expect(table.locator('th[aria-sort]')).toHaveCount(0);
+    await orderSelect(page).selectOption({ label: 'Riesgo (menos alertas primero)' });
+    await expect(column(table, 1)).toHaveText(['Alfa', 'Zulu', 'Bravo', 'Delta', 'Hotel', 'India', 'Kilo']);
+  });
+
+  test('keeps the records of one site together, by host and then by the whole URL', async ({ page }) => {
+    // Two records on b.invalid whose names are not next to each other, an Android app, whose host is its
+    // package, and a record without a URL, which goes last in both directions.
+    await seed(page, [{ name: 'chrome.csv', lines: [
+      CHROMIUM_HEADER,
+      'Zeta,https://b.invalid/a,zeta,fake-zeta-secret-1234,', 'Alfa,https://a.invalid/z,alfa,fake-alfa-secret-1234,',
+      'Mike,https://b.invalid/x,mike,fake-mike-secret-1234,', 'Bravo,android://sig@com.example.app/,bravo,fake-bravo-secret-1234,',
+      'Charlie,,charlie,fake-charlie-secret-1234,',
+    ] }]);
+    await showAllRecords(page, 5);
+    const table = desktopTable(page);
+    await orderSelect(page).selectOption({ label: 'URL (ascendente)' });
+    await expect(column(table, 1)).toHaveText(['Alfa', 'Zeta', 'Mike', 'Bravo', 'Charlie']);
+    await orderSelect(page).selectOption({ label: 'URL (descendente)' });
+    await expect(column(table, 1)).toHaveText(['Bravo', 'Mike', 'Zeta', 'Alfa', 'Charlie']);
+  });
+
+  test('offers the risk and URL orders only in «Todas»', async ({ page }) => {
+    await seedReviewed(page);
+    await expect(orderSelect(page).locator('option', { hasText: /^(Riesgo|URL) / })).toHaveCount(0);
+    await showAllRecords(page, STATES.length);
+    await expect(orderSelect(page).locator('option', { hasText: /^(Riesgo|URL) / })).toHaveCount(4);
+  });
+});
