@@ -27,7 +27,20 @@ export interface WorkspaceState {
   audit: { reused: string[][]; weak: string[]; incomplete: string[]; breaches: 'not_checked' };
   stats: { total: number; included: number; excluded: number; reviewed: number; verified: number };
   can_undo: boolean;
+  /** The step the next undo reverts, or null when there is nothing to undo. */
+  last_change: UndoStep | null;
 }
+/** What an undo step changed: record and field names only, never values. */
+export interface UndoStep {
+  id: number;
+  action: 'edit' | 'trash' | 'restore' | 'merge';
+  count: number;
+  /** The name the affected records share, or null when they do not share one. */
+  name: string | null;
+  fields: (keyof RecordEdit)[];
+}
+/** Only a successful /api/undo says what it undid; the workspace snapshot never carries it. */
+export type UndoResponse = WorkspaceState & { undone: UndoStep };
 export interface ImportWarningColumn { column: string; rows: number }
 export interface ImportWarning { file: string; imported_count: number; columns: ImportWarningColumn[] }
 /** Only a successful /api/import answers the ephemeral warnings channel; the workspace snapshot never carries it. */

@@ -1,6 +1,7 @@
 """HTTP contract tests with synthetic data; no production secrets."""
 import csv
 import io
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -309,7 +310,11 @@ class APITests(unittest.TestCase):
             with self.subTest(url=str(response.request.url)):
                 self.assertEqual(response.status_code, 200, response.text)
                 self.assertNotIn('FICTIONAL-T6-SECRET', response.text)
-                self.assertNotIn('totp', response.text)
+                # An undo step may name the field it changed, never its value: nothing else mentions it.
+                body = {key: value for key, value in response.json().items()
+                        if key not in ('last_change', 'undone')}
+                self.assertNotIn('totp', json.dumps(body))
+        self.assertEqual(responses[-1].json()['last_change']['fields'], ['totp'])
         details = {i: self.client.get('/api/records/' + i).json() for i in ids}
         self.assertEqual([details[i]['totp'] for i in ids], [secret, secret + '-EDITED', ''])
         # The editor gets the current secret only; the immutable original stays out, like the password.
