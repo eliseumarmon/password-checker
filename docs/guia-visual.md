@@ -113,6 +113,7 @@ Las pantallas actuales se describen en el [flujo de usuario](flujo-usuario.md). 
 9. **Confirmación de exportación:** recuento de credenciales incluidas y de conflictos pendientes; exige confirmación explícita.
 10. **Aviso de error:** muestra el motivo concreto, permanece hasta cerrarlo y nunca queda oculto detrás de un diálogo.
 11. **Diálogo de confirmación:** propio de la aplicación, no el del navegador; el botón de confirmar nombra la acción y cancelar es la opción que recibe el foco.
+12. **Aviso de cambio:** tras cada cambio dice qué cambió, con nombres de ficha y de campo y nunca valores. Ofrece «Deshacer» mientras su cambio sea el último y lo sustituye el aviso siguiente. No desaparece solo y nunca tapa el final de la página.
 
 ## 7. Diseño de datos sensibles
 

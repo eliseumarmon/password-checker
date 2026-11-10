@@ -22,7 +22,7 @@ Este documento reúne lo que la aplicación todavía no hace: limitaciones conoc
 
 ## Funcionalidades planificadas
 
-No hay ninguna en curso. Las fases, los planes de cada funcionalidad y las decisiones pendientes están en la [hoja de ruta](hoja-de-ruta.md); solo están aprobadas la planificación de la Fase 1 y la de `review-filters`, de la Fase 2. La última funcionalidad completada son los [filtros y el orden de la revisión](../odd/done/review-filters.md): filtro por estado, un solo orden por tabla entre las cabeceras y un selector, orden por riesgo y por URL en «Todas», y filtros y orden recordados al recargar.
+No hay ninguna en curso. Las fases, los planes de cada funcionalidad y las decisiones pendientes están en la [hoja de ruta](hoja-de-ruta.md); solo están aprobadas la planificación de la Fase 1 y la de `review-filters`, de la Fase 2. La última funcionalidad completada es [deshacer con atajo y avisos de cambio](../odd/done/undo-ux.md): `Ctrl/Cmd+Z` fuera de los campos de texto y un aviso tras cada cambio que dice qué cambió y permite deshacerlo, sustituyendo al anterior.
 
 ## Ideas de diseño sin implementar
 
@@ -30,7 +30,7 @@ Este apartado reúne tanto las mejoras de la propuesta visual inicial como las i
 
 ### Mejoras de la interfaz actual
 
-- **Interfaz general:** tema claro; ajustes de idioma, tema y caducidad por inactividad, y una sección de ayuda; botón «Ocultar todo» en la cabecera; atajo `Ctrl/Cmd+Z` para el «Deshacer» de la aplicación (hoy solo funciona el deshacer nativo dentro de los campos de texto).
+- **Interfaz general:** tema claro; ajustes de idioma, tema y caducidad por inactividad, y una sección de ayuda; botón «Ocultar todo» en la cabecera; un ajuste para que el [aviso de cambio](flujo-usuario.md#deshacer-y-avisos-de-cambio) desaparezca solo tras unos segundos, con pausa mientras el ratón o el foco estén encima (hoy solo se cierra con «×»; [undo-ux](../odd/done/undo-ux.md), L5).
 - **Comparación:** revelar contraseñas de forma individual dentro de la comparación; panel comparativo que muestre de cada registro la URL original, el nombre, el usuario, la contraseña oculta, las notas y el estado, y permita conservar A, B o ambos, fusionar notas y editar el candidato final, distinguiendo los datos originales (inmutables) de la salida editable; en móvil, acciones «Elegir para exportación», «Conservar ambas» y «Fusionar notas»; una comparación más completa de originales.
   - Antes, hacerla comprensible: agrupar por sitio y, dentro, por usuario, en lugar de comparar cada registro con el primero mediante chips «URL ✓», «Usuario ≠» o «Clave ≠».
   - Identificar con letras (Clave A, B, C) las contraseñas distintas de cada cuenta, sin mostrarlas. Las equivalencias las calcula el backend.
@@ -39,7 +39,7 @@ Este apartado reúne tanto las mejoras de la propuesta visual inicial como las i
   - Que el estado «En la papelera» ocupe una sola línea.
   - Plan: [compare-resolution](../odd/tasks/compare-resolution.md), Etapa A.
 - **Auditoría:** en escritorio, mantener la cuadrícula 2×2 y poder ampliar cualquier categoría a todo el ancho y el alto disponibles; en móvil, un acordeón con una categoría abierta a la vez ([audit-layout](../odd/tasks/audit-layout.md)).
-- **Ficha:** en móvil, detalle a pantalla completa con navegación «Anterior / Siguiente pendiente»; botón para copiar la contraseña con aviso de portapapeles; fecha local al confirmar manualmente y acciones «Marcar revisada» y «Acceso verificado» separadas; aviso de edición con deshacer e indicación de qué cambió.
+- **Ficha:** en móvil, detalle a pantalla completa con navegación «Anterior / Siguiente pendiente»; botón para copiar la contraseña con aviso de portapapeles; fecha local al confirmar manualmente y acciones «Marcar revisada» y «Acceso verificado» separadas.
 - **Exportación:** modal con resultados incluidos y excluidos, conflictos pendientes, destino y formato Bitwarden, en lugar de la confirmación actual con recuentos; resumen y vista previa antes de exportar.
 - **Procedencia de las importaciones (propuesta, Fase 3):** sustituir la lista cerrada de orígenes (`chrome`, `brave`, `firefox`, `safari`, `unknown`) por dos datos.
   - **Formato de exportación**, el que ya se detecta por las cabeceras: `chromium`, `firefox`, `safari` o `generic`. Son nombres de formato y no de motor (Chromium, Gecko, WebKit), porque el CSV con `OTPAuth` también lo exporta la app Contraseñas de Apple, y un CSV de otro gestor con columna de nombre se lee como `chromium`.
@@ -61,6 +61,7 @@ La evolución planteada conserva la revisión y auditoría de credenciales que y
 - **Decisión pendiente — versiones y migraciones:** definir la evolución del contenido de `.pwc` y las migraciones de la futura base de datos. **Estado actual:** el envoltorio cifrado del archivo sigue en versión 1; el contenido de la sesión es versión 2 y rechaza el contenido v1 tras descifrarlo. No prometer compatibilidad retrospectiva ni reintroducir la lectura de v1 sin una decisión nueva.
 - **Propuesta — contraseña maestra y ciclo de bloqueo:** desbloquear la bóveda con un secreto maestro y bloquearla por inactividad o a petición del usuario; estudiar derivación de claves, exposición de secretos en memoria, cambio de contraseña, reautenticación para operaciones sensibles y comportamiento ante pérdida de la contraseña. Un diseño de recuperación no debe crear una puerta trasera.
 - **Propuesta — historial y auditoría:** registrar cambios de elementos, accesos y operaciones sensibles con fecha, actor y resultado cuando exista identidad de usuario; valorar versiones y recuperación de cambios sin guardar secretos en registros de actividad ni mostrar valores anteriores por defecto. Separar el historial de modificaciones del actual estado «Pendiente/Revisada/Verificada».
+- **Idea — historial de deshacer en la bóveda:** cada paso de deshacer ya lleva una descripción (acción, nombre y campos, nunca valores; [undo-ux](../odd/done/undo-ux.md)), así que con la bóveda podría conservarse entre ejecuciones. Antes hay que decidir cuánto se guarda: hoy cada paso es una copia completa de los registros y el historial contiene valores anteriores, contraseñas viejas incluidas. Haría falta guardar solo lo que tocó cada paso, un límite de antigüedad y una forma de purgarlo.
 
 #### Modelo de datos y relación entre servicios
 
