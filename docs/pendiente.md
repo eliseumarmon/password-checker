@@ -12,16 +12,17 @@ Este documento reúne lo que la aplicación todavía no hace: limitaciones conoc
 ## Trabajo pendiente
 
 - Validación con usuarios: no se han realizado entrevistas ni pruebas observadas con personas ni con contraseñas reales (véase [Validación con personas](#validación-con-personas)).
-- Accesibilidad en móvil, hallazgos no aprobados de la [revisión de teclado](../odd/done/keyboard-accessibility.md) (L6 y L8): botones y campos de 36 a 43 px de alto, cuando la guía pide 44, y casilla «Solo pendientes» de 18 px; icono de papelera de 16 px, cuando la guía pide 18-24, y «Guardar» y «Cancelar» fuera de la vista al abrir la ficha o la sesión en pantallas muy bajas. Falta además probar con un lector de pantalla y un teclado virtual reales.
+- Accesibilidad en móvil, hallazgos no aprobados de la [revisión de teclado](../odd/done/keyboard-accessibility.md) (L6 y L8): botones y campos de 36 a 43 px de alto, cuando la guía pide 44; icono de papelera de 16 px, cuando la guía pide 18-24, y «Guardar» y «Cancelar» fuera de la vista al abrir la ficha o la sesión en pantallas muy bajas. Falta además probar con un lector de pantalla y un teclado virtual reales.
 - `typescript` 7: bloqueado hasta que `vue-tsc` y `@vue/compiler-sfc` lo admitan; hoy fallan tanto la comprobación de tipos como la compilación ([frontend-major-updates](../odd/tasks/frontend-major-updates.md)).
 - Prueba automática de contraste: medir los pares de texto, borde de control y foco en uso, y exigir 4,5:1 al texto y 3:1 a lo demás (WCAG 1.4.3 y 1.4.11), sin fijar los valores exactos de los colores. Antes hay que decidir qué hacer con los seis bordes de control que no llegan a 3:1 ([css-tokens](../odd/done/css-tokens.md), L7); corregirlos es un cambio visual.
 - Dependencias: el endurecimiento está completado ([auditoría de dependencias](auditoria-dependencias.md) y plan en [dependency-hardening](../odd/done/dependency-hardening.md)). Las medidas que quedaban tienen su propio plan, enlazado desde la [hoja de ruta](hoja-de-ruta.md#fase-0--endurecimiento-de-dependencias).
 - Una evaluación local de fortaleza más completa.
+- Alertas de URL en «Auditoría»: mostrar la URL `http` sin cifrar y el usuario y la contraseña dentro de la URL. El servidor ya las marca en cada registro (`http` y `embedded_auth`), pero la aplicación no las muestra en ningún sitio. Cuando se muestren, entrarán en el orden «Riesgo» de «Todas», que hoy cuenta solo las listas de reutilizadas, poco seguras e incompletas ([review-filters](../odd/done/review-filters.md), S5).
 - Identidad de servicios y duplicados: definir si las credenciales se identifican por la URL/URI encontrada al importar o si se vinculan a un servicio lógico común (web, Android, iOS). Conservar las asociaciones originales y evaluar las consecuencias para la detección de duplicados; pertenecer al mismo servicio no implica fusionarlas automáticamente.
 
 ## Funcionalidades planificadas
 
-No hay ninguna en curso. Las fases, los planes de cada funcionalidad y las decisiones pendientes están en la [hoja de ruta](hoja-de-ruta.md); solo la planificación de la Fase 1 está aprobada. La última funcionalidad completada, el [soporte de Safari](../odd/done/safari-support.md) (exportación de Safari o de la app Contraseñas con sus códigos 2FA hasta Bitwarden y contenido de sesión `.pwc` v2), se completó con T8.
+No hay ninguna en curso. Las fases, los planes de cada funcionalidad y las decisiones pendientes están en la [hoja de ruta](hoja-de-ruta.md); solo están aprobadas la planificación de la Fase 1 y la de `review-filters`, de la Fase 2. La última funcionalidad completada son los [filtros y el orden de la revisión](../odd/done/review-filters.md): filtro por estado, un solo orden por tabla entre las cabeceras y un selector, orden por riesgo y por URL en «Todas», y filtros y orden recordados al recargar.
 
 ## Ideas de diseño sin implementar
 
@@ -29,7 +30,7 @@ Este apartado reúne tanto las mejoras de la propuesta visual inicial como las i
 
 ### Mejoras de la interfaz actual
 
-- **Interfaz general:** tema claro; ajustes de idioma, tema y caducidad por inactividad, y una sección de ayuda; botón «Ocultar todo» en la cabecera; filtro por estado y selector de orden junto a la búsqueda; en «Todas», orden por riesgo y por URL, con los grupos de una misma URL contiguos; continuidad de filtros y de la ordenación de cada tabla, al cambiar de pantalla y al recargar; atajo `Ctrl/Cmd+Z` para el «Deshacer» de la aplicación (hoy solo funciona el deshacer nativo dentro de los campos de texto).
+- **Interfaz general:** tema claro; ajustes de idioma, tema y caducidad por inactividad, y una sección de ayuda; botón «Ocultar todo» en la cabecera; atajo `Ctrl/Cmd+Z` para el «Deshacer» de la aplicación (hoy solo funciona el deshacer nativo dentro de los campos de texto).
 - **Comparación:** revelar contraseñas de forma individual dentro de la comparación; panel comparativo que muestre de cada registro la URL original, el nombre, el usuario, la contraseña oculta, las notas y el estado, y permita conservar A, B o ambos, fusionar notas y editar el candidato final, distinguiendo los datos originales (inmutables) de la salida editable; en móvil, acciones «Elegir para exportación», «Conservar ambas» y «Fusionar notas»; una comparación más completa de originales.
   - Antes, hacerla comprensible: agrupar por sitio y, dentro, por usuario, en lugar de comparar cada registro con el primero mediante chips «URL ✓», «Usuario ≠» o «Clave ≠».
   - Identificar con letras (Clave A, B, C) las contraseñas distintas de cada cuenta, sin mostrarlas. Las equivalencias las calcula el backend.

@@ -117,6 +117,7 @@ Las pantallas actuales se describen en el [flujo de usuario](flujo-usuario.md). 
 ## 7. Diseño de datos sensibles
 
 - **No guardar credenciales en `localStorage`, `sessionStorage`, `IndexedDB` ni cachés del navegador**. La sesión activa reside en el proceso local.
+  - `localStorage` guarda solo preferencias de vista, sin ningún dato de las credenciales: la barra lateral contraída (`pc.sidebarCollapsed`), el tipo y el estado de los filtros (`pc.reviewFilters`) y el orden de cada tabla (`pc.tableSort.<tabla>`). El texto de búsqueda no se guarda, porque puede contener un usuario.
 - Una sesión para reanudar debe persistirse **cifrada con criptografía estándar autenticada y derivación robusta de clave**, con frase de paso elegida por el usuario. No inventar cifrado; no guardar la frase en el proyecto.
 - El código 2FA (TOTP) es tan confidencial como la contraseña: solo viaja en la importación, la ficha de edición, la sesión cifrada y la exportación.
 - No guardar contraseñas ni códigos 2FA en trazas, logs, informes Markdown, telemetría ni URLs, ni repetirlos en mensajes de error. Escapar todos los datos CSV antes de pintarlos en el DOM (el CSV es entrada no confiable). Proteger contra peticiones de otras páginas al servicio local.

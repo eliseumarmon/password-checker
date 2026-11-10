@@ -12,21 +12,41 @@ import SessionDialog from './components/SessionDialog.vue';
 import WelcomePanel from './components/WelcomePanel.vue';
 import GroupsTable from './components/GroupsTable.vue';
 import RecordsTable from './components/RecordsTable.vue';
+import SortSelect from './components/SortSelect.vue';
 import AuditView from './components/AuditView.vue';
 import TrashView from './components/TrashView.vue';
 import SettingsView from './components/SettingsView.vue';
 import { confirmAction, pendingConfirm, settleConfirm } from './confirm';
-import { SCREENS } from './labels';
+import { labelReview, REVIEWS, SCREENS } from './labels';
 import { MIN_SESSION_PASSPHRASE_LENGTH } from './limits';
 import { resetTablePages } from './tableState';
-import type { CredentialDetail, CredentialSummary, DuplicateGroup, FilterType, RecordEdit, Screen, SessionInput, SessionMode } from './types';
+import type { CredentialDetail, CredentialSummary, DuplicateGroup, FilterReview, FilterType, RecordEdit, Review, Screen, SessionInput, SessionMode } from './types';
 
 const store = useWorkspace();
 const screen = ref<Screen>('credentials');
 const subtab = ref<'duplicates' | 'all'>('duplicates');
-const filterType = ref<FilterType>('all');
+// The type and state filters survive a reload (review-filters S3); the search does not, because it may hold
+// a user name and credentials never go to browser storage (docs/guia-visual.md §7).
+const FILTERS_KEY = 'pc.reviewFilters';
+const storedFilters = readFilters();
+const filterType = ref<FilterType>(storedFilters.type);
 const query = ref('');
-const pendingOnly = ref(false);
+const filterReview = ref<FilterReview>(storedFilters.review);
+function readFilters(): { type: FilterType; review: FilterReview } {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(FILTERS_KEY) ?? 'null');
+    const { type, review } = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>;
+    return {
+      type: type === 'web' || type === 'android' ? type : 'all',
+      review: REVIEWS.includes(review as Review) ? review as Review : 'all',
+    };
+  } catch {
+    return { type: 'all', review: 'all' };
+  }
+}
+watch([filterType, filterReview], ([type, review]) => {
+  try { localStorage.setItem(FILTERS_KEY, JSON.stringify({ type, review })); } catch { /* ignore */ }
+});
 // Members fixed when the comparison opens, so it outlives the group when one is discarded.
 const compareIds = ref<string[] | null>(null);
 const selected = ref<CredentialDetail | null>(null);
@@ -57,8 +77,17 @@ const groups = computed(() => data.value?.groups ?? []);
 const recById = computed(() => new Map(records.value.map(r => [r.id, r])));
 const activeRecords = computed(() => records.value.filter(r => r.included));
 const trashed = computed(() => records.value.filter(r => !r.included));
+// The risk order counts one alert for each audit list a record is in; the server sends the lists.
+const alertsById = computed(() => {
+  const counts = new Map<string, number>();
+  const audit = data.value?.audit;
+  for (const id of audit ? [...audit.reused.flat(), ...audit.weak, ...audit.incomplete] : []) counts.set(id, (counts.get(id) ?? 0) + 1);
+  return counts;
+});
 const visibleRows = computed(() => activeRecords.value.filter(r => matches(r)));
-const visibleGroups = computed(() => groups.value.filter(g => matches(g) && (!pendingOnly.value || g.pending)));
+// A group shows while any of its members is in the chosen state.
+const visibleGroups = computed(() => groups.value.filter(g => matches(g)
+  && (filterReview.value === 'all' || g.members.some(m => m.review === filterReview.value))));
 const compareRows = computed(() => (compareIds.value ?? []).flatMap(id => recById.value.get(id) ?? []));
 // Group ids follow their first active member, so the current group is found by membership;
 // a group with records from outside the comparison is another group, not this one.
@@ -75,7 +104,7 @@ const errorHost = computed<'session' | 'editor' | 'compare' | 'page' | null>(() 
 
 function matches(row: CredentialSummary | DuplicateGroup): boolean {
   if (filterType.value !== 'all' && row.type !== filterType.value) return false;
-  if (pendingOnly.value && 'review' in row && row.review !== 'pending') return false;
+  if (filterReview.value !== 'all' && 'review' in row && row.review !== filterReview.value) return false;
   const term = query.value.trim().toLocaleLowerCase();
   return !term || [row.name, row.url, row.username].some(v => v.toLocaleLowerCase().includes(term));
 }
@@ -218,9 +247,9 @@ onUnmounted(() => layoutObserver?.disconnect());
             <button id="tab-all" role="tab" :class="{selected:subtab==='all'}" :aria-selected="subtab==='all'" aria-controls="credentials-panel" :tabindex="subtab==='all' ? 0 : -1" @click="subtab='all'">Todas ({{activeRecords.length}})</button>
           </div>
           <div id="credentials-panel" role="tabpanel" :aria-labelledby="`tab-${subtab}`">
-          <div class="filters"><input v-model="query" aria-label="Buscar credenciales" placeholder="Buscar por nombre, URL o usuario" /><select v-model="filterType" aria-label="Filtrar tipo"><option value="all">Web y Android</option><option value="web">Solo web</option><option value="android">Solo Android</option></select><label class="check"><input v-model="pendingOnly" type="checkbox" /> Solo pendientes</label></div>
+          <div class="filters"><input v-model="query" aria-label="Buscar credenciales" placeholder="Buscar por nombre, URL o usuario" /><select v-model="filterType" aria-label="Filtrar tipo"><option value="all">Web y Android</option><option value="web">Solo web</option><option value="android">Solo Android</option></select><select v-model="filterReview" aria-label="Filtrar estado"><option value="all">Todos los estados</option><option v-for="review in REVIEWS" :key="review" :value="review">{{labelReview(review)}}</option></select><SortSelect :table="subtab==='duplicates' ? 'groups' : 'records'" /></div>
           <GroupsTable v-if="subtab==='duplicates'" :groups="visibleGroups" :busy="store.busy" @open="openGroup" @trash="trashGroup" />
-          <RecordsTable v-else :rows="visibleRows" :busy="store.busy" @edit="openRecord" @trash="moveToTrash" />
+          <RecordsTable v-else :rows="visibleRows" :busy="store.busy" :alerts="alertsById" @edit="openRecord" @trash="moveToTrash" />
           </div>
         </section>
         <AuditView v-else-if="screen==='audit'" :audit="data.audit" :records="recById" @review="openRecord" />

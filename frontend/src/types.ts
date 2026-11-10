@@ -2,6 +2,7 @@ export type Review = 'pending' | 'reviewed' | 'verified' | 'incorrect';
 export type Screen = 'credentials' | 'audit' | 'trash' | 'settings';
 export type CredentialType = 'web' | 'android';
 export type FilterType = 'all' | CredentialType;
+export type FilterReview = 'all' | Review;
 
 export interface CredentialSummary {
   id: string; name: string; url: string; username: string; type: CredentialType;

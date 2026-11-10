@@ -1,7 +1,8 @@
 import { computed, nextTick, ref, toValue, watch, type MaybeRefOrGetter, type Ref } from 'vue';
 import { PAGE_SIZE } from './limits';
 
-// Sorting and paging of the desktop tables, without markup (native-tables S4).
+// Sorting and paging of the tables, without markup (native-tables S4), with one order per table that
+// the column headers and the order selector share (review-filters S2).
 // e2e/tables.spec.ts pins this behavior.
 
 export type SortDirection = 'ascending' | 'descending';
@@ -19,17 +20,40 @@ export function compareValues(a: unknown, b: unknown, direction: SortDirection):
   return order * (x < y ? -1 : x > y ? 1 : 0);
 }
 
-/** A stable sort: tied rows keep their original order in both directions. */
-export function sortRows<T, F extends keyof T & string>(rows: readonly T[], sort: SortState<F>): T[] {
+/**
+ * An order that no column shows (review-filters S2): the values it compares in turn, all in the chosen
+ * direction, and an optional tie-break that always goes ascending.
+ */
+export interface DerivedOrder<T> { values: (row: T) => readonly unknown[]; tieBreak?: (row: T) => unknown }
+export type DerivedOrders<T> = Readonly<Record<string, DerivedOrder<T>>>;
+
+function compareInTurn(a: readonly unknown[], b: readonly unknown[], direction: SortDirection): number {
+  for (let index = 0; index < Math.max(a.length, b.length); index++) {
+    const result = compareValues(a[index], b[index], direction);
+    if (result) return result;
+  }
+  return 0;
+}
+
+/** A stable sort: tied rows keep their original order in both directions. A derived order wins over a column. */
+export function sortRows<T>(rows: readonly T[], sort: SortState<string>, derived: DerivedOrders<T> = {}): T[] {
   const { field, direction } = sort;
   if (!field) return [...rows];
-  return [...rows].sort((a, b) => compareValues(a[field], b[field], direction));
+  const order = Object.hasOwn(derived, field) ? derived[field] : undefined;
+  if (!order) return [...rows].sort((a, b) => compareValues((a as Record<string, unknown>)[field], (b as Record<string, unknown>)[field], direction));
+  // Each row's values are worked out once, not on every comparison.
+  const keyed = rows.map(row => ({ row, values: order.values(row), tie: order.tieBreak?.(row) }));
+  keyed.sort((a, b) => compareInTurn(a.values, b.values, direction) || compareValues(a.tie, b.tie, 'ascending'));
+  return keyed.map(item => item.row);
 }
+
+/** No sort: rows keep the order the server sends them in. The headers and the order selector both use it. */
+export const NO_SORT: Readonly<SortState<never>> = Object.freeze({ field: null, direction: 'ascending' });
 
 /** Each press on a header moves through ascending, descending and back to the original order. */
 export function nextSort<F extends string>(sort: SortState<F>, field: F): SortState<F> {
   if (sort.field !== field) return { field, direction: 'ascending' };
-  return sort.direction === 'ascending' ? { field, direction: 'descending' } : { field: null, direction: 'ascending' };
+  return sort.direction === 'ascending' ? { field, direction: 'descending' } : NO_SORT;
 }
 
 export function pageCount(total: number): number {
@@ -46,18 +70,93 @@ export function pageWindow(page: number, pages: number, size = 5): number[] {
 }
 
 export type TableKey = 'groups' | 'records' | 'trash';
+
+/** A sortable column: the field it sorts by and the label of its header. */
+export interface SortColumn { field: string; label: string }
+
+/** The sortable columns of each table, in screen order: the headers and the order selector both read them. */
+export const SORT_COLUMNS = {
+  records: [
+    { field: 'name', label: 'Sitio / App' }, { field: 'username', label: 'Usuario' }, { field: 'type', label: 'Tipo' },
+    { field: 'source', label: 'Origen' }, { field: 'review', label: 'Revisión' },
+  ],
+  groups: [
+    { field: 'name', label: 'Sitio' }, { field: 'username', label: 'Usuario' }, { field: 'type', label: 'Tipo' },
+    { field: 'count', label: 'Copias' }, { field: 'kind', label: 'Comparación' },
+  ],
+  trash: [{ field: 'name', label: 'Sitio / App' }, { field: 'username', label: 'Usuario' }, { field: 'source', label: 'Origen' }],
+} as const satisfies Record<TableKey, readonly SortColumn[]>;
+
+/** The directions a selector option offers, in its order, each with the words that name it. */
+export type DirectionWords = readonly (readonly [SortDirection, string])[];
+
+/** An order only the selector offers, since no column shows it, with the words for each direction it lists. */
+export interface ExtraOrder { field: string; label: string; directions?: DirectionWords }
+
+/** The table that lists them must give each one a derived order to `useTable`. */
+export const EXTRA_ORDERS: Record<TableKey, readonly ExtraOrder[]> = {
+  records: [
+    { field: 'risk', label: 'Riesgo', directions: [['descending', 'más alertas primero'], ['ascending', 'menos alertas primero']] },
+    { field: 'url', label: 'URL' },
+  ],
+  groups: [],
+  trash: [],
+};
+
+/** Unsorted rows keep the order the server sends: records as imported, groups with different passwords first. */
+export const UNSORTED_LABEL: Record<TableKey, string> = {
+  records: 'Orden de importación', groups: 'Contraseñas diferentes primero', trash: 'Orden de importación',
+};
+
+const INITIAL_SORT: SortState<string> = { field: 'name', direction: 'ascending' };
 interface TableMemory { sort: Ref<SortState<string>>; requested: Ref<number> }
 
-// Outlives the components, which unmount when the screen or the tab changes. A reload clears it.
+// Outlives the components, which unmount when the screen or the tab changes. A reload clears it; the
+// orders then come back from storage, the pages start again at 1.
 const memory = new Map<TableKey, TableMemory>();
 
-function remembered(key: TableKey, initial: SortState<string>): TableMemory {
+// Each table's order also survives a reload (review-filters S3). A per-viewer convenience only: storage may
+// be unavailable or hold values this version does not know, so failures are ignored and unknown values dropped.
+const STORAGE_PREFIX = 'pc.tableSort.';
+
+function storedSort(key: TableKey): SortState<string> | null {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(STORAGE_PREFIX + key) ?? 'null');
+    if (typeof value !== 'object' || value === null) return null;
+    const { field, direction } = value as Record<string, unknown>;
+    if (direction !== 'ascending' && direction !== 'descending') return null;
+    if (field === null) return NO_SORT;
+    const fields = [...SORT_COLUMNS[key], ...EXTRA_ORDERS[key]].map(order => order.field);
+    return typeof field === 'string' && fields.includes(field) ? { field, direction } : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeSort(key: TableKey, { field, direction }: SortState<string>): void {
+  try { localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify({ field, direction })); } catch { /* ignore */ }
+}
+
+function remembered(key: TableKey): TableMemory {
   let entry = memory.get(key);
   if (!entry) {
-    entry = { sort: ref(initial), requested: ref(1) };
+    entry = { sort: ref(storedSort(key) ?? { ...INITIAL_SORT }), requested: ref(1) };
     memory.set(key, entry);
   }
   return entry;
+}
+
+/** The one order of a table, which its headers and the order selector both show and set. */
+export function tableSort(key: TableKey): Readonly<Ref<SortState<string>>> {
+  return remembered(key).sort;
+}
+
+/** A new order starts again at the first page, wherever it is set from. */
+export function setTableSort(key: TableKey, sort: SortState<string>): void {
+  const entry = remembered(key);
+  entry.sort.value = sort;
+  entry.requested.value = 1;
+  storeSort(key, sort);
 }
 
 /** A new workspace has other rows, so the previous page numbers mean nothing there; the chosen sort stays. */
@@ -65,13 +164,22 @@ export function resetTablePages(): void {
   for (const entry of memory.values()) entry.requested.value = 1;
 }
 
-export function useTable<T, F extends keyof T & string = keyof T & string>(key: TableKey, rows: MaybeRefOrGetter<readonly T[]>, initial: SortState<NoInfer<F>>) {
+/**
+ * F is a column the headers sort by. The current order may also name a derived order, such as «risk»,
+ * so it stays a plain string. Every order in EXTRA_ORDERS for this table needs its entry in `derived`.
+ */
+export function useTable<T, F extends keyof T & string = keyof T & string>(
+  key: TableKey, rows: MaybeRefOrGetter<readonly T[]>, derived: DerivedOrders<T> = {},
+) {
+  // Without its derived order, a selector-only order would quietly sort by a row property with that name.
+  const missing = EXTRA_ORDERS[key].filter(order => !Object.hasOwn(derived, order.field)).map(order => order.field);
+  if (missing.length) throw new Error(`useTable('${key}') has no derived order for: ${missing.join(', ')}`);
   // The page asked for is kept apart from the page shown: while a filter hides the paginator, the page
   // asked for survives and comes back when the filter is cleared.
-  const stored = remembered(key, initial);
-  const sort = stored.sort as Ref<SortState<F>>;
+  const stored = remembered(key);
+  const { sort } = stored;
   const { requested } = stored;
-  const sorted = computed(() => sortRows(toValue(rows), sort.value));
+  const sorted = computed(() => sortRows(toValue(rows), sort.value, derived));
   const pages = computed(() => pageCount(sorted.value.length));
   const paginated = computed(() => sorted.value.length > PAGE_SIZE);
   const page = computed(() => Math.min(requested.value, pages.value));
@@ -83,8 +191,7 @@ export function useTable<T, F extends keyof T & string = keyof T & string>(key: 
   watch(pages, count => { if (paginated.value && requested.value > count) requested.value = count; }, { immediate: true });
 
   function sortBy(field: F): void {
-    sort.value = nextSort(sort.value, field);
-    requested.value = 1;
+    setTableSort(key, nextSort(sort.value, field));
   }
   function direction(field: F): SortDirection | null {
     return sort.value.field === field ? sort.value.direction : null;
