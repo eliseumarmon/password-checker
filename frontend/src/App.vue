@@ -12,6 +12,7 @@ import SessionDialog from './components/SessionDialog.vue';
 import WelcomePanel from './components/WelcomePanel.vue';
 import GroupsTable from './components/GroupsTable.vue';
 import RecordsTable from './components/RecordsTable.vue';
+import SortSelect from './components/SortSelect.vue';
 import AuditView from './components/AuditView.vue';
 import TrashView from './components/TrashView.vue';
 import SettingsView from './components/SettingsView.vue';
@@ -220,7 +221,7 @@ onUnmounted(() => layoutObserver?.disconnect());
             <button id="tab-all" role="tab" :class="{selected:subtab==='all'}" :aria-selected="subtab==='all'" aria-controls="credentials-panel" :tabindex="subtab==='all' ? 0 : -1" @click="subtab='all'">Todas ({{activeRecords.length}})</button>
           </div>
           <div id="credentials-panel" role="tabpanel" :aria-labelledby="`tab-${subtab}`">
-          <div class="filters"><input v-model="query" aria-label="Buscar credenciales" placeholder="Buscar por nombre, URL o usuario" /><select v-model="filterType" aria-label="Filtrar tipo"><option value="all">Web y Android</option><option value="web">Solo web</option><option value="android">Solo Android</option></select><select v-model="filterReview" aria-label="Filtrar estado"><option value="all">Todos los estados</option><option v-for="review in REVIEWS" :key="review" :value="review">{{labelReview(review)}}</option></select></div>
+          <div class="filters"><input v-model="query" aria-label="Buscar credenciales" placeholder="Buscar por nombre, URL o usuario" /><select v-model="filterType" aria-label="Filtrar tipo"><option value="all">Web y Android</option><option value="web">Solo web</option><option value="android">Solo Android</option></select><select v-model="filterReview" aria-label="Filtrar estado"><option value="all">Todos los estados</option><option v-for="review in REVIEWS" :key="review" :value="review">{{labelReview(review)}}</option></select><SortSelect :table="subtab==='duplicates' ? 'groups' : 'records'" /></div>
           <GroupsTable v-if="subtab==='duplicates'" :groups="visibleGroups" :busy="store.busy" @open="openGroup" @trash="trashGroup" />
           <RecordsTable v-else :rows="visibleRows" :busy="store.busy" @edit="openRecord" @trash="moveToTrash" />
           </div>

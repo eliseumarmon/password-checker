@@ -21,6 +21,11 @@ export function column(table: Locator, index: number): Locator {
   return index === 1 ? cells.locator(':is(.table-link, strong)') : cells;
 }
 
+/** The names on the cards that replace the tables on a phone, top to bottom. */
+export function cardNames(page: Page): Locator {
+  return page.locator('.mobile-cards article strong');
+}
+
 export function columnHeader(table: Locator, name: string): Locator {
   return table.locator('thead th', { hasText: name });
 }

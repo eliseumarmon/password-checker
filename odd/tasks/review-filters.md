@@ -7,7 +7,7 @@ Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m 
 ## Specs
 
 - **S1 — Filtro por estado.** `docs/pendiente.md`: «filtro por estado y selector de orden junto a la búsqueda».
-  - Un selector con «Todos», «Pendiente», «Revisada», «Verificada» y «No funciona» (las etiquetas de `labelReview`), junto a la búsqueda y al filtro de tipo.
+  - Un selector con «Todos los estados» (L13), «Pendiente», «Revisada», «Verificada» y «No funciona» (las etiquetas de `labelReview`), junto a la búsqueda y al filtro de tipo.
   - En «Duplicados», un grupo cumple el filtro si alguno de sus miembros tiene ese estado. Hoy «Solo pendientes» ya funciona así con `pending`.
   - **Confirmado (L7):** el selector sustituye la casilla «Solo pendientes»; elegir «Pendiente» equivale a marcarla.
 - **S2 — Orden único.** `docs/pendiente.md`: «en «Todas», orden por riesgo y por URL, con los grupos de una misma URL contiguos».
@@ -26,7 +26,7 @@ Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m 
 
 ## Tasks
 
-- [x] T1 — S1: filtro por estado. RED primero en E2E (cada estado en «Todas» y en «Duplicados»). Ruta: inline. RED: las 3 pruebas de `e2e/filters.spec.ts` fallan esperando el selector «Filtrar estado»; GREEN: 3 de 3, y la suite entera 150 de 150 (L13).
+- [x] T1 — S1: filtro por estado. RED primero en E2E (cada estado en «Todas» y en «Duplicados»). Ruta: inline. RED: las 3 pruebas de `e2e/filters.spec.ts` fallan esperando el selector «Filtrar estado»; GREEN: 3 de 3, y la suite entera 150 de 150 (L13). Commit `9be6d70`; evaluación de revisión: riesgo medio, `under_budget`. Revisada como tramo propio antes de T2 (lente de fiabilidad): aprobada y confirmada (L15).
 - [ ] T2 — S2: orden único entre el selector y las cabeceras, con las columnas actuales, y tarjetas del móvil en el mismo orden. RED primero en E2E. Ruta: inline.
 - [ ] T3 — S2: orden por riesgo y por URL en «Todas», reutilizando el comparador de `native-tables`. RED primero en E2E con datos ficticios de riesgo conocido. Ruta: inline.
 - [ ] T4 — S3: continuidad. RED primero en E2E (recargar conserva tipo, estado y orden, pero no la búsqueda), con almacenamiento no disponible incluido. Riesgo: posible punto 2, por guardar datos en el navegador; commit propio. Ruta: inline.
@@ -47,3 +47,14 @@ Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m 
 - **L11 (2026-11-10).** Previsión por tarea: T1 ~80, T2 ~200, T3 ~120, T4 ~140 y T5 ~40 líneas, unas 580 en total. Supera las 400, así que `ask-on-risk` pide elegir la estrategia de cadena antes del primer commit.
 - **L12 (2026-11-10).** Estrategia de entrega: «Hazlo entero se pasa por poco el límite». Se entrega con `single-pr`: una sola integración a `main` al final, manteniendo un commit por tarea en la rama.
 - **L13 (2026-11-10).** T1 hecho. La primera opción se llama «Todos los estados» en vez de «Todos», porque con el desplegable cerrado «Todos» no dice de qué. El grupo se muestra si algún miembro tiene el estado elegido; con «Pendiente» da lo mismo que la casilla, porque el servidor calcula `pending` con los mismos miembros (`review_state.py:73`). La casilla era la única de la aplicación: se quitan las reglas `.check` de `style.css`, que ya no usa nadie, y la comprobación de su tamaño en `e2e/review.spec.ts` («uses compact cards and rows»). Riesgo: ninguno.
+- **L14 (2026-11-10).** T2. RED: 8 pruebas nuevas de `e2e/filters.spec.ts` fallan (no existe el selector «Ordenar»; las tarjetas del móvil salen en el orden de llegada). GREEN: 11 de 11 en el archivo, y la suite entera 158 de 158. Diseño:
+  - `tableState.ts` guarda las columnas ordenables de cada tabla (`SORT_COLUMNS`), que leen las cabeceras y el selector, y el orden inicial, que antes pasaba cada componente. `setTableSort()` es la única forma de cambiar el orden, y vuelve a la página 1 venga de donde venga.
+  - Las opciones dicen «(ascendente)» y «(descendente)» en vez de «A → Z», porque «Copias» es un número y «Origen» deja «Desconocido» al final.
+  - La opción sin orden se llama «Orden de importación» en registros y papelera, y «Contraseñas diferentes primero» en grupos, porque el servidor manda los grupos ordenados así (`review_state.py:75-76`).
+  - Capturas a 1440, 1280, 414, 390 y 320 px. A 320, «Ordenar» medía 268 px en un hueco de 260 y se salía del margen; a 390, repartir la fila a partes iguales cortaba «Todos los estados». En el móvil, los desplegables parten de su anchura natural (`flex:1 1 auto;min-width:0`): comparten fila solo si caben enteros (414 px) y si no ocupan la fila entera (390 y 320). El escritorio mide igual que antes.
+  - Prueba de la barra de filtros a 320 y 390 px: ningún control se sale del panel. Sin la regla del móvil falla a 320 («Expected: <= 290, Received: 298»); con ella, 13 de 13 en el archivo.
+  - Riesgo: punto 3, porque cambia `useTable`, que usan las tres tablas (orden inicial centralizado; las cabeceras ordenan a través de `setTableSort`). Lleva verificador independiente y revisión propia. Antes se cierra el tramo de T1 con su revisión.
+- **L15 (2026-11-10).** Revisión de T1 (`9be6d70`, lente de fiabilidad), con consentimiento del usuario («Revisar este cambio»): aprobada y confirmada; el punto de partida de la siguiente revisión pasa a `9be6d70`. Dos observaciones informativas:
+  - Aviso: podría quedar otra casilla con la clase `.check`. Comprobado: fuera de `style.css` no hay ninguna casilla ni la clase `check` en `frontend/src` ni en `index.html`. Sin efecto.
+  - Sugerencia: el nuevo desplegable no tiene prueba de tamaño. Atendida en T2 con la prueba de la barra de filtros (L14).
+  - La herramienta pidió decidir sobre `SortSelect.vue`, de T2 y aún sin seguimiento: quedó fuera con `--untracked-scope exclude` y el inventario que devolvió `status`.

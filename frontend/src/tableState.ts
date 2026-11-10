@@ -1,7 +1,8 @@
 import { computed, nextTick, ref, toValue, watch, type MaybeRefOrGetter, type Ref } from 'vue';
 import { PAGE_SIZE } from './limits';
 
-// Sorting and paging of the desktop tables, without markup (native-tables S4).
+// Sorting and paging of the tables, without markup (native-tables S4), with one order per table that
+// the column headers and the order selector share (review-filters S2).
 // e2e/tables.spec.ts pins this behavior.
 
 export type SortDirection = 'ascending' | 'descending';
@@ -46,18 +47,53 @@ export function pageWindow(page: number, pages: number, size = 5): number[] {
 }
 
 export type TableKey = 'groups' | 'records' | 'trash';
+
+/** A sortable column: the field it sorts by and the label of its header. */
+export interface SortColumn { field: string; label: string }
+
+/** The sortable columns of each table, in screen order: the headers and the order selector both read them. */
+export const SORT_COLUMNS = {
+  records: [
+    { field: 'name', label: 'Sitio / App' }, { field: 'username', label: 'Usuario' }, { field: 'type', label: 'Tipo' },
+    { field: 'source', label: 'Origen' }, { field: 'review', label: 'Revisión' },
+  ],
+  groups: [
+    { field: 'name', label: 'Sitio' }, { field: 'username', label: 'Usuario' }, { field: 'type', label: 'Tipo' },
+    { field: 'count', label: 'Copias' }, { field: 'kind', label: 'Comparación' },
+  ],
+  trash: [{ field: 'name', label: 'Sitio / App' }, { field: 'username', label: 'Usuario' }, { field: 'source', label: 'Origen' }],
+} as const satisfies Record<TableKey, readonly SortColumn[]>;
+
+/** Unsorted rows keep the order the server sends: records as imported, groups with different passwords first. */
+export const UNSORTED_LABEL: Record<TableKey, string> = {
+  records: 'Orden de importación', groups: 'Contraseñas diferentes primero', trash: 'Orden de importación',
+};
+
+const INITIAL_SORT: SortState<string> = { field: 'name', direction: 'ascending' };
 interface TableMemory { sort: Ref<SortState<string>>; requested: Ref<number> }
 
 // Outlives the components, which unmount when the screen or the tab changes. A reload clears it.
 const memory = new Map<TableKey, TableMemory>();
 
-function remembered(key: TableKey, initial: SortState<string>): TableMemory {
+function remembered(key: TableKey): TableMemory {
   let entry = memory.get(key);
   if (!entry) {
-    entry = { sort: ref(initial), requested: ref(1) };
+    entry = { sort: ref({ ...INITIAL_SORT }), requested: ref(1) };
     memory.set(key, entry);
   }
   return entry;
+}
+
+/** The one order of a table, which its headers and the order selector both show and set. */
+export function tableSort(key: TableKey): Readonly<Ref<SortState<string>>> {
+  return remembered(key).sort;
+}
+
+/** A new order starts again at the first page, wherever it is set from. */
+export function setTableSort(key: TableKey, sort: SortState<string>): void {
+  const entry = remembered(key);
+  entry.sort.value = sort;
+  entry.requested.value = 1;
 }
 
 /** A new workspace has other rows, so the previous page numbers mean nothing there; the chosen sort stays. */
@@ -65,10 +101,10 @@ export function resetTablePages(): void {
   for (const entry of memory.values()) entry.requested.value = 1;
 }
 
-export function useTable<T, F extends keyof T & string = keyof T & string>(key: TableKey, rows: MaybeRefOrGetter<readonly T[]>, initial: SortState<NoInfer<F>>) {
+export function useTable<T, F extends keyof T & string = keyof T & string>(key: TableKey, rows: MaybeRefOrGetter<readonly T[]>) {
   // The page asked for is kept apart from the page shown: while a filter hides the paginator, the page
   // asked for survives and comes back when the filter is cleared.
-  const stored = remembered(key, initial);
+  const stored = remembered(key);
   const sort = stored.sort as Ref<SortState<F>>;
   const { requested } = stored;
   const sorted = computed(() => sortRows(toValue(rows), sort.value));
@@ -83,8 +119,7 @@ export function useTable<T, F extends keyof T & string = keyof T & string>(key: 
   watch(pages, count => { if (paginated.value && requested.value > count) requested.value = count; }, { immediate: true });
 
   function sortBy(field: F): void {
-    sort.value = nextSort(sort.value, field);
-    requested.value = 1;
+    setTableSort(key, nextSort(sort.value, field));
   }
   function direction(field: F): SortDirection | null {
     return sort.value.field === field ? sort.value.direction : null;
