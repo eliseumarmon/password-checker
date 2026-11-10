@@ -2,7 +2,7 @@
 
 Objetivo: que cada categoría de la Auditoría pueda consultarse con todo el espacio disponible, sin perder la vista general en escritorio y con un acordeón en móvil.
 Rama: `feat/audit-layout` desde `main`. Fase 2. Depende de: `css-tokens` y `keyboard-accessibility` (Fase 1). Solo frontend. Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build` y `npm run e2e`. Estado: planificado, sin empezar; no está aprobado para implementarse.
+Comprobaciones: `npm run build` y `npm run e2e`. Estado: planificado; orden aprobado (n.º 2 de 8, L2); supuestos pendientes, se preguntan al empezar.
 
 ## Specs
 
@@ -22,3 +22,8 @@ Comprobaciones: `npm run build` y `npm run e2e`. Estado: planificado, sin empeza
 ## Log
 
 - **L1 (2026-11-04).** Origen: anotaciones del usuario sobre una conversación externa, pegada en la sesión; fragmentos en S1. La conversación propuso primero un acordeón también en escritorio. Tras la objeción del usuario, quedó la cuadrícula ampliable en escritorio y el acordeón en móvil. Comprobado en `main` (`ec8d167`): `audit-grid` con los cuatro bloques, y `<details>` solo en las contraseñas reutilizadas.
+- **L2 (2026-11-10).** Revisión del plan contra `main` (`af881a5`), tras la Fase 1 y `review-filters`, a petición del usuario: «Planifica el resto de la fase2». Orden aprobado: «Pequeños primero (Recomendado)»; este plan es el n.º 2 de 8. Supuestos: «Justo antes de cada uno (Recomendado)», así que los supuestos y las decisiones pendientes se preguntan al empezar.
+  - Nada desfasado: cuatro bloques en `AuditView.vue`, `<details>` solo en las reutilizadas y `.audit-block{max-height:550px;overflow:auto}`.
+  - Va antes de `local-strength`, cuya T3 añade motivos a los mismos bloques.
+  - Decisiones pendientes nuevas: el estado inicial en escritorio (todo compacto o alguna categoría ampliada) y el ancho en el que pasa a acordeón (hoy `style.css` tiene cortes en 1100 y 760 px).
+  - Previsión: ~150 líneas.

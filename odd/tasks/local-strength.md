@@ -2,7 +2,7 @@
 
 Objetivo: detectar más patrones débiles sin conexión y explicar en la auditoría por qué se marca una contraseña, sin mostrarla nunca.
 Rama: `feat/local-strength` desde `main`. Fase 2. No depende de otros planes: T1 y T2 son backend y pueden empezar en cualquier momento. Entrega: `ask-on-risk`, previsión ~300 líneas.
-Comprobaciones: `python -m unittest discover -s tests` y `ruff check .`; con T3, también `npm run build` y `npm run e2e`. Estado: planificado, sin empezar.
+Comprobaciones: `python -m unittest discover -s tests` y `ruff check .`; con T3, también `npm run build` y `npm run e2e`. Estado: planificado; orden aprobado (n.º 3 de 8, L4); supuestos pendientes, se preguntan al empezar.
 
 ## Specs
 
@@ -40,3 +40,9 @@ Comprobaciones: `python -m unittest discover -s tests` y `ruff check .`; con T3,
   - `is_weak()` solo marca `OBVIOUS` y `SHORT`; `MODERATE` no avisa.
   - `audit.weak` es una lista de ids sin motivo.
   - No depende de ninguna decisión pendiente. Ruta: inline.
+- **L4 (2026-11-10).** Revisión del plan contra `main` (`af881a5`), tras la Fase 1 y `review-filters`, a petición del usuario: «Planifica el resto de la fase2». Orden aprobado: «Pequeños primero (Recomendado)»; este plan es el n.º 3 de 8. Supuestos: «Justo antes de cada uno (Recomendado)», así que los supuestos y las decisiones pendientes se preguntan al empezar.
+  - Nada desfasado en `domain/strength.py`.
+  - Restricción nueva: `audit.weak` debe seguir siendo una lista de ids, porque la usa el orden «Riesgo» de «Todas» (`App.vue:81`, `alertsById`, de `review-filters`). Los motivos van en un campo aparte y opcional.
+  - El dominio sigue sin dependencias externas (`tests/test_architecture.py`).
+  - Su T3 se hace sobre la maqueta nueva de `audit-layout`.
+  - Decisiones pendientes nuevas: si `MODERATE` (12 o 13 caracteres) sigue sin marcarse, y si los motivos nuevos cuentan como «poco segura» o solo informan; el idioma de los motivos, con D6 abierta.

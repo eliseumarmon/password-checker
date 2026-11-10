@@ -1,8 +1,8 @@
 # Ficha móvil y acciones rápidas de revisión
 
 Objetivo: mostrar la ficha a pantalla completa en el móvil con navegación entre pendientes, añadir las acciones «Marcar revisada» y «Acceso verificado», y el botón «Buscar en tienda» para registros Android.
-Rama: `feat/mobile-record-detail` desde `main`. Fase 2. Depende de: `keyboard-accessibility` (foco en la ficha). Entrega: `ask-on-risk`, previsión ~300 líneas. Solo frontend.
-Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: planificado, sin empezar.
+Rama: `feat/mobile-record-detail` desde `main`. Fase 2. Depende de: `keyboard-accessibility` (foco en la ficha). Entrega: `ask-on-risk`, previsión ~350-400 líneas (L4). Solo frontend.
+Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m unittest discover -s tests` y `ruff check .`. Estado: planificado; orden aprobado (n.º 5 de 8, L4); supuestos pendientes, se preguntan al empezar.
 
 ## Specs
 
@@ -37,3 +37,9 @@ Comprobaciones: `npm run build` y `npm run e2e`; al cerrar, también `python -m 
   - `Workspace.change()` devuelve a pendiente cualquier edición de URL, usuario, contraseña o código 2FA.
   - `safeWebUrl()` solo abre URL `http(s)`.
   - No depende de ninguna decisión pendiente. Ruta: inline.
+- **L4 (2026-11-10).** Revisión del plan contra `main` (`af881a5`), tras la Fase 1 y `review-filters`, a petición del usuario: «Planifica el resto de la fase2». Orden aprobado: «Pequeños primero (Recomendado)»; este plan es el n.º 5 de 8. Supuestos: «Justo antes de cada uno (Recomendado)», así que los supuestos y las decisiones pendientes se preguntan al empezar.
+  - S1 pide que anterior y siguiente sigan «el orden y los filtros de la lista visible». Desde `review-filters`, ese orden vive dentro de cada tabla (`useTable` en `tableState.ts`, llamado desde `RecordsTable.vue`), y `App.vue` solo tiene la lista filtrada, sin ordenar. Hay que exponer el orden.
+  - La ficha también se abre desde «Auditoría» y desde la comparación, que no tienen orden de lista. Decisión pendiente nueva: qué recorre «Siguiente pendiente» desde ahí.
+  - El paquete para «Buscar en tienda» es el `host` de las URI `android://…@paquete/` y `androidapp://paquete` (`domain/urls.py`).
+  - «Abrir sitio» abre ahora el origen y la ruta (D9); no afecta a este plan.
+  - Previsión: sube a ~350-400 líneas por exponer el orden.
