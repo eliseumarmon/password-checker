@@ -1,5 +1,6 @@
 """Each undo step carries a description of what it changed (undo-ux S3). Synthetic data only."""
 import sys
+import threading
 import unittest
 from pathlib import Path
 
@@ -115,11 +116,36 @@ class UndoStepTests(unittest.TestCase):
         self.assertIsNone(self.last_change())
         identifier = next(iter(self.workspace._records))
         self.workspace.change(identifier, {'review': 'reviewed'})
-        self.assertNotEqual(self.last_change()['id'], before)
+        seen = {before, self.last_change()['id']}
+        self.assertEqual(len(seen), 2)
         payload = self.workspace.serialize()
         self.workspace.change(identifier, {'review': 'verified'})
+        seen.add(self.last_change()['id'])
         self.workspace.restore(payload)
         self.assertIsNone(self.last_change())
+        self.workspace.change(identifier, {'review': 'verified'})
+        self.assertNotIn(self.last_change()['id'], seen)
+
+    def test_concurrent_undos_of_the_same_step_undo_it_once(self):
+        self.workspace.change(self.amazon, {'review': 'reviewed'})
+        self.workspace.change(self.amazon, {'review': 'verified'})
+        step, steps = self.last_change()['id'], len(self.workspace._history)
+        start, results = threading.Barrier(16), []
+
+        def undo():
+            start.wait()
+            try:
+                self.workspace.undo(step)
+                results.append(True)
+            except ValueError:
+                results.append(False)
+        threads = [threading.Thread(target=undo) for _ in range(16)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        self.assertEqual(results.count(True), 1)
+        self.assertEqual(len(self.workspace._history), steps - 1)
 
     def test_step_ids_are_never_repeated_not_even_after_a_server_restart(self):
         ids = []
@@ -202,6 +228,21 @@ class UndoStepAPITests(unittest.TestCase):
         accepted = self.client.post('/api/undo', json={'step': last['id']})
         self.assertEqual(accepted.status_code, 200, accepted.text)
         self.assertEqual(accepted.json()['undone'], last)
+
+    def test_undo_rejects_malformed_steps_and_names_an_empty_history(self):
+        csv = b'name,url,username,password,note\nSite,https://site.invalid/,alice,fictional-secret-123,\n'
+        identifier = self.client.post('/api/import', files=[('files', ('chrome.csv', csv, 'text/csv'))]).json()['records'][0]['id']
+        step = self.client.patch('/api/records/' + identifier, json={'review': 'verified'}).json()['last_change']['id']
+        for body in ({}, {'step': ''}, {'step': 'a' * 65}, {'step': 5}, {'step': None}, [step]):
+            with self.subTest(body=body):
+                before = self.client.get('/api/workspace').content
+                response = self.client.post('/api/undo', json=body)
+                self.assertEqual(response.status_code, 422, response.text)
+                self.assertEqual(self.client.get('/api/workspace').content, before)
+        self.assertEqual(self.client.post('/api/undo', json={'step': step}).status_code, 200)
+        empty = self.client.post('/api/undo', json={'step': step})
+        self.assertEqual(empty.status_code, 409, empty.text)
+        self.assertEqual(empty.json()['detail'], 'No hay cambios que deshacer')
 
 
 if __name__ == '__main__':
