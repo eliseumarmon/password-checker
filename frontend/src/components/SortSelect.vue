@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { setTableSort, SORT_COLUMNS, tableSort, UNSORTED_LABEL, type SortDirection, type TableKey } from '../tableState';
+import { NO_SORT, setTableSort, SORT_COLUMNS, tableSort, UNSORTED_LABEL, type SortDirection, type TableKey } from '../tableState';
 
 // Sets the same order as the column headers, and is the only way to sort on a phone, where the
 // tables become cards without headers. Each option names its direction, so the whole order is read
@@ -24,7 +24,7 @@ const chosen = computed({
   },
   set(value: string): void {
     const [field, direction] = value.split(':') as [string, SortDirection];
-    setTableSort(props.table, value === UNSORTED ? { field: null, direction: 'ascending' } : { field, direction });
+    setTableSort(props.table, value === UNSORTED ? NO_SORT : { field, direction });
   },
 });
 </script>

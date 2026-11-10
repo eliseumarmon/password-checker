@@ -27,10 +27,13 @@ export function sortRows<T, F extends keyof T & string>(rows: readonly T[], sort
   return [...rows].sort((a, b) => compareValues(a[field], b[field], direction));
 }
 
+/** No sort: rows keep the order the server sends them in. The headers and the order selector both use it. */
+export const NO_SORT: Readonly<SortState<never>> = Object.freeze({ field: null, direction: 'ascending' });
+
 /** Each press on a header moves through ascending, descending and back to the original order. */
 export function nextSort<F extends string>(sort: SortState<F>, field: F): SortState<F> {
   if (sort.field !== field) return { field, direction: 'ascending' };
-  return sort.direction === 'ascending' ? { field, direction: 'descending' } : { field: null, direction: 'ascending' };
+  return sort.direction === 'ascending' ? { field, direction: 'descending' } : NO_SORT;
 }
 
 export function pageCount(total: number): number {

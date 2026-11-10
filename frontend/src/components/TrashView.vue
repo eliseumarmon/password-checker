@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import SortHeader from './SortHeader.vue';
+import SortSelect from './SortSelect.vue';
 import TablePaginator from './TablePaginator.vue';
 import { labelOrigin } from '../labels';
 import { SORT_COLUMNS, useRemovalFocus, useTable } from '../tableState';
@@ -22,6 +23,7 @@ function restore(row: CredentialSummary): Promise<void> {
     <h2>Credenciales descartadas</h2><p>No se exportan. Restaura las que quieras recuperar.</p>
     <p v-if="!rows.length" class="empty">La papelera está vacía.</p>
     <template v-else>
+      <div class="filters"><SortSelect table="trash" /></div>
       <div ref="root" class="desktop-table">
         <table aria-label="Credenciales descartadas">
           <thead><tr>

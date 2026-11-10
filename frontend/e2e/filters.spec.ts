@@ -92,6 +92,10 @@ const GROUP_ORDERS = [
   'Tipo (ascendente)', 'Tipo (descendente)', 'Copias (ascendente)', 'Copias (descendente)',
   'Comparación (ascendente)', 'Comparación (descendente)', 'Contraseñas diferentes primero',
 ];
+const TRASH_ORDERS = [
+  'Sitio / App (ascendente)', 'Sitio / App (descendente)', 'Usuario (ascendente)', 'Usuario (descendente)',
+  'Origen (ascendente)', 'Origen (descendente)', 'Orden de importación',
+];
 // Imported in an order that is neither by name nor by user.
 const THREE = [CHROMIUM_HEADER, chromiumRow('Charlie', 'carol'), chromiumRow('Alpha', 'dave'), chromiumRow('Bravo', 'bob')];
 
@@ -176,13 +180,16 @@ test.describe('on a phone', () => {
     await expect(cardNames(page)).toHaveText(['Zeta', 'Alfa']);
   });
 
-  test('lists the trash cards in the order of its table', async ({ page }) => {
+  test('lists the trash cards in the order chosen in its own selector', async ({ page }) => {
     await seed(page, [{ name: 'chrome.csv', lines: THREE }]);
     const ids = (await (await page.request.get('/api/workspace')).json()).records.map((record: { id: string }) => record.id);
     expect((await page.request.post('/api/records/trash', { data: { ids } })).ok()).toBe(true);
     await page.reload();
     await page.getByRole('navigation', { name: 'Navegación móvil' }).getByRole('button', { name: /Papelera/ }).click();
     await expect(cardNames(page)).toHaveText(['Alpha', 'Bravo', 'Charlie']);
+    await expect(orderSelect(page).locator('option')).toHaveText(TRASH_ORDERS);
+    await orderSelect(page).selectOption({ label: 'Orden de importación' });
+    await expect(cardNames(page)).toHaveText(['Charlie', 'Alpha', 'Bravo']);
   });
 });
 
