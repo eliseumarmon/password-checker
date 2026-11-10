@@ -214,7 +214,7 @@ test('merges exact copies into the trash and can undo it', async ({ page }) => {
   await confirmWith(page, 'Fusionar');
   await expect(metric(page, 'En la papelera')).toHaveText('1');
   await expect(page.getByRole('tab', { name: 'Todas (5)' })).toBeVisible();
-  await page.getByRole('button', { name: /Deshacer/ }).click();
+  await page.getByRole('button', { name: '↶ Deshacer' }).click();
   await expect(metric(page, 'En la papelera')).toHaveText('0');
 });
 
@@ -502,7 +502,7 @@ test('trashes a whole duplicate group in one undoable step', async ({ page }) =>
   await confirmWith(page, 'Mover a la papelera');
   await expect(metric(page, 'En la papelera')).toHaveText('2');
   await expect(page.getByRole('tab', { name: 'Duplicados (1)' })).toBeVisible();
-  await page.getByRole('button', { name: /Deshacer/ }).click();
+  await page.getByRole('button', { name: '↶ Deshacer' }).click();
   await expect(metric(page, 'En la papelera')).toHaveText('0');
 });
 
@@ -762,7 +762,7 @@ test('saves an encrypted session and opens it again', async ({ page }) => {
   const file = { name: saved.suggestedFilename(), mimeType: 'application/octet-stream', buffer: await readFile(await saved.path()) };
   await expect(saveDialog).toBeHidden();
 
-  await page.getByRole('button', { name: /Deshacer/ }).click();
+  await page.getByRole('button', { name: '↶ Deshacer' }).click();
   await expect(metric(page, 'En la papelera')).toHaveText('0');
   await sidebar(page).getByRole('button', { name: 'Ajustes' }).click();
   await page.getByRole('button', { name: 'Abrir', exact: true }).click();

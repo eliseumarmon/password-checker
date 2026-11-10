@@ -36,3 +36,10 @@
 .warning-files>li>ul{margin-top:2px}
 .warning-details{align-self:flex-start;min-height:32px;padding:4px 10px}
 .warning-footer{font-size:13px;color:var(--notice-warning-footer)}
+
+/* Last change: same presentation as the other notices, with its Deshacer next to the text (undo-ux S2). */
+.change{box-shadow:0 8px 24px var(--shadow);background:var(--status-success-bg);color:var(--status-success-text);padding:12px 18px;border-radius:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;overflow-wrap:anywhere}
+.change .notice-text{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}
+.change>button{padding:0 8px;border:0;background:transparent;color:inherit;flex-shrink:0}
+.change .notice-action{min-height:32px;padding:4px 12px}
+.compare-dialog>.change{flex:none;margin:16px 16px 0}

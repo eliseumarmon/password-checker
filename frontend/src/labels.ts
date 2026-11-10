@@ -1,4 +1,4 @@
-import type { CredentialType, DuplicateGroup, Review, Screen } from './types';
+import type { CredentialType, DuplicateGroup, RecordEdit, Review, Screen, UndoStep } from './types';
 
 type ScreenIcon = { kind: 'glyph'; text: string } | { kind: 'trash' };
 
@@ -26,4 +26,26 @@ export function labelType(type: CredentialType): string {
 
 export function labelOrigin(origin: string): string {
   return origin === 'unknown' ? 'Desconocido' : origin;
+}
+
+const FIELD_LABELS: Record<keyof RecordEdit, string> = {
+  name: 'Nombre', url: 'URL', username: 'Usuario', password: 'Contraseña', totp: 'Código 2FA',
+  note: 'Notas', review: 'Estado de revisión', included: 'Papelera',
+};
+
+function joinList(items: string[]): string {
+  return items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} y ${items[items.length - 1]}`;
+}
+
+/** What an undo step did, by record and field names only, never values (undo-ux S2). */
+export function describeStep(step: UndoStep): string {
+  const name = step.name === null ? null : `«${step.name}»`;
+  switch (step.action) {
+    case 'edit': return `${name ?? 'Credencial'} guardada. Cambió: ${joinList(step.fields.map(field => FIELD_LABELS[field]))}.`;
+    case 'trash': return step.count === 1
+      ? `${name ?? 'Credencial'} en la papelera.`
+      : `${step.count} registros${name ? ` de ${name}` : ''} en la papelera.`;
+    case 'restore': return `${name ?? 'Credencial'} restaurada.`;
+    case 'merge': return `Copias exactas fusionadas: ${step.count} ${step.count === 1 ? 'registro' : 'registros'} a la papelera.`;
+  }
 }
