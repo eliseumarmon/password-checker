@@ -79,6 +79,19 @@ class WorkspaceTests(unittest.TestCase):
         self.assertEqual(self.workspace.get(identifier)['review'], 'pending')
         self.assertNotIn('verified', self.workspace.snapshot()['stats'])
 
+    def test_progress_counts_reviewed_and_trashed_records_but_not_incorrect_ones(self):
+        ids = [r['id'] for r in self.workspace.snapshot()['records']]
+        self.workspace.change(ids[0], {'review': 'reviewed'})
+        self.workspace.change(ids[1], {'review': 'incorrect'})
+        self.assertEqual(self.workspace.snapshot()['stats']['reviewed'], 1)
+        # A trashed record counts whatever its state, also one still pending.
+        stats = self.workspace.trash([ids[1], ids[2]])['stats']
+        self.assertEqual((stats['reviewed'], stats['total']), (3, 5))
+        stats = self.workspace.trash([ids[3], ids[4]])['stats']
+        self.assertEqual((stats['reviewed'], stats['total']), (5, 5))
+        stats = self.workspace.undo()['stats']
+        self.assertEqual((stats['reviewed'], stats['total']), (3, 5))
+
     def test_trash_many_is_atomic_and_one_undo_step(self):
         ids = [r['id'] for r in self.workspace.snapshot()['records'][:3]]
         with self.assertRaises(KeyError):

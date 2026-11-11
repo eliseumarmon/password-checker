@@ -222,6 +222,26 @@ function sidebar(page: Page): Locator {
   return page.getByRole('complementary', { name: 'Navegación principal' });
 }
 
+test('counts reviewed and trashed records in the progress, but not those marked as not working', async ({ page }) => {
+  const progress = metric(page, 'Revisadas');
+  await expect(progress).toHaveText('0 / 6');
+  await page.getByRole('tab', { name: 'Todas (6)' }).click();
+  const table = page.locator('.desktop-table');
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  for (const [user, review, shown] of [['carol', 'incorrect', '0 / 6'], ['eve', 'reviewed', '1 / 6']]) {
+    await table.getByRole('row', { name: new RegExp(user) }).getByRole('button', { name: 'Editar' }).click();
+    await editor.getByLabel('Estado de revisión').selectOption(review);
+    await editor.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(editor).toBeHidden();
+    await expect(progress).toHaveText(shown);
+  }
+  // A trashed record counts whatever its state: one marked as not working, then one still pending.
+  await table.getByRole('row', { name: /carol/ }).getByRole('button', { name: 'Mover a la papelera' }).click();
+  await expect(progress).toHaveText('2 / 6');
+  await table.getByRole('row', { name: /Conflict/ }).first().getByRole('button', { name: 'Mover a la papelera' }).click();
+  await expect(progress).toHaveText('3 / 6');
+});
+
 test('trashes a row from its quick action and restores it from the trash', async ({ page }) => {
   await page.getByRole('tab', { name: 'Todas (6)' }).click();
   await page.locator('.desktop-table').getByRole('row', { name: /carol/ })

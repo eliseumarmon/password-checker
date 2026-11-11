@@ -96,7 +96,9 @@ def review_state(records: list[Candidate], files: list[dict[str, Any]],
         'stats': {
             'total': len(records), 'included': len(active),
             'excluded': len(records) - len(active),
-            'reviewed': sum(r.review != 'pending' for r in records),
+            # Progress: what needs no more work. A trashed record counts whatever its state;
+            # "No funciona" marks a record to come back to, so it does not.
+            'reviewed': sum(not r.included or r.review == 'reviewed' for r in records),
         },
         'can_undo': last_change is not None,
         'last_change': last_change,
