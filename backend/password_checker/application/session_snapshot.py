@@ -8,7 +8,7 @@ from typing import Any
 
 from ..domain.credential import ORIGINS, Credential
 from . import limits
-from .candidate import ALLOWED_REVIEW, RETIRED_REVIEW, Candidate
+from .candidate import ALLOWED_REVIEW, Candidate
 
 FIELD_LABELS = {'name': 'nombre', 'url': 'URL', 'username': 'usuario', 'password': 'contraseña', 'note': 'notas',
                 'totp': 'TOTP'}
@@ -122,14 +122,13 @@ def from_payload(payload: dict[str, Any]) -> tuple[dict[str, Candidate], list[di
                 raise ValueError('Campo de credencial no válido')
         if not raw['id'] or raw['id'] in validated or not isinstance(raw['included'], bool):
             raise ValueError('ID o inclusión de credencial no válidos')
-        review = RETIRED_REVIEW.get(raw['review'], raw['review']) if isinstance(raw['review'], str) else None
-        if review not in ALLOWED_REVIEW:
+        if not isinstance(raw['review'], str) or raw['review'] not in ALLOWED_REVIEW:
             raise ValueError('Estado de revisión no válido')
         validated[raw['id']] = Candidate(
             id=raw['id'], original=Credential(**origin),
             name=raw['name'], url=raw['url'], username=raw['username'],
             password=raw['password'], note=raw['note'], totp=raw['totp'],
-            included=raw['included'], review=review,
+            included=raw['included'], review=raw['review'],
         )
     safe_files = []
     for file in files:

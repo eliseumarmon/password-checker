@@ -9,8 +9,6 @@ from ..domain.credential import Credential, display_name
 from ..domain.urls import bitwarden_uri
 
 ALLOWED_REVIEW = frozenset({'pending', 'reviewed', 'incorrect'})
-# Retired states that older session files may still hold, and the state they open as.
-RETIRED_REVIEW = {'verified': 'reviewed'}
 
 
 @dataclass(frozen=True)

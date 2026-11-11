@@ -73,14 +73,14 @@ class SessionTests(unittest.TestCase):
             self.workspace.restore(invalid)
         self.assertEqual(self.workspace.get(self.record_id)['review'], 'pending')
 
-    def test_session_saved_with_the_retired_verified_state_opens_as_reviewed(self):
-        # Sessions saved before "Verificada" merged into "Revisada" must still open.
+    def test_session_with_the_retired_verified_state_is_rejected_without_changes(self):
+        # No compatibility with older session files while the app has no users.
         saved = self.workspace.serialize()
         saved['records'][0]['review'] = 'verified'
-        restored = Workspace()
-        restored.restore(saved)
-        self.assertEqual(restored.get(self.record_id)['review'], 'reviewed')
-        self.assertEqual(restored.serialize()['records'][0]['review'], 'reviewed')
+        before = self.workspace.serialize()
+        with self.assertRaisesRegex(ValueError, 'Estado de revisión no válido'):
+            self.workspace.restore(saved)
+        self.assertEqual(self.workspace.serialize(), before)
 
     def test_passphrase_length_boundary_in_cipher(self):
         for length in (11, 1025):
