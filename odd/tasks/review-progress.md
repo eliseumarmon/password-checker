@@ -23,7 +23,7 @@ Comprobaciones: `.venv/Scripts/python.exe -m unittest discover -s tests` y `ruff
 - [x] T1 — S3, S4: tres estados y sin `verified`, backend y frontend, con la conversión al abrir sesiones. RED primero en `unittest`. Riesgo: punto 1 (lectura de sesiones guardadas). Ruta: inline. RED y GREEN en L6.
 - [x] T2 — S1: barra de progreso. RED primero en `unittest`. Ruta: inline. RED y GREEN en L8.
 - [x] T3 — S2: grupos «Varias cuentas» resueltos por revisión y texto del diálogo. RED primero en `unittest` y E2E. Ruta: inline. RED y GREEN en L9.
-- [ ] T4 — S5: documentación. Ruta: inline.
+- [x] T4 — S5: documentación. Ruta: inline. Detalle en L10.
 
 ## Log
 
@@ -36,3 +36,4 @@ Comprobaciones: `.venv/Scripts/python.exe -m unittest discover -s tests` y `ruff
 - **L7 (2026-11-11).** T1, commit `8b4c2cc`. Evaluación: riesgo alto (punto 1 elevado a mano: la carga de sesiones convierte `verified`). Verificador independiente en copia aislada: S3 y S4 PASS, `unittest` 186 de 186, `ruff` limpio; `restore` probado con los tres estados, `verified` y valores no válidos (lista, `None`, número, texto desconocido), sin cambios en el espacio anterior al rechazar. Revisión con riesgo y fiabilidad: aprobada y confirmada. Sugerencias sin bloqueo, para más adelante: probar `PATCH /api/records` con `verified` y abrir un `.pwc` cifrado con `verified` por la API.
 - **L8 (2026-11-11).** T2. RED: `test_progress_counts_reviewed_and_trashed_records_but_not_incorrect_ones` falla (`2 != 1`: «No funciona» contaba). GREEN: `unittest` 187 de 187, `ruff` limpio; E2E nueva `counts reviewed and trashed records in the progress, but not those marked as not working` y suite completa 194 de 194.
 - **L9 (2026-11-11).** T2, commit `10047ce`: riesgo medio, revisión no debida. T3. RED: `test_a_multiple_accounts_group_is_resolved_once_every_active_member_is_reviewed` falla (el grupo seguía con las tres revisadas); `test_conflicting_and_exact_groups_stay_until_one_copy_is_left_however_reviewed` ya pasa y protege lo que no cambia. GREEN: `unittest` 189 de 189, `ruff` limpio, E2E 195 de 195 con la nueva `resolves a group of different accounts once every account is reviewed`. El diálogo dice ahora «Este grupo ya está resuelto.». En `filters.spec.ts`, «Grupo Dos» pasa a tener sus dos cuentas pendientes, porque revisadas ya no forman grupo.
+- **L10 (2026-11-11).** T3, commit `09c0b85`: riesgo medio, revisión no debida. T4: `docs/flujo-usuario.md` (pasos 3, 5 y 6, y filtro de estado), `README.md` (criterios), `docs/guia-visual.md` (tabla de estados y ficha; «Revisada» usa `success`, «Comprobado / terminado») y `docs/pendiente.md` (ideas que nombraban «Verificada»). El principio 6 de la guía («Revisado» no significa «Acceso verificado») sigue siendo cierto y no cambia.

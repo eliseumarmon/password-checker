@@ -57,9 +57,8 @@ No utilizar verde para indicar que una contraseña es «segura» si únicamente 
 | Cuenta distinta | Indicador «Varias cuentas» | Mismo sitio, distinta identidad, o copias iguales con códigos 2FA distintos; normalmente conservar |
 | Reutilización | Icono advertencia + «Usada en N cuentas» | Misma contraseña en cuentas distintas; **no** equivale a duplicado |
 | Pendiente | Punto + texto «Pendiente» | No revisado |
-| Revisado | Check de revisión + texto «Revisada» | Inspeccionado sin confirmar acceso |
-| Verificado | Check de acceso + texto «Verificada» | El usuario declara que ha iniciado sesión correctamente |
-| Incorrecto | Icono X + texto «No funciona» | Requiere corrección manual |
+| Revisado | Check de revisión + texto «Revisada» | El usuario lo da por bueno; no afirma que el acceso esté comprobado |
+| Incorrecto | Icono X + texto «No funciona» | Requiere corrección manual; queda como trabajo pendiente y no cuenta en el progreso |
 | En la papelera | Icono de basura y sección «Papelera» | No saldrá en el CSV; se restaura desde la papelera |
 
 El estado de **revisión** y el estado de **seguridad** son independientes. Las ediciones de URL/usuario/contraseña/código 2FA invalidan la verificación previa; una edición de notas no.
@@ -107,7 +106,7 @@ Las pantallas actuales se describen en el [flujo de usuario](flujo-usuario.md). 
 3. **Comparador de registros:** original inmutable frente a candidato editable; procedencia visible.
 4. **Campo secreto:** oculto por defecto, con su propio botón «Mostrar/Ocultar» (nombre accesible «Mostrar contraseña» o «Mostrar código 2FA»); revelar uno no revela el otro y nunca se revelan todos al cargar. El campo «Código 2FA (TOTP)» de la ficha, bajo la contraseña, sigue este patrón y pide a navegadores y gestores de contraseñas que no lo autocompleten, aunque no todos lo respetan.
 5. **Enlace de servicio:** clic explícito abre **pestaña nueva** solo para URL web `http(s)` validada, con `noopener noreferrer`; si hay credenciales en URL, exigir revisión y no abrirla tal cual. No usar favicons remotos.
-6. **Ficha de revisión:** muestra y cambia el estado de revisión; «Revisada» y «Verificada» son estados distintos.
+6. **Ficha de revisión:** muestra y cambia el estado de revisión; los estados son «Pendiente», «Revisada» y «No funciona».
 7. **Aviso de edición:** advertir antes de perder cambios sin guardar; no autoaplicar sobre originales.
 8. **Desglose de auditoría:** grupos por contraseña reutilizada con número de cuentas, pero **sin el valor de la contraseña en el encabezado**.
 9. **Confirmación de exportación:** recuento de credenciales incluidas y de conflictos pendientes; exige confirmación explícita.
