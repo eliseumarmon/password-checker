@@ -103,9 +103,9 @@ export const EXTRA_ORDERS: Record<TableKey, readonly ExtraOrder[]> = {
   trash: [],
 };
 
-/** Unsorted rows keep the order the server sends: records as imported, groups with different passwords first. */
+/** Unsorted rows keep the order the server sends: records as imported, groups with conflicting versions first. */
 export const UNSORTED_LABEL: Record<TableKey, string> = {
-  records: 'Orden de importación', groups: 'Contraseñas diferentes primero', trash: 'Orden de importación',
+  records: 'Orden de importación', groups: 'Versiones diferentes primero', trash: 'Orden de importación',
 };
 
 const INITIAL_SORT: SortState<string> = { field: 'name', direction: 'ascending' };

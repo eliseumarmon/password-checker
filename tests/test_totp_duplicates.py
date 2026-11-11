@@ -44,7 +44,7 @@ class TotpDuplicateTests(unittest.TestCase):
         for totps, expected in cases.items():
             with self.subTest(totps=totps):
                 workspace = workspace_with(totps)
-                self.assertEqual(group_kinds(workspace), ['exact' if len(expected) == 1 else 'multiple-accounts'])
+                self.assertEqual(group_kinds(workspace), ['exact' if len(expected) == 1 else 'conflict'])
                 workspace.merge_exact()
                 self.assertEqual(kept_totps(workspace), expected)
 
@@ -52,10 +52,25 @@ class TotpDuplicateTests(unittest.TestCase):
         for order in permutations(['', T1, T2]):
             with self.subTest(order=order):
                 workspace = workspace_with(order)
-                self.assertEqual(group_kinds(workspace), ['multiple-accounts'])
+                self.assertEqual(group_kinds(workspace), ['conflict'])
                 workspace.merge_exact()
                 self.assertEqual(kept_totps(workspace), ['', T1, T2])
                 self.assertFalse(workspace.snapshot()['can_undo'])
+
+    def test_one_account_with_two_totps_is_a_conflict_that_reviewing_does_not_resolve(self):
+        # Same account, two versions: like two passwords, only trashing one resolves it.
+        workspace = workspace_with([T1, T2])
+        other = Candidate.from_source(Credential('chrome', 9, 'Site', 'https://site.invalid/', 'bob',
+                                                 'fictional-pw-456', ''))
+        workspace._records[other.id] = other
+        self.assertEqual(group_kinds(workspace), ['conflict'])
+        for identifier in list(workspace._records):
+            workspace.change(identifier, {'review': 'reviewed'})
+        self.assertEqual(group_kinds(workspace), ['conflict'])
+        alice = next(r.id for r in workspace._records.values() if r.totp == T1)
+        workspace.trash([alice])
+        # Left: one version of alice and bob, both reviewed, so different accounts already resolved.
+        self.assertEqual(group_kinds(workspace), [])
 
     def test_copies_without_totp_merge_into_the_single_totp(self):
         for order in set(permutations(['', '', T1])):

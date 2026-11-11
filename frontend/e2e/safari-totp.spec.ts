@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { welcomeTest } from './isolated-welcome';
+import { desktopTable, seed } from './tables';
 
 // Fictional credentials and TOTP URIs only, built in memory.
 const IMPORTED_TOTP = 'otpauth://totp/Example:alice?secret=FICTIONALIMPORTED&issuer=Example';
@@ -133,4 +134,24 @@ test('asks before discarding an unsaved TOTP edit and keeps the saved one', asyn
 welcomeTest('lists Safari among the supported exports on the welcome screen', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByText('Arrastra varios CSV de Chrome, Brave, Firefox y Safari.', { exact: false })).toBeVisible();
+});
+
+test('treats one account with two TOTPs as a conflict that only trashing a copy resolves', async ({ page }) => {
+  const copy = (totp: string) => ['Title,URL,Username,Password,Notes,OTPAuth', `Example,https://example.invalid/,alice,fictional-Pw-123,,${totp}`];
+  await seed(page, [{ name: 'Passwords.csv', lines: copy(IMPORTED_TOTP) }, { name: 'Passwords-old.csv', lines: copy(EDITED_TOTP) }]);
+  await expect(desktopTable(page).getByRole('row', { name: /Example/ })).toContainText('Versiones diferentes');
+  await desktopTable(page).getByRole('row', { name: /Example/ }).getByRole('button', { name: 'Comparar' }).click();
+  const compare = page.getByRole('dialog', { name: 'Comparar duplicados' });
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  const cards = compare.locator('.compare-card');
+  for (const index of [0, 1]) {
+    await cards.nth(index).getByRole('button', { name: 'Ver / editar' }).click();
+    await editor.getByLabel('Estado de revisión').selectOption('reviewed');
+    await editor.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(editor).toBeHidden();
+  }
+  // Same account, two versions: reviewing both does not resolve it, as with two passwords.
+  await expect(compare).toContainText('Versiones diferentes · 2 registros');
+  await cards.nth(1).getByRole('button', { name: 'Descartar' }).click();
+  await expect(compare).toContainText('Este grupo ya está resuelto.');
 });

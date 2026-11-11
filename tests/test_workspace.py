@@ -109,6 +109,19 @@ class WorkspaceTests(unittest.TestCase):
         # A trashed member no longer counts: the active ones decide.
         self.assertEqual(kinds(workspace.trash([eva])), [])
 
+    def test_reviewing_does_not_resolve_a_group_that_still_holds_two_copies_of_one_account(self):
+        workspace = Workspace()
+        workspace._records = {r.id: r for r in [
+            Candidate.from_source(cred('Site', 'https://site.invalid/', 'ana', 'fictional-ana-123')),
+            Candidate.from_source(cred('Site', 'https://site.invalid/', 'ana', 'fictional-ana-123', 'firefox')),
+            Candidate.from_source(cred('Site', 'https://site.invalid/', 'bob', 'fictional-bob-123'))]}
+        for identifier in list(workspace._records):
+            workspace.change(identifier, {'review': 'reviewed'})
+        self.assertEqual([(g['kind'], g['count']) for g in workspace.snapshot()['groups']],
+                         [('multiple-accounts', 3)])
+        # Merging the copy leaves two different accounts, both reviewed: resolved.
+        self.assertEqual(workspace.merge_exact()['groups'], [])
+
     def test_conflicting_and_exact_groups_stay_until_one_copy_is_left_however_reviewed(self):
         for record in self.workspace.snapshot()['records']:
             self.workspace.change(record['id'], {'review': 'reviewed'})

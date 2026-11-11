@@ -53,8 +53,8 @@ No utilizar verde para indicar que una contraseña es «segura» si únicamente 
 | Tipo | Forma | Qué significa |
 |---|---|---|
 | Duplicado exacto | Indicador neutro «Copia exacta» | URL canónica, usuario exacto y contraseña iguales, sin dos códigos 2FA distintos; pueden diferir notas y procedencia |
-| Conflicto | Icono alerta y texto «Contraseñas diferentes» | Misma cuenta aparente, variantes que requieren comprobación |
-| Cuenta distinta | Indicador «Varias cuentas» | Mismo sitio, distinta identidad, o copias iguales con códigos 2FA distintos; normalmente conservar |
+| Conflicto | Icono alerta y texto «Versiones diferentes» | Misma cuenta aparente con contraseñas o códigos 2FA distintos; requiere descartar una versión |
+| Cuenta distinta | Indicador «Varias cuentas» | Mismo sitio, distinta identidad; normalmente conservar |
 | Reutilización | Icono advertencia + «Usada en N cuentas» | Misma contraseña en cuentas distintas; **no** equivale a duplicado |
 | Pendiente | Punto + texto «Pendiente» | No revisado |
 | Revisado | Check de revisión + texto «Revisada» | El usuario lo da por bueno; no afirma que el acceso esté comprobado |

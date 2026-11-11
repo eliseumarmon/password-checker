@@ -17,7 +17,7 @@ export function labelReview(review: Review): string {
 }
 
 export function labelGroup(kind: DuplicateGroup['kind']): string {
-  return ({ exact: 'Copia exacta', conflict: 'Contraseñas diferentes', 'multiple-accounts': 'Varias cuentas' })[kind];
+  return ({ exact: 'Copia exacta', conflict: 'Versiones diferentes', 'multiple-accounts': 'Varias cuentas' })[kind];
 }
 
 export function labelType(type: CredentialType): string {

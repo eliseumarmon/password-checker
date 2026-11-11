@@ -90,7 +90,7 @@ const RECORD_ORDERS = [
 const GROUP_ORDERS = [
   'Sitio (ascendente)', 'Sitio (descendente)', 'Usuario (ascendente)', 'Usuario (descendente)',
   'Tipo (ascendente)', 'Tipo (descendente)', 'Copias (ascendente)', 'Copias (descendente)',
-  'Comparación (ascendente)', 'Comparación (descendente)', 'Contraseñas diferentes primero',
+  'Comparación (ascendente)', 'Comparación (descendente)', 'Versiones diferentes primero',
 ];
 const TRASH_ORDERS = [
   'Sitio / App (ascendente)', 'Sitio / App (descendente)', 'Usuario (ascendente)', 'Usuario (descendente)',
@@ -176,7 +176,7 @@ test.describe('on a phone', () => {
       'Zeta,https://zeta.invalid/,zeta,fake-zeta-secret-1,', 'Zeta,https://zeta.invalid/,zeta,fake-zeta-secret-2,',
     ] }]);
     await expect(cardNames(page)).toHaveText(['Alfa', 'Zeta']);
-    await orderSelect(page).selectOption({ label: 'Contraseñas diferentes primero' });
+    await orderSelect(page).selectOption({ label: 'Versiones diferentes primero' });
     await expect(cardNames(page)).toHaveText(['Zeta', 'Alfa']);
   });
 
@@ -361,7 +361,7 @@ test.describe('after a reload', () => {
   test('restores a stored order without sorting', async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('pc.tableSort.groups', '{"field":null,"direction":"ascending"}'));
     await seedReviewed(page);
-    await expect(chosenOrder(page)).toHaveText('Contraseñas diferentes primero');
+    await expect(chosenOrder(page)).toHaveText('Versiones diferentes primero');
     await expect(desktopTable(page).locator('th[aria-sort]')).toHaveCount(0);
   });
 
