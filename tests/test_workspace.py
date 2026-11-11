@@ -92,6 +92,28 @@ class WorkspaceTests(unittest.TestCase):
         stats = self.workspace.undo()['stats']
         self.assertEqual((stats['reviewed'], stats['total']), (3, 5))
 
+    def test_a_multiple_accounts_group_is_resolved_once_every_active_member_is_reviewed(self):
+        workspace = Workspace()
+        workspace._records = {r.id: r for r in [
+            Candidate.from_source(cred('Site', 'https://site.invalid/', user, f'fictional-{user}-123'))
+            for user in ('ana', 'bob', 'eva')]}
+        ana, bob, eva = workspace._records
+        kinds = lambda snapshot: [(g['kind'], g['count']) for g in snapshot['groups']]
+        workspace.change(ana, {'review': 'reviewed'})
+        self.assertEqual(kinds(workspace.change(bob, {'review': 'incorrect'})), [('multiple-accounts', 3)])
+        # A pending member keeps the group open even when the rest are reviewed.
+        workspace.change(bob, {'review': 'reviewed'})
+        self.assertEqual(kinds(workspace.snapshot()), [('multiple-accounts', 3)])
+        self.assertEqual(kinds(workspace.change(eva, {'review': 'reviewed'})), [])
+        self.assertEqual(kinds(workspace.undo()), [('multiple-accounts', 3)])
+        # A trashed member no longer counts: the active ones decide.
+        self.assertEqual(kinds(workspace.trash([eva])), [])
+
+    def test_conflicting_and_exact_groups_stay_until_one_copy_is_left_however_reviewed(self):
+        for record in self.workspace.snapshot()['records']:
+            self.workspace.change(record['id'], {'review': 'reviewed'})
+        self.assertEqual([g['kind'] for g in self.workspace.snapshot()['groups']], ['conflict'])
+
     def test_trash_many_is_atomic_and_one_undo_step(self):
         ids = [r['id'] for r in self.workspace.snapshot()['records'][:3]]
         with self.assertRaises(KeyError):

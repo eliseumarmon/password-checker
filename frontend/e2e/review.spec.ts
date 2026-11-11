@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { bodyRows, desktopTable, goToPage, paginator } from './tables';
+import { bodyRows, CHROMIUM_HEADER, chromiumRow, desktopTable, goToPage, paginator, seed } from './tables';
 
 // Fictional credentials only, built in memory: real exports never touch the repo.
 const CHROME_CSV = [
@@ -560,7 +560,7 @@ test('keeps the comparison open after discarding one record', async ({ page }) =
   await expect(cards.first()).toContainText('En la papelera');
   await expect(cards.first().getByRole('button', { name: 'Descartar' })).toHaveCount(0);
   await expect(compare.locator('.compare-flags')).toHaveCount(0);
-  await expect(compare).toContainText('Ya no quedan duplicados activos en este grupo.');
+  await expect(compare).toContainText('Este grupo ya está resuelto.');
 
   await cards.nth(1).getByRole('button', { name: 'Ver / editar' }).click();
   const editor = page.getByRole('dialog', { name: 'Editar credencial' });
@@ -571,6 +571,28 @@ test('keeps the comparison open after discarding one record', async ({ page }) =
   await expect(metric(page, 'En la papelera')).toHaveText('0');
   await expect(cards.first().getByRole('button', { name: 'Descartar' })).toBeVisible();
   await expect(compare.locator('.compare-flags')).toHaveCount(2);
+});
+
+test('resolves a group of different accounts once every account is reviewed', async ({ page }) => {
+  await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, chromiumRow('Sitio', 'ana'), chromiumRow('Sitio', 'bob')] }]);
+  await expect(metric(page, 'Duplicados y conflictos')).toHaveText('1');
+  await desktopTable(page).getByRole('row', { name: /Sitio/ }).getByRole('button', { name: 'Comparar' }).click();
+  const compare = page.getByRole('dialog', { name: 'Comparar duplicados' });
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  for (const [index, open] of [[0, true], [1, false]] as const) {
+    await compare.locator('.compare-card').nth(index).getByRole('button', { name: 'Ver / editar' }).click();
+    await editor.getByLabel('Estado de revisión').selectOption('reviewed');
+    await editor.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(editor).toBeHidden();
+    if (open) await expect(compare).toContainText('Varias cuentas · 2 registros');
+  }
+  // Both accounts stay active: reviewing them resolves the group without trashing anything.
+  await expect(compare).toContainText('Este grupo ya está resuelto.');
+  await expect(compare.locator('.compare-card')).toHaveText([/Revisada/, /Revisada/]);
+  await compare.getByRole('button', { name: 'Cerrar panel' }).click();
+  await expect(metric(page, 'Duplicados y conflictos')).toHaveText('0');
+  await expect(page.getByRole('tab', { name: 'Duplicados (0)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Todas (2)' })).toBeVisible();
 });
 
 test('marks the other record from the comparison after discarding one', async ({ page }) => {
@@ -596,7 +618,7 @@ test('does not show another group when an edit moves a record out of the compari
   await editor.getByLabel('URL o paquete Android').fill('https://example.invalid/login');
   await editor.getByRole('button', { name: 'Guardar cambios' }).click();
   await expect(editor).toBeHidden();
-  await expect(compare).toContainText('Ya no quedan duplicados activos en este grupo.');
+  await expect(compare).toContainText('Este grupo ya está resuelto.');
   await expect(compare.locator('.compare-flags')).toHaveCount(0);
 });
 

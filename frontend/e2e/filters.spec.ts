@@ -15,7 +15,7 @@ type Review = 'pending' | 'reviewed' | 'incorrect';
 const STATES: [name: string, username: string, review: Review][] = [
   ['Alfa', 'alfa', 'pending'], ['Bravo', 'bravo', 'reviewed'], ['Charlie', 'charlie', 'reviewed'], ['Delta', 'delta', 'incorrect'],
   ['Grupo Uno', 'uno-a', 'reviewed'], ['Grupo Uno', 'uno-b', 'pending'],
-  ['Grupo Dos', 'dos-a', 'reviewed'], ['Grupo Dos', 'dos-b', 'reviewed'],
+  ['Grupo Dos', 'dos-a', 'pending'], ['Grupo Dos', 'dos-b', 'pending'],
 ];
 
 async function seedReviewed(page: Page): Promise<void> {
@@ -45,8 +45,8 @@ test('shows in «Todas» only the records in the chosen state', async ({ page })
   await showAllRecords(page, STATES.length);
   const users = column(desktopTable(page), 2);
   const expected: [label: string, users: string[]][] = [
-    ['Pendiente', ['alfa', 'uno-b']],
-    ['Revisada', ['bravo', 'charlie', 'dos-a', 'dos-b', 'uno-a']],
+    ['Pendiente', ['alfa', 'dos-a', 'dos-b', 'uno-b']],
+    ['Revisada', ['bravo', 'charlie', 'uno-a']],
     ['No funciona', ['delta']],
     ['Todos los estados', ['alfa', 'bravo', 'charlie', 'delta', 'dos-a', 'dos-b', 'uno-a', 'uno-b']],
   ];
@@ -60,8 +60,8 @@ test('keeps in «Duplicados» the groups with a member in the chosen state', asy
   await seedReviewed(page);
   const names = column(desktopTable(page), 1);
   const expected: [label: string, groups: string[]][] = [
-    ['Pendiente', ['Grupo Uno']],
-    ['Revisada', ['Grupo Dos', 'Grupo Uno']],
+    ['Pendiente', ['Grupo Dos', 'Grupo Uno']],
+    ['Revisada', ['Grupo Uno']],
     ['Todos los estados', ['Grupo Dos', 'Grupo Uno']],
   ];
   for (const [label, shown] of expected) {
@@ -384,7 +384,7 @@ test.describe('after a reload', () => {
       Object.defineProperty(window, 'localStorage', { configurable: true, get() { throw new DOMException('blocked', 'SecurityError'); } });
     });
     await seedReviewed(page);
-    await reviewFilter(page).selectOption({ label: 'Pendiente' });
+    await reviewFilter(page).selectOption({ label: 'Revisada' });
     await expect(column(desktopTable(page), 1)).toHaveText(['Grupo Uno']);
     await orderSelect(page).selectOption({ label: 'Sitio (descendente)' });
     await reviewFilter(page).selectOption({ label: 'Todos los estados' });

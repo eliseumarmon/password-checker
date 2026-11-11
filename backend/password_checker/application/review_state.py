@@ -62,6 +62,10 @@ def detect_groups(rows: list[Candidate]) -> list[dict[str, Any]]:
         keys = {duplicate_key(identity(r)) for r in members}
         exact = len(keys) == 1 and None not in keys and merged_totp(members) is not None
         category = 'conflict' if conflict else ('exact' if exact else 'multiple-accounts')
+        # Different accounts on one site are not copies: reviewing them all resolves the group.
+        # Copies and conflicts would still reach Bitwarden twice, so only trash or merge resolves them.
+        if category == 'multiple-accounts' and all(r.review == 'reviewed' for r in members):
+            continue
         result.append({
             'id': base.id, 'kind': category, 'name': base.name,
             'url': base.url, 'username': base.username, 'type': kind_of(base.url),
