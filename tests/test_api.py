@@ -142,6 +142,16 @@ class APITests(unittest.TestCase):
         self.assertNotIn(secret, response.text)
         self.assertEqual(self.client.get('/api/workspace').json(), without_warnings(before))
 
+    def test_edit_with_an_unknown_review_state_is_a_422_that_changes_nothing(self):
+        # An old tab can still send the retired "Verificada" state.
+        before = self.import_exact_copies()
+        for review in ('verified', 'Reviewed', ''):
+            with self.subTest(review=review):
+                response = self.client.patch(f"/api/records/{before['records'][0]['id']}", json={'review': review})
+                self.assertEqual(response.status_code, 422, response.text)
+                self.assertEqual(response.json()['detail'], 'Estado de revisión no válido')
+                self.assertEqual(self.client.get('/api/workspace').json(), without_warnings(before))
+
     def test_csv_with_bad_quoting_is_a_422_that_changes_nothing(self):
         good = b'name,url,username,password,note\nA,https://a.invalid/,alice,fictional-123456,\n'
         imported = self.client.post('/api/import', files=[('files', ('chrome.csv', good, 'text/csv'))])
@@ -206,7 +216,7 @@ class APITests(unittest.TestCase):
         self.assertNotIn('session_saved', imported)
         self.assertNotIn('session_saved', self.client.get('/api/workspace').json())
         identifier = imported['records'][0]['id']
-        self.client.patch('/api/records/' + identifier, json={'review': 'verified'})
+        self.client.patch('/api/records/' + identifier, json={'review': 'reviewed'})
         passphrase = 'fictional-session-passphrase-12345'
         saved = self.client.post('/api/session/save', json={'passphrase': passphrase})
         self.assertEqual(saved.status_code, 200, saved.text)
@@ -215,12 +225,12 @@ class APITests(unittest.TestCase):
         invalid = self.client.post('/api/session/load', data={'passphrase': 'wrong-long-passphrase'},
                                    files={'file': ('session.pwc', saved.content, 'application/octet-stream')})
         self.assertEqual(invalid.status_code, 422)
-        self.assertEqual(workspace.snapshot()['stats']['verified'], 1)
+        self.assertEqual(workspace.get(identifier)['review'], 'reviewed')
         self.client.patch('/api/records/' + identifier, json={'review': 'pending'})
         restored = self.client.post('/api/session/load', data={'passphrase': passphrase},
                                     files={'file': ('session.pwc', saved.content, 'application/octet-stream')})
         self.assertEqual(restored.status_code, 200, restored.text)
-        self.assertEqual(restored.json()['stats']['verified'], 1)
+        self.assertEqual(workspace.get(identifier)['review'], 'reviewed')
         self.assertNotIn('session_saved', restored.json())
         self.assertNotIn('session_saved', self.client.get('/api/workspace').json())
 
@@ -461,7 +471,7 @@ class APITests(unittest.TestCase):
         self.assertEqual(imported.status_code, 200, imported.text)
         self.assertEqual(len(imported.json()['warnings']), 1)
         identifier = imported.json()['records'][0]['id']
-        self.client.patch('/api/records/' + identifier, json={'review': 'verified'})
+        self.client.patch('/api/records/' + identifier, json={'review': 'reviewed'})
         before = workspace.snapshot()
         self.assertTrue(before['can_undo'])
         self.assertNotIn('warnings', before)

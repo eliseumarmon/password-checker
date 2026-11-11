@@ -1,4 +1,4 @@
-export type Review = 'pending' | 'reviewed' | 'verified' | 'incorrect';
+export type Review = 'pending' | 'reviewed' | 'incorrect';
 export type Screen = 'credentials' | 'audit' | 'trash' | 'settings';
 export type CredentialType = 'web' | 'android';
 export type FilterType = 'all' | CredentialType;
@@ -25,7 +25,7 @@ export interface WorkspaceState {
   files: { name: string; source: string; count: number }[];
   records: CredentialSummary[]; groups: DuplicateGroup[];
   audit: { reused: string[][]; weak: string[]; incomplete: string[]; breaches: 'not_checked' };
-  stats: { total: number; included: number; excluded: number; reviewed: number; verified: number };
+  stats: { total: number; included: number; excluded: number; reviewed: number };
   can_undo: boolean;
   /** The step the next undo reverts, or null when there is nothing to undo. */
   last_change: UndoStep | null;

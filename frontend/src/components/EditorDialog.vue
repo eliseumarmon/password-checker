@@ -104,7 +104,7 @@ async function openSite(url: string): Promise<void> {
         <label>Contraseña <span class="secret-input"><input v-model="form.password" :type="revealed?'text':'password'" autocomplete="new-password" spellcheck="false" /><button :aria-label="revealed?'Ocultar contraseña':'Mostrar contraseña'" @click="revealed=!revealed">{{revealed?'Ocultar':'Mostrar'}}</button></span></label>
         <label>Código 2FA (TOTP) <span class="secret-input"><input v-model="form.totp" aria-label="Código 2FA (TOTP)" :type="revealedTotp?'text':'password'" autocomplete="new-password" data-1p-ignore data-lpignore="true" data-bwignore spellcheck="false" /><button :aria-label="revealedTotp?'Ocultar código 2FA':'Mostrar código 2FA'" @click="revealedTotp=!revealedTotp">{{revealedTotp?'Ocultar':'Mostrar'}}</button></span></label>
         <label>Notas<textarea v-model="form.note" rows="5"></textarea></label>
-        <label>Estado de revisión<select v-model="form.review"><option value="pending">{{labelReview('pending')}}</option><option value="reviewed">{{labelReview('reviewed')}} (sin verificar acceso)</option><option value="verified">{{labelReview('verified')}} manualmente</option><option value="incorrect">{{labelReview('incorrect')}}</option></select></label>
+        <label>Estado de revisión<select v-model="form.review"><option value="pending">{{labelReview('pending')}}</option><option value="reviewed">{{labelReview('reviewed')}}</option><option value="incorrect">{{labelReview('incorrect')}}</option></select></label>
         <p class="hint">Editar esta contraseña guardada NO cambia la contraseña real del servicio.</p>
         <p class="muted">Origen inmutable: {{labelOrigin(record.source)}} · línea {{record.line}}</p>
       </div>

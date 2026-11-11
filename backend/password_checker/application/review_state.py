@@ -57,11 +57,21 @@ def detect_groups(rows: list[Candidate]) -> list[dict[str, Any]]:
         by_user: dict[str, set[str]] = defaultdict(set)
         for r in members:
             by_user[r.username].add(r.password)
-        conflict = any(len(passwords) > 1 for passwords in by_user.values())
+        by_identity: dict[Any, list[Candidate]] = defaultdict(list)
+        for r in members:
+            by_identity[duplicate_key(identity(r))].append(r)
+        # One account with two versions is a conflict: two passwords, or copies with two TOTPs.
+        conflict = (any(len(passwords) > 1 for passwords in by_user.values())
+                    or any(key is not None and len(copies) > 1 and merged_totp(copies) is None
+                           for key, copies in by_identity.items()))
         # Exact only when merge_exact would merge the whole group.
-        keys = {duplicate_key(identity(r)) for r in members}
-        exact = len(keys) == 1 and None not in keys and merged_totp(members) is not None
+        exact = len(by_identity) == 1 and None not in by_identity and merged_totp(members) is not None
         category = 'conflict' if conflict else ('exact' if exact else 'multiple-accounts')
+        # Different accounts on one site are not copies: reviewing them all resolves the group.
+        # Copies and conflicts would still reach Bitwarden twice, so only trash or merge resolves them.
+        if (category == 'multiple-accounts' and len(by_user) == len(members)
+                and all(r.review == 'reviewed' for r in members)):
+            continue
         result.append({
             'id': base.id, 'kind': category, 'name': base.name,
             'url': base.url, 'username': base.username, 'type': kind_of(base.url),
@@ -96,8 +106,9 @@ def review_state(records: list[Candidate], files: list[dict[str, Any]],
         'stats': {
             'total': len(records), 'included': len(active),
             'excluded': len(records) - len(active),
-            'reviewed': sum(r.review != 'pending' for r in records),
-            'verified': sum(r.review == 'verified' for r in records),
+            # Progress: what needs no more work. A trashed record counts whatever its state;
+            # "No funciona" marks a record to come back to, so it does not.
+            'reviewed': sum(not r.included or r.review == 'reviewed' for r in records),
         },
         'can_undo': last_change is not None,
         'last_change': last_change,

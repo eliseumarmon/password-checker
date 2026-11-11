@@ -10,14 +10,14 @@ export const SCREENS: { id: Screen; icon: ScreenIcon; label: string; title: stri
 ];
 
 /** Every review state, in the order the review moves through them. */
-export const REVIEWS: readonly Review[] = ['pending', 'reviewed', 'verified', 'incorrect'];
+export const REVIEWS: readonly Review[] = ['pending', 'reviewed', 'incorrect'];
 
 export function labelReview(review: Review): string {
-  return ({ pending: 'Pendiente', reviewed: 'Revisada', verified: 'Verificada', incorrect: 'No funciona' })[review];
+  return ({ pending: 'Pendiente', reviewed: 'Revisada', incorrect: 'No funciona' })[review];
 }
 
 export function labelGroup(kind: DuplicateGroup['kind']): string {
-  return ({ exact: 'Copia exacta', conflict: 'Contraseñas diferentes', 'multiple-accounts': 'Varias cuentas' })[kind];
+  return ({ exact: 'Copia exacta', conflict: 'Versiones diferentes', 'multiple-accounts': 'Varias cuentas' })[kind];
 }
 
 export function labelType(type: CredentialType): string {

@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { bodyRows, desktopTable, goToPage, paginator } from './tables';
+import { bodyRows, CHROMIUM_HEADER, chromiumRow, desktopTable, goToPage, paginator, seed } from './tables';
 
 // Fictional credentials only, built in memory: real exports never touch the repo.
 const CHROME_CSV = [
@@ -198,15 +198,15 @@ test('preserves review options and saves the selected state', async ({ page }) =
   const editor = page.getByRole('dialog', { name: 'Editar credencial' });
   const select = editor.getByLabel('Estado de revisión');
   await expect(select.locator('option')).toHaveText([
-    'Pendiente', 'Revisada (sin verificar acceso)', 'Verificada manualmente', 'No funciona',
+    'Pendiente', 'Revisada', 'No funciona',
   ]);
   await expect(select).toHaveValue('pending');
-  await select.selectOption('verified');
+  await select.selectOption('reviewed');
   await editor.getByRole('button', { name: 'Guardar cambios' }).click();
   await expect(editor).toBeHidden();
-  await expect(row).toContainText('Verificada');
+  await expect(row).toContainText('Revisada');
   await row.getByRole('button', { name: 'Editar' }).click();
-  await expect(select).toHaveValue('verified');
+  await expect(select).toHaveValue('reviewed');
 });
 
 test('merges exact copies into the trash and can undo it', async ({ page }) => {
@@ -221,6 +221,26 @@ test('merges exact copies into the trash and can undo it', async ({ page }) => {
 function sidebar(page: Page): Locator {
   return page.getByRole('complementary', { name: 'Navegación principal' });
 }
+
+test('counts reviewed and trashed records in the progress, but not those marked as not working', async ({ page }) => {
+  const progress = metric(page, 'Revisadas');
+  await expect(progress).toHaveText('0 / 6');
+  await page.getByRole('tab', { name: 'Todas (6)' }).click();
+  const table = page.locator('.desktop-table');
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  for (const [user, review, shown] of [['carol', 'incorrect', '0 / 6'], ['eve', 'reviewed', '1 / 6']]) {
+    await table.getByRole('row', { name: new RegExp(user) }).getByRole('button', { name: 'Editar' }).click();
+    await editor.getByLabel('Estado de revisión').selectOption(review);
+    await editor.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(editor).toBeHidden();
+    await expect(progress).toHaveText(shown);
+  }
+  // A trashed record counts whatever its state: one marked as not working, then one still pending.
+  await table.getByRole('row', { name: /carol/ }).getByRole('button', { name: 'Mover a la papelera' }).click();
+  await expect(progress).toHaveText('2 / 6');
+  await table.getByRole('row', { name: /Conflict/ }).first().getByRole('button', { name: 'Mover a la papelera' }).click();
+  await expect(progress).toHaveText('3 / 6');
+});
 
 test('trashes a row from its quick action and restores it from the trash', async ({ page }) => {
   await page.getByRole('tab', { name: 'Todas (6)' }).click();
@@ -540,7 +560,7 @@ test('keeps the comparison open after discarding one record', async ({ page }) =
   await expect(cards.first()).toContainText('En la papelera');
   await expect(cards.first().getByRole('button', { name: 'Descartar' })).toHaveCount(0);
   await expect(compare.locator('.compare-flags')).toHaveCount(0);
-  await expect(compare).toContainText('Ya no quedan duplicados activos en este grupo.');
+  await expect(compare).toContainText('Este grupo ya está resuelto.');
 
   await cards.nth(1).getByRole('button', { name: 'Ver / editar' }).click();
   const editor = page.getByRole('dialog', { name: 'Editar credencial' });
@@ -553,6 +573,28 @@ test('keeps the comparison open after discarding one record', async ({ page }) =
   await expect(compare.locator('.compare-flags')).toHaveCount(2);
 });
 
+test('resolves a group of different accounts once every account is reviewed', async ({ page }) => {
+  await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER, chromiumRow('Sitio', 'ana'), chromiumRow('Sitio', 'bob')] }]);
+  await expect(metric(page, 'Duplicados y conflictos')).toHaveText('1');
+  await desktopTable(page).getByRole('row', { name: /Sitio/ }).getByRole('button', { name: 'Comparar' }).click();
+  const compare = page.getByRole('dialog', { name: 'Comparar duplicados' });
+  const editor = page.getByRole('dialog', { name: 'Editar credencial' });
+  for (const [index, open] of [[0, true], [1, false]] as const) {
+    await compare.locator('.compare-card').nth(index).getByRole('button', { name: 'Ver / editar' }).click();
+    await editor.getByLabel('Estado de revisión').selectOption('reviewed');
+    await editor.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(editor).toBeHidden();
+    if (open) await expect(compare).toContainText('Varias cuentas · 2 registros');
+  }
+  // Both accounts stay active: reviewing them resolves the group without trashing anything.
+  await expect(compare).toContainText('Este grupo ya está resuelto.');
+  await expect(compare.locator('.compare-card')).toHaveText([/Revisada/, /Revisada/]);
+  await compare.getByRole('button', { name: 'Cerrar panel' }).click();
+  await expect(metric(page, 'Duplicados y conflictos')).toHaveText('0');
+  await expect(page.getByRole('tab', { name: 'Duplicados (0)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Todas (2)' })).toBeVisible();
+});
+
 test('marks the other record from the comparison after discarding one', async ({ page }) => {
   await page.locator('.desktop-table').getByRole('row', { name: /Conflict/ }).getByRole('button', { name: 'Comparar' }).click();
   const compare = page.getByRole('dialog', { name: 'Comparar duplicados' });
@@ -560,11 +602,11 @@ test('marks the other record from the comparison after discarding one', async ({
   await cards.first().getByRole('button', { name: 'Descartar' }).click();
   await cards.nth(1).getByRole('button', { name: 'Ver / editar' }).click();
   const editor = page.getByRole('dialog', { name: 'Editar credencial' });
-  await editor.getByLabel('Estado de revisión').selectOption('verified');
+  await editor.getByLabel('Estado de revisión').selectOption('reviewed');
   await editor.getByRole('button', { name: 'Guardar cambios' }).click();
   await expect(editor).toBeHidden();
   await expect(compare).toBeVisible();
-  await expect(cards.nth(1)).toContainText('Verificada');
+  await expect(cards.nth(1)).toContainText('Revisada');
   await expect(cards.first()).toContainText('En la papelera');
 });
 
@@ -576,7 +618,7 @@ test('does not show another group when an edit moves a record out of the compari
   await editor.getByLabel('URL o paquete Android').fill('https://example.invalid/login');
   await editor.getByRole('button', { name: 'Guardar cambios' }).click();
   await expect(editor).toBeHidden();
-  await expect(compare).toContainText('Ya no quedan duplicados activos en este grupo.');
+  await expect(compare).toContainText('Este grupo ya está resuelto.');
   await expect(compare.locator('.compare-flags')).toHaveCount(0);
 });
 

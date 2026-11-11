@@ -8,7 +8,7 @@ from dataclasses import dataclass, replace
 from ..domain.credential import Credential, display_name
 from ..domain.urls import bitwarden_uri
 
-ALLOWED_REVIEW = frozenset({'pending', 'reviewed', 'verified', 'incorrect'})
+ALLOWED_REVIEW = frozenset({'pending', 'reviewed', 'incorrect'})
 
 
 @dataclass(frozen=True)

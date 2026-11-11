@@ -188,7 +188,7 @@ async function merge(): Promise<void> {
 async function exportNow(): Promise<void> {
   if (!data.value) return;
   const unresolved = data.value.groups.filter(g => g.kind === 'conflict').length;
-  if (!await confirmAction(`Se exportarán ${data.value.stats.included} credenciales. ${unresolved} grupos presentan contraseñas conflictivas. Bitwarden no eliminará duplicados automáticamente. ¿Generar CSV?`, 'Generar CSV')) return;
+  if (!await confirmAction(`Se exportarán ${data.value.stats.included} credenciales. ${unresolved} grupos tienen versiones diferentes de una misma cuenta. Bitwarden no eliminará duplicados automáticamente. ¿Generar CSV?`, 'Generar CSV')) return;
   try { await api.exportCsv(); } catch (error) { errorMessage(error); }
 }
 // The header button and Ctrl/Cmd+Z undo the step this page shows. When another tab already moved past it,

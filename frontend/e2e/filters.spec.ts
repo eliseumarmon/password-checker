@@ -9,13 +9,13 @@ import {
 // The tables compare text with the browser's locale, so the expected orders hold for this one.
 test.use({ locale: 'es-ES' });
 
-type Review = 'pending' | 'reviewed' | 'verified' | 'incorrect';
+type Review = 'pending' | 'reviewed' | 'incorrect';
 
 // Four records on their own and two groups: «Grupo Uno» mixes states, «Grupo Dos» has only one.
 const STATES: [name: string, username: string, review: Review][] = [
-  ['Alfa', 'alfa', 'pending'], ['Bravo', 'bravo', 'reviewed'], ['Charlie', 'charlie', 'verified'], ['Delta', 'delta', 'incorrect'],
-  ['Grupo Uno', 'uno-a', 'verified'], ['Grupo Uno', 'uno-b', 'pending'],
-  ['Grupo Dos', 'dos-a', 'reviewed'], ['Grupo Dos', 'dos-b', 'reviewed'],
+  ['Alfa', 'alfa', 'pending'], ['Bravo', 'bravo', 'reviewed'], ['Charlie', 'charlie', 'reviewed'], ['Delta', 'delta', 'incorrect'],
+  ['Grupo Uno', 'uno-a', 'reviewed'], ['Grupo Uno', 'uno-b', 'pending'],
+  ['Grupo Dos', 'dos-a', 'pending'], ['Grupo Dos', 'dos-b', 'pending'],
 ];
 
 async function seedReviewed(page: Page): Promise<void> {
@@ -35,7 +35,7 @@ function reviewFilter(page: Page) {
 
 test('filters by review state with a selector that replaces the pending-only checkbox', async ({ page }) => {
   await seedReviewed(page);
-  await expect(reviewFilter(page).locator('option')).toHaveText(['Todos los estados', 'Pendiente', 'Revisada', 'Verificada', 'No funciona']);
+  await expect(reviewFilter(page).locator('option')).toHaveText(['Todos los estados', 'Pendiente', 'Revisada', 'No funciona']);
   await expect(reviewFilter(page)).toHaveValue('all');
   await expect(page.getByRole('checkbox', { name: 'Solo pendientes' })).toHaveCount(0);
 });
@@ -45,9 +45,8 @@ test('shows in «Todas» only the records in the chosen state', async ({ page })
   await showAllRecords(page, STATES.length);
   const users = column(desktopTable(page), 2);
   const expected: [label: string, users: string[]][] = [
-    ['Pendiente', ['alfa', 'uno-b']],
-    ['Revisada', ['bravo', 'dos-a', 'dos-b']],
-    ['Verificada', ['charlie', 'uno-a']],
+    ['Pendiente', ['alfa', 'dos-a', 'dos-b', 'uno-b']],
+    ['Revisada', ['bravo', 'charlie', 'uno-a']],
     ['No funciona', ['delta']],
     ['Todos los estados', ['alfa', 'bravo', 'charlie', 'delta', 'dos-a', 'dos-b', 'uno-a', 'uno-b']],
   ];
@@ -61,9 +60,8 @@ test('keeps in «Duplicados» the groups with a member in the chosen state', asy
   await seedReviewed(page);
   const names = column(desktopTable(page), 1);
   const expected: [label: string, groups: string[]][] = [
-    ['Pendiente', ['Grupo Uno']],
-    ['Revisada', ['Grupo Dos']],
-    ['Verificada', ['Grupo Uno']],
+    ['Pendiente', ['Grupo Dos', 'Grupo Uno']],
+    ['Revisada', ['Grupo Uno']],
     ['Todos los estados', ['Grupo Dos', 'Grupo Uno']],
   ];
   for (const [label, shown] of expected) {
@@ -92,7 +90,7 @@ const RECORD_ORDERS = [
 const GROUP_ORDERS = [
   'Sitio (ascendente)', 'Sitio (descendente)', 'Usuario (ascendente)', 'Usuario (descendente)',
   'Tipo (ascendente)', 'Tipo (descendente)', 'Copias (ascendente)', 'Copias (descendente)',
-  'Comparación (ascendente)', 'Comparación (descendente)', 'Contraseñas diferentes primero',
+  'Comparación (ascendente)', 'Comparación (descendente)', 'Versiones diferentes primero',
 ];
 const TRASH_ORDERS = [
   'Sitio / App (ascendente)', 'Sitio / App (descendente)', 'Usuario (ascendente)', 'Usuario (descendente)',
@@ -178,7 +176,7 @@ test.describe('on a phone', () => {
       'Zeta,https://zeta.invalid/,zeta,fake-zeta-secret-1,', 'Zeta,https://zeta.invalid/,zeta,fake-zeta-secret-2,',
     ] }]);
     await expect(cardNames(page)).toHaveText(['Alfa', 'Zeta']);
-    await orderSelect(page).selectOption({ label: 'Contraseñas diferentes primero' });
+    await orderSelect(page).selectOption({ label: 'Versiones diferentes primero' });
     await expect(cardNames(page)).toHaveText(['Zeta', 'Alfa']);
   });
 
@@ -363,7 +361,7 @@ test.describe('after a reload', () => {
   test('restores a stored order without sorting', async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('pc.tableSort.groups', '{"field":null,"direction":"ascending"}'));
     await seedReviewed(page);
-    await expect(chosenOrder(page)).toHaveText('Contraseñas diferentes primero');
+    await expect(chosenOrder(page)).toHaveText('Versiones diferentes primero');
     await expect(desktopTable(page).locator('th[aria-sort]')).toHaveCount(0);
   });
 
@@ -386,7 +384,7 @@ test.describe('after a reload', () => {
       Object.defineProperty(window, 'localStorage', { configurable: true, get() { throw new DOMException('blocked', 'SecurityError'); } });
     });
     await seedReviewed(page);
-    await reviewFilter(page).selectOption({ label: 'Pendiente' });
+    await reviewFilter(page).selectOption({ label: 'Revisada' });
     await expect(column(desktopTable(page), 1)).toHaveText(['Grupo Uno']);
     await orderSelect(page).selectOption({ label: 'Sitio (descendente)' });
     await reviewFilter(page).selectOption({ label: 'Todos los estados' });

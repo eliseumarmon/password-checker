@@ -44,7 +44,7 @@ class TotpDuplicateTests(unittest.TestCase):
         for totps, expected in cases.items():
             with self.subTest(totps=totps):
                 workspace = workspace_with(totps)
-                self.assertEqual(group_kinds(workspace), ['exact' if len(expected) == 1 else 'multiple-accounts'])
+                self.assertEqual(group_kinds(workspace), ['exact' if len(expected) == 1 else 'conflict'])
                 workspace.merge_exact()
                 self.assertEqual(kept_totps(workspace), expected)
 
@@ -52,10 +52,25 @@ class TotpDuplicateTests(unittest.TestCase):
         for order in permutations(['', T1, T2]):
             with self.subTest(order=order):
                 workspace = workspace_with(order)
-                self.assertEqual(group_kinds(workspace), ['multiple-accounts'])
+                self.assertEqual(group_kinds(workspace), ['conflict'])
                 workspace.merge_exact()
                 self.assertEqual(kept_totps(workspace), ['', T1, T2])
                 self.assertFalse(workspace.snapshot()['can_undo'])
+
+    def test_one_account_with_two_totps_is_a_conflict_that_reviewing_does_not_resolve(self):
+        # Same account, two versions: like two passwords, only trashing one resolves it.
+        workspace = workspace_with([T1, T2])
+        other = Candidate.from_source(Credential('chrome', 9, 'Site', 'https://site.invalid/', 'bob',
+                                                 'fictional-pw-456', ''))
+        workspace._records[other.id] = other
+        self.assertEqual(group_kinds(workspace), ['conflict'])
+        for identifier in list(workspace._records):
+            workspace.change(identifier, {'review': 'reviewed'})
+        self.assertEqual(group_kinds(workspace), ['conflict'])
+        alice = next(r.id for r in workspace._records.values() if r.totp == T1)
+        workspace.trash([alice])
+        # Left: one version of alice and bob, both reviewed, so different accounts already resolved.
+        self.assertEqual(group_kinds(workspace), [])
 
     def test_copies_without_totp_merge_into_the_single_totp(self):
         for order in set(permutations(['', '', T1])):
@@ -79,12 +94,12 @@ class TotpDuplicateTests(unittest.TestCase):
             with self.subTest(order=order):
                 workspace = workspace_with(order)
                 for row in list(workspace._records.values()):
-                    workspace.change(row.id, {'review': 'verified'})
+                    workspace.change(row.id, {'review': 'reviewed'})
                 workspace.merge_exact()
                 kept = [row for row in workspace._records.values() if row.included]
                 self.assertEqual([row.totp for row in kept], [T1])
-                # Unchanged secret: still verified. A secret it did not have: not checked yet.
-                self.assertEqual(kept[0].review, 'verified' if order[0] == T1 else 'pending')
+                # Unchanged secret: still reviewed. A secret it did not have: not checked yet.
+                self.assertEqual(kept[0].review, 'reviewed' if order[0] == T1 else 'pending')
 
     def test_a_later_merge_keeps_a_totp_already_kept(self):
         workspace = workspace_with(['', T1])

@@ -24,7 +24,7 @@ const matches = computed(() => new Map(props.group?.members.map(member => [membe
       <div class="dialog-content">
       <div class="drawer-top"><h2 ref="title" tabindex="-1">Comparar registros</h2><button aria-label="Cerrar panel" @click="$emit('close')">✕</button></div>
       <p v-if="group">{{labelGroup(group.kind)}} · {{group.count}} registros. Ninguna contraseña se elimina por defecto.</p>
-      <p v-else>Ya no quedan duplicados activos en este grupo.</p>
+      <p v-else>Este grupo ya está resuelto.</p>
       <div class="compare-grid">
         <div v-for="r in rows" :key="r.id" class="compare-card">
           <div class="row-between"><strong>{{labelOrigin(r.source)}} · línea {{r.line}}</strong><span class="status" :class="r.included && r.review">{{r.included ? labelReview(r.review) : 'En la papelera'}}</span></div>

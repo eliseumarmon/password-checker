@@ -52,22 +52,80 @@ class WorkspaceTests(unittest.TestCase):
 
     def test_verification_invalidated_by_password_edit_but_not_note(self):
         identifier = self.workspace.snapshot()['records'][0]['id']
-        self.workspace.change(identifier, {'review': 'verified'})
+        self.workspace.change(identifier, {'review': 'reviewed'})
         self.workspace.change(identifier, {'note': 'reviewed'})
-        self.assertEqual(self.workspace.get(identifier)['review'], 'verified')
+        self.assertEqual(self.workspace.get(identifier)['review'], 'reviewed')
         self.workspace.change(identifier, {'password': 'fictional-changed-123'})
         self.assertEqual(self.workspace.get(identifier)['review'], 'pending')
         self.workspace.undo()
-        self.assertEqual(self.workspace.get(identifier)['review'], 'verified')
+        self.assertEqual(self.workspace.get(identifier)['review'], 'reviewed')
 
     def test_identity_edit_resets_review_even_when_set_in_the_same_edit(self):
         identifier = self.workspace.snapshot()['records'][0]['id']
         for field, value in (('password', 'fictional-new-123456'), ('username', 'carol'), ('url', 'https://new.invalid')):
-            self.workspace.change(identifier, {field: value, 'review': 'verified'})
+            self.workspace.change(identifier, {field: value, 'review': 'reviewed'})
             self.assertEqual(self.workspace.get(identifier)['review'], 'pending', field)
         # Without an identity change, an explicit review state is kept.
-        self.workspace.change(identifier, {'note': 'checked', 'review': 'verified'})
-        self.assertEqual(self.workspace.get(identifier)['review'], 'verified')
+        self.workspace.change(identifier, {'note': 'checked', 'review': 'reviewed'})
+        self.assertEqual(self.workspace.get(identifier)['review'], 'reviewed')
+
+    def test_review_states_are_pending_reviewed_and_incorrect(self):
+        identifier = self.workspace.snapshot()['records'][0]['id']
+        for review in ('reviewed', 'incorrect', 'pending'):
+            self.workspace.change(identifier, {'review': review})
+            self.assertEqual(self.workspace.get(identifier)['review'], review)
+        with self.assertRaises(ValueError):
+            self.workspace.change(identifier, {'review': 'verified'})
+        self.assertEqual(self.workspace.get(identifier)['review'], 'pending')
+        self.assertNotIn('verified', self.workspace.snapshot()['stats'])
+
+    def test_progress_counts_reviewed_and_trashed_records_but_not_incorrect_ones(self):
+        ids = [r['id'] for r in self.workspace.snapshot()['records']]
+        self.workspace.change(ids[0], {'review': 'reviewed'})
+        self.workspace.change(ids[1], {'review': 'incorrect'})
+        self.assertEqual(self.workspace.snapshot()['stats']['reviewed'], 1)
+        # A trashed record counts whatever its state, also one still pending.
+        stats = self.workspace.trash([ids[1], ids[2]])['stats']
+        self.assertEqual((stats['reviewed'], stats['total']), (3, 5))
+        stats = self.workspace.trash([ids[3], ids[4]])['stats']
+        self.assertEqual((stats['reviewed'], stats['total']), (5, 5))
+        stats = self.workspace.undo()['stats']
+        self.assertEqual((stats['reviewed'], stats['total']), (3, 5))
+
+    def test_a_multiple_accounts_group_is_resolved_once_every_active_member_is_reviewed(self):
+        workspace = Workspace()
+        workspace._records = {r.id: r for r in [
+            Candidate.from_source(cred('Site', 'https://site.invalid/', user, f'fictional-{user}-123'))
+            for user in ('ana', 'bob', 'eva')]}
+        ana, bob, eva = workspace._records
+        kinds = lambda snapshot: [(g['kind'], g['count']) for g in snapshot['groups']]
+        workspace.change(ana, {'review': 'reviewed'})
+        self.assertEqual(kinds(workspace.change(bob, {'review': 'incorrect'})), [('multiple-accounts', 3)])
+        # A pending member keeps the group open even when the rest are reviewed.
+        workspace.change(bob, {'review': 'reviewed'})
+        self.assertEqual(kinds(workspace.snapshot()), [('multiple-accounts', 3)])
+        self.assertEqual(kinds(workspace.change(eva, {'review': 'reviewed'})), [])
+        self.assertEqual(kinds(workspace.undo()), [('multiple-accounts', 3)])
+        # A trashed member no longer counts: the active ones decide.
+        self.assertEqual(kinds(workspace.trash([eva])), [])
+
+    def test_reviewing_does_not_resolve_a_group_that_still_holds_two_copies_of_one_account(self):
+        workspace = Workspace()
+        workspace._records = {r.id: r for r in [
+            Candidate.from_source(cred('Site', 'https://site.invalid/', 'ana', 'fictional-ana-123')),
+            Candidate.from_source(cred('Site', 'https://site.invalid/', 'ana', 'fictional-ana-123', 'firefox')),
+            Candidate.from_source(cred('Site', 'https://site.invalid/', 'bob', 'fictional-bob-123'))]}
+        for identifier in list(workspace._records):
+            workspace.change(identifier, {'review': 'reviewed'})
+        self.assertEqual([(g['kind'], g['count']) for g in workspace.snapshot()['groups']],
+                         [('multiple-accounts', 3)])
+        # Merging the copy leaves two different accounts, both reviewed: resolved.
+        self.assertEqual(workspace.merge_exact()['groups'], [])
+
+    def test_conflicting_and_exact_groups_stay_until_one_copy_is_left_however_reviewed(self):
+        for record in self.workspace.snapshot()['records']:
+            self.workspace.change(record['id'], {'review': 'reviewed'})
+        self.assertEqual([g['kind'] for g in self.workspace.snapshot()['groups']], ['conflict'])
 
     def test_trash_many_is_atomic_and_one_undo_step(self):
         ids = [r['id'] for r in self.workspace.snapshot()['records'][:3]]
