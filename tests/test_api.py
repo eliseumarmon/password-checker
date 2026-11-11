@@ -142,6 +142,16 @@ class APITests(unittest.TestCase):
         self.assertNotIn(secret, response.text)
         self.assertEqual(self.client.get('/api/workspace').json(), without_warnings(before))
 
+    def test_edit_with_an_unknown_review_state_is_a_422_that_changes_nothing(self):
+        # An old tab can still send the retired "Verificada" state.
+        before = self.import_exact_copies()
+        for review in ('verified', 'Reviewed', ''):
+            with self.subTest(review=review):
+                response = self.client.patch(f"/api/records/{before['records'][0]['id']}", json={'review': review})
+                self.assertEqual(response.status_code, 422, response.text)
+                self.assertEqual(response.json()['detail'], 'Estado de revisión no válido')
+                self.assertEqual(self.client.get('/api/workspace').json(), without_warnings(before))
+
     def test_csv_with_bad_quoting_is_a_422_that_changes_nothing(self):
         good = b'name,url,username,password,note\nA,https://a.invalid/,alice,fictional-123456,\n'
         imported = self.client.post('/api/import', files=[('files', ('chrome.csv', good, 'text/csv'))])
