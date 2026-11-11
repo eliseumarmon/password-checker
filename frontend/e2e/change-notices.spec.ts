@@ -217,3 +217,113 @@ for (const [width, height] of [[320, 640], [1280, 720]]) {
     expect(box.y + box.height).toBeLessThanOrEqual(top);
   });
 }
+
+for (const [width, height] of [[1280, 720], [390, 760]]) {
+  test(`inside the comparison the notice floats at the bottom of the window, never past the last record, at ${width} px`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    const variants = Array.from({ length: 10 }, (_, n) => `Netflix,https://netflix.invalid/,ana,fictional-variant-${n}00,`);
+    const imported = await page.request.post('/api/import', {
+      multipart: { files: { name: 'variants.csv', mimeType: 'text/csv', buffer: Buffer.from(['name,url,username,password,note', ...variants].join('\n')) } },
+    });
+    expect(imported.ok()).toBe(true);
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Comparar/ }).first().click();
+    const compare = page.getByRole('dialog', { name: 'Comparar duplicados' });
+    const content = compare.locator('.dialog-content');
+    await compare.getByRole('button', { name: 'Descartar' }).first().click();
+    const toast = compare.getByRole('status', { name: 'Último cambio' });
+    await expect(toast).toContainText('«Netflix» en la papelera.');
+
+    // At the top of the list, it floats at the bottom of the visible part of the window.
+    await content.evaluate(element => element.scrollTo(0, 0));
+    await expect.poll(() => content.evaluate(element => element.scrollTop)).toBe(0);
+    const view = (await content.boundingBox())!;
+    const floating = (await toast.boundingBox())!;
+    expect(floating.y + floating.height).toBeLessThanOrEqual(view.y + view.height);
+    expect(floating.y + floating.height).toBeGreaterThan(view.y + view.height - 40);
+    // As wide as its text, against the right edge.
+    if (width > 760) expect(floating.width).toBeLessThan(view.width / 2);
+    expect(Math.abs(floating.x + floating.width - (view.x + view.width))).toBeLessThan(40);
+
+    // At the end, the last record's buttons stay above it.
+    await content.evaluate(element => element.scrollTo(0, element.scrollHeight));
+    await expect.poll(() => content.evaluate(element => element.scrollTop + element.clientHeight >= element.scrollHeight - 1)).toBe(true);
+    const last = (await compare.locator('.compare-card').last().getByRole('button', { name: 'Ver / editar' }).boundingBox())!;
+    expect(last.y + last.height).toBeLessThanOrEqual((await toast.boundingBox())!.y);
+    await toast.getByRole('button', { name: 'Deshacer', exact: true }).click();
+    await expect(toast).toContainText('Se deshizo: «Netflix» en la papelera.');
+  });
+}
+
+test('in the comparison, Tab reaches the toast without leaving the dialog, and an error shows above it', async ({ page }) => {
+  await seed(page);
+  await table(page).getByRole('button', { name: 'Comparar' }).first().click();
+  const compare = page.getByRole('dialog', { name: 'Comparar duplicados' });
+  await compare.getByRole('button', { name: 'Descartar' }).first().click();
+  const toast = compare.getByRole('status', { name: 'Último cambio' });
+  await expect(toast).toContainText('en la papelera.');
+
+  // The dialog keeps focus inside: Tab goes round its controls, the toast's among them.
+  const reached = new Set<string>();
+  for (let press = 0; press < 30; press += 1) {
+    await page.keyboard.press('Tab');
+    const focus = await page.evaluate(() => {
+      const active = document.activeElement;
+      return { inDialog: !!active?.closest('.compare-dialog'), inToast: active?.closest('.change') ? active.textContent?.trim() ?? '' : '' };
+    });
+    expect(focus.inDialog).toBe(true);
+    if (focus.inToast) reached.add(focus.inToast);
+  }
+  expect([...reached]).toEqual(expect.arrayContaining(['Deshacer', '×']));
+
+  // A failed operation shows its error at the top of the dialog, above the toast.
+  await page.route('**/api/records/*', route => route.request().method() === 'PATCH'
+    ? route.fulfill({ status: 500, contentType: 'application/json', body: '{"detail":"Fallo ficticio"}' })
+    : route.continue());
+  await compare.getByRole('button', { name: 'Descartar' }).first().click();
+  const error = compare.getByRole('alert');
+  await expect(error).toContainText('Fallo ficticio');
+  await expect(toast).toContainText('en la papelera.');
+  expect((await error.boundingBox())!.y + (await error.boundingBox())!.height).toBeLessThanOrEqual((await toast.boundingBox())!.y);
+});
+
+test('on the page the notice is as wide as its text, and the space beside it lets clicks through', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await seed(page);
+  await trashAmazonFromItsRow(page);
+  const box = (await notice(page).boundingBox())!;
+  expect(box.width).toBeLessThan(480);
+  expect(box.x + box.width).toBeGreaterThan(1280 - 40);
+  // Just left of the notice, where the stack used to reach, the page underneath gets the click.
+  const point = { x: box.x - 40, y: box.y + box.height / 2 };
+  const inStack = await page.evaluate(({ x, y }) => !!document.elementFromPoint(x, y)?.closest('.page-notices'), point);
+  expect(inStack).toBe(false);
+});
+
+for (const [width, height] of [[1280, 720], [390, 760], [320, 640]]) {
+  test(`in the comparison the toast never covers the focused control, at ${width} px`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    const variants = Array.from({ length: 10 }, (_, n) => `Netflix,https://netflix.invalid/,ana,fictional-variant-${n}00,`);
+    const imported = await page.request.post('/api/import', {
+      multipart: { files: { name: 'variants.csv', mimeType: 'text/csv', buffer: Buffer.from(['name,url,username,password,note', ...variants].join('\n')) } },
+    });
+    expect(imported.ok()).toBe(true);
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Comparar/ }).first().click();
+    const compare = page.getByRole('dialog', { name: 'Comparar duplicados' });
+    await compare.getByRole('button', { name: 'Descartar' }).first().click();
+    await expect(compare.getByRole('status', { name: 'Último cambio' })).toContainText('en la papelera.');
+    for (let press = 0; press < 40; press += 1) {
+      await page.keyboard.press('Tab');
+      const overlap = await page.evaluate(() => {
+        const active = document.activeElement as HTMLElement | null;
+        const toast = document.querySelector('.compare-dialog .change');
+        if (!active || !toast || toast.contains(active)) return 0;
+        const a = active.getBoundingClientRect();
+        const t = toast.getBoundingClientRect();
+        return Math.max(0, Math.min(a.bottom, t.bottom) - Math.max(a.top, t.top));
+      });
+      expect(overlap).toBe(0);
+    }
+  });
+}

@@ -42,7 +42,15 @@
 .change .notice-text{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}
 .change>button{padding:0 8px;border:0;background:transparent;color:inherit;flex-shrink:0}
 .change .notice-action{min-height:32px;padding:4px 12px}
-.compare-dialog>.change{flex:none;margin:16px 16px 0}
+/* In the comparison the change notice floats like a toast at the bottom of the list, and ends after its last record. */
+.compare-dialog .dialog-content>.change{position:sticky;bottom:16px;z-index:1;width:fit-content;max-width:min(640px,100%);margin:16px 0 0 auto}
+/* A control scrolled into view, by Tab for instance, stops above the toast, however tall its text makes it:
+   the toast's height, its 16px offset, the list's 20px bottom padding (sticky counts from it) and a small gap. */
+.compare-dialog .dialog-content:has(>.change){scroll-padding-bottom:calc(var(--compare-toast-height,0px) + 48px)}
+/* On the page too, the change notice is as wide as its text, against the right edge. Only the notices take clicks:
+   the empty part of the stack lets them through to the page underneath. */
+.page-notices{pointer-events:none}.page-notices>*{pointer-events:auto}
+.page-notices>.change{align-self:flex-end;width:fit-content;max-width:100%}
 
 /* Room below the content for the page notice stack, so the last rows can scroll clear of it. */
 .main{padding-bottom:calc(60px + var(--notices-height,0px))}

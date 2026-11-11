@@ -34,6 +34,8 @@ const matches = computed(() => new Map(props.group?.members.map(member => [membe
         </div>
       </div>
       <p class="hint">Las coincidencias se comparan respecto al primer registro activo del grupo. Lo descartado va a la papelera y se puede restaurar.</p>
+      <!-- A toast that floats at the bottom of the list; inside the dialog, so Tab and screen readers reach it. -->
+      <slot name="toast" />
       </div>
     </section>
   </div>
