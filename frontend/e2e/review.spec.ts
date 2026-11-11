@@ -198,15 +198,15 @@ test('preserves review options and saves the selected state', async ({ page }) =
   const editor = page.getByRole('dialog', { name: 'Editar credencial' });
   const select = editor.getByLabel('Estado de revisión');
   await expect(select.locator('option')).toHaveText([
-    'Pendiente', 'Revisada (sin verificar acceso)', 'Verificada manualmente', 'No funciona',
+    'Pendiente', 'Revisada', 'No funciona',
   ]);
   await expect(select).toHaveValue('pending');
-  await select.selectOption('verified');
+  await select.selectOption('reviewed');
   await editor.getByRole('button', { name: 'Guardar cambios' }).click();
   await expect(editor).toBeHidden();
-  await expect(row).toContainText('Verificada');
+  await expect(row).toContainText('Revisada');
   await row.getByRole('button', { name: 'Editar' }).click();
-  await expect(select).toHaveValue('verified');
+  await expect(select).toHaveValue('reviewed');
 });
 
 test('merges exact copies into the trash and can undo it', async ({ page }) => {
@@ -560,11 +560,11 @@ test('marks the other record from the comparison after discarding one', async ({
   await cards.first().getByRole('button', { name: 'Descartar' }).click();
   await cards.nth(1).getByRole('button', { name: 'Ver / editar' }).click();
   const editor = page.getByRole('dialog', { name: 'Editar credencial' });
-  await editor.getByLabel('Estado de revisión').selectOption('verified');
+  await editor.getByLabel('Estado de revisión').selectOption('reviewed');
   await editor.getByRole('button', { name: 'Guardar cambios' }).click();
   await expect(editor).toBeHidden();
   await expect(compare).toBeVisible();
-  await expect(cards.nth(1)).toContainText('Verificada');
+  await expect(cards.nth(1)).toContainText('Revisada');
   await expect(cards.first()).toContainText('En la papelera');
 });
 

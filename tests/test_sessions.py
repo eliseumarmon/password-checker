@@ -24,12 +24,13 @@ class SessionTests(unittest.TestCase):
         self.record_id = record.id
 
     def test_roundtrip_preserves_verification_and_edited_notes(self):
-        self.workspace.change(self.record_id, {'note': 'updated note', 'review': 'verified'})
+        self.workspace.change(self.record_id, {'note': 'updated note', 'review': 'reviewed'})
         encrypted = encrypt_session(self.workspace.serialize(), self.password)
         self.assertNotIn(b'fictional-secret-987654', encrypted)
         restored = Workspace()
         snapshot = restored.restore(decrypt_session(encrypted, self.password))
-        self.assertEqual(snapshot['stats']['verified'], 1)
+        self.assertEqual(snapshot['stats']['reviewed'], 1)
+        self.assertEqual(restored.get(self.record_id)['review'], 'reviewed')
         self.assertEqual(restored.get(self.record_id)['note'], 'updated note')
         self.assertEqual(restored.get(self.record_id)['password'], 'fictional-secret-987654')
 
@@ -38,7 +39,7 @@ class SessionTests(unittest.TestCase):
                               'fictional-secret-987654', '', 'otpauth://totp/fictional-imported')
         record = Candidate.from_source(original)
         self.workspace._records[record.id] = record
-        self.workspace.change(record.id, {'review': 'verified'})
+        self.workspace.change(record.id, {'review': 'reviewed'})
         self.workspace.change(record.id, {'totp': 'otpauth://totp/fictional-edited'})
         encrypted = encrypt_session(self.workspace.serialize(), self.password)
         self.assertNotIn(b'fictional-imported', encrypted)
@@ -71,6 +72,15 @@ class SessionTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.workspace.restore(invalid)
         self.assertEqual(self.workspace.get(self.record_id)['review'], 'pending')
+
+    def test_session_saved_with_the_retired_verified_state_opens_as_reviewed(self):
+        # Sessions saved before "Verificada" merged into "Revisada" must still open.
+        saved = self.workspace.serialize()
+        saved['records'][0]['review'] = 'verified'
+        restored = Workspace()
+        restored.restore(saved)
+        self.assertEqual(restored.get(self.record_id)['review'], 'reviewed')
+        self.assertEqual(restored.serialize()['records'][0]['review'], 'reviewed')
 
     def test_passphrase_length_boundary_in_cipher(self):
         for length in (11, 1025):

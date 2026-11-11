@@ -79,12 +79,12 @@ class TotpDuplicateTests(unittest.TestCase):
             with self.subTest(order=order):
                 workspace = workspace_with(order)
                 for row in list(workspace._records.values()):
-                    workspace.change(row.id, {'review': 'verified'})
+                    workspace.change(row.id, {'review': 'reviewed'})
                 workspace.merge_exact()
                 kept = [row for row in workspace._records.values() if row.included]
                 self.assertEqual([row.totp for row in kept], [T1])
-                # Unchanged secret: still verified. A secret it did not have: not checked yet.
-                self.assertEqual(kept[0].review, 'verified' if order[0] == T1 else 'pending')
+                # Unchanged secret: still reviewed. A secret it did not have: not checked yet.
+                self.assertEqual(kept[0].review, 'reviewed' if order[0] == T1 else 'pending')
 
     def test_a_later_merge_keeps_a_totp_already_kept(self):
         workspace = workspace_with(['', T1])

@@ -206,7 +206,7 @@ class APITests(unittest.TestCase):
         self.assertNotIn('session_saved', imported)
         self.assertNotIn('session_saved', self.client.get('/api/workspace').json())
         identifier = imported['records'][0]['id']
-        self.client.patch('/api/records/' + identifier, json={'review': 'verified'})
+        self.client.patch('/api/records/' + identifier, json={'review': 'reviewed'})
         passphrase = 'fictional-session-passphrase-12345'
         saved = self.client.post('/api/session/save', json={'passphrase': passphrase})
         self.assertEqual(saved.status_code, 200, saved.text)
@@ -215,12 +215,12 @@ class APITests(unittest.TestCase):
         invalid = self.client.post('/api/session/load', data={'passphrase': 'wrong-long-passphrase'},
                                    files={'file': ('session.pwc', saved.content, 'application/octet-stream')})
         self.assertEqual(invalid.status_code, 422)
-        self.assertEqual(workspace.snapshot()['stats']['verified'], 1)
+        self.assertEqual(workspace.get(identifier)['review'], 'reviewed')
         self.client.patch('/api/records/' + identifier, json={'review': 'pending'})
         restored = self.client.post('/api/session/load', data={'passphrase': passphrase},
                                     files={'file': ('session.pwc', saved.content, 'application/octet-stream')})
         self.assertEqual(restored.status_code, 200, restored.text)
-        self.assertEqual(restored.json()['stats']['verified'], 1)
+        self.assertEqual(workspace.get(identifier)['review'], 'reviewed')
         self.assertNotIn('session_saved', restored.json())
         self.assertNotIn('session_saved', self.client.get('/api/workspace').json())
 
@@ -461,7 +461,7 @@ class APITests(unittest.TestCase):
         self.assertEqual(imported.status_code, 200, imported.text)
         self.assertEqual(len(imported.json()['warnings']), 1)
         identifier = imported.json()['records'][0]['id']
-        self.client.patch('/api/records/' + identifier, json={'review': 'verified'})
+        self.client.patch('/api/records/' + identifier, json={'review': 'reviewed'})
         before = workspace.snapshot()
         self.assertTrue(before['can_undo'])
         self.assertNotIn('warnings', before)

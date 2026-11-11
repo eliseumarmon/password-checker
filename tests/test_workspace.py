@@ -52,22 +52,32 @@ class WorkspaceTests(unittest.TestCase):
 
     def test_verification_invalidated_by_password_edit_but_not_note(self):
         identifier = self.workspace.snapshot()['records'][0]['id']
-        self.workspace.change(identifier, {'review': 'verified'})
+        self.workspace.change(identifier, {'review': 'reviewed'})
         self.workspace.change(identifier, {'note': 'reviewed'})
-        self.assertEqual(self.workspace.get(identifier)['review'], 'verified')
+        self.assertEqual(self.workspace.get(identifier)['review'], 'reviewed')
         self.workspace.change(identifier, {'password': 'fictional-changed-123'})
         self.assertEqual(self.workspace.get(identifier)['review'], 'pending')
         self.workspace.undo()
-        self.assertEqual(self.workspace.get(identifier)['review'], 'verified')
+        self.assertEqual(self.workspace.get(identifier)['review'], 'reviewed')
 
     def test_identity_edit_resets_review_even_when_set_in_the_same_edit(self):
         identifier = self.workspace.snapshot()['records'][0]['id']
         for field, value in (('password', 'fictional-new-123456'), ('username', 'carol'), ('url', 'https://new.invalid')):
-            self.workspace.change(identifier, {field: value, 'review': 'verified'})
+            self.workspace.change(identifier, {field: value, 'review': 'reviewed'})
             self.assertEqual(self.workspace.get(identifier)['review'], 'pending', field)
         # Without an identity change, an explicit review state is kept.
-        self.workspace.change(identifier, {'note': 'checked', 'review': 'verified'})
-        self.assertEqual(self.workspace.get(identifier)['review'], 'verified')
+        self.workspace.change(identifier, {'note': 'checked', 'review': 'reviewed'})
+        self.assertEqual(self.workspace.get(identifier)['review'], 'reviewed')
+
+    def test_review_states_are_pending_reviewed_and_incorrect(self):
+        identifier = self.workspace.snapshot()['records'][0]['id']
+        for review in ('reviewed', 'incorrect', 'pending'):
+            self.workspace.change(identifier, {'review': review})
+            self.assertEqual(self.workspace.get(identifier)['review'], review)
+        with self.assertRaises(ValueError):
+            self.workspace.change(identifier, {'review': 'verified'})
+        self.assertEqual(self.workspace.get(identifier)['review'], 'pending')
+        self.assertNotIn('verified', self.workspace.snapshot()['stats'])
 
     def test_trash_many_is_atomic_and_one_undo_step(self):
         ids = [r['id'] for r in self.workspace.snapshot()['records'][:3]]

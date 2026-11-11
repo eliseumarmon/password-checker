@@ -9,12 +9,12 @@ import {
 // The tables compare text with the browser's locale, so the expected orders hold for this one.
 test.use({ locale: 'es-ES' });
 
-type Review = 'pending' | 'reviewed' | 'verified' | 'incorrect';
+type Review = 'pending' | 'reviewed' | 'incorrect';
 
 // Four records on their own and two groups: «Grupo Uno» mixes states, «Grupo Dos» has only one.
 const STATES: [name: string, username: string, review: Review][] = [
-  ['Alfa', 'alfa', 'pending'], ['Bravo', 'bravo', 'reviewed'], ['Charlie', 'charlie', 'verified'], ['Delta', 'delta', 'incorrect'],
-  ['Grupo Uno', 'uno-a', 'verified'], ['Grupo Uno', 'uno-b', 'pending'],
+  ['Alfa', 'alfa', 'pending'], ['Bravo', 'bravo', 'reviewed'], ['Charlie', 'charlie', 'reviewed'], ['Delta', 'delta', 'incorrect'],
+  ['Grupo Uno', 'uno-a', 'reviewed'], ['Grupo Uno', 'uno-b', 'pending'],
   ['Grupo Dos', 'dos-a', 'reviewed'], ['Grupo Dos', 'dos-b', 'reviewed'],
 ];
 
@@ -35,7 +35,7 @@ function reviewFilter(page: Page) {
 
 test('filters by review state with a selector that replaces the pending-only checkbox', async ({ page }) => {
   await seedReviewed(page);
-  await expect(reviewFilter(page).locator('option')).toHaveText(['Todos los estados', 'Pendiente', 'Revisada', 'Verificada', 'No funciona']);
+  await expect(reviewFilter(page).locator('option')).toHaveText(['Todos los estados', 'Pendiente', 'Revisada', 'No funciona']);
   await expect(reviewFilter(page)).toHaveValue('all');
   await expect(page.getByRole('checkbox', { name: 'Solo pendientes' })).toHaveCount(0);
 });
@@ -46,8 +46,7 @@ test('shows in «Todas» only the records in the chosen state', async ({ page })
   const users = column(desktopTable(page), 2);
   const expected: [label: string, users: string[]][] = [
     ['Pendiente', ['alfa', 'uno-b']],
-    ['Revisada', ['bravo', 'dos-a', 'dos-b']],
-    ['Verificada', ['charlie', 'uno-a']],
+    ['Revisada', ['bravo', 'charlie', 'dos-a', 'dos-b', 'uno-a']],
     ['No funciona', ['delta']],
     ['Todos los estados', ['alfa', 'bravo', 'charlie', 'delta', 'dos-a', 'dos-b', 'uno-a', 'uno-b']],
   ];
@@ -62,8 +61,7 @@ test('keeps in «Duplicados» the groups with a member in the chosen state', asy
   const names = column(desktopTable(page), 1);
   const expected: [label: string, groups: string[]][] = [
     ['Pendiente', ['Grupo Uno']],
-    ['Revisada', ['Grupo Dos']],
-    ['Verificada', ['Grupo Uno']],
+    ['Revisada', ['Grupo Dos', 'Grupo Uno']],
     ['Todos los estados', ['Grupo Dos', 'Grupo Uno']],
   ];
   for (const [label, shown] of expected) {

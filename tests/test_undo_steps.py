@@ -51,7 +51,7 @@ class UndoStepTests(unittest.TestCase):
         self.assertNotIn('fictional', repr(change))
 
     def test_save_lists_the_review_reset_that_a_new_secret_causes(self):
-        self.workspace.change(self.netflix_old, {'review': 'verified'})
+        self.workspace.change(self.netflix_old, {'review': 'reviewed'})
         self.workspace.change(self.netflix_old, {'password': 'fictional-new-222'})
         self.assertEqual(self.last_change()['fields'], ['password', 'review'])
 
@@ -119,16 +119,16 @@ class UndoStepTests(unittest.TestCase):
         seen = {before, self.last_change()['id']}
         self.assertEqual(len(seen), 2)
         payload = self.workspace.serialize()
-        self.workspace.change(identifier, {'review': 'verified'})
+        self.workspace.change(identifier, {'review': 'incorrect'})
         seen.add(self.last_change()['id'])
         self.workspace.restore(payload)
         self.assertIsNone(self.last_change())
-        self.workspace.change(identifier, {'review': 'verified'})
+        self.workspace.change(identifier, {'review': 'incorrect'})
         self.assertNotIn(self.last_change()['id'], seen)
 
     def test_concurrent_undos_of_the_same_step_undo_it_once(self):
         self.workspace.change(self.amazon, {'review': 'reviewed'})
-        self.workspace.change(self.amazon, {'review': 'verified'})
+        self.workspace.change(self.amazon, {'review': 'incorrect'})
         step, steps = self.last_change()['id'], len(self.workspace._history)
         start, results = threading.Barrier(16), []
 
@@ -152,7 +152,7 @@ class UndoStepTests(unittest.TestCase):
         for workspace in (self.workspace, Workspace()):
             if not workspace._records:
                 workspace._records = dict(self.workspace._records)
-            for review in ('reviewed', 'verified', 'pending'):
+            for review in ('reviewed', 'incorrect', 'pending'):
                 workspace.change(self.amazon, {'review': review})
                 ids.append(workspace.snapshot()['last_change']['id'])
         self.assertTrue(all(isinstance(step, str) and step for step in ids))
@@ -204,7 +204,7 @@ class UndoStepAPITests(unittest.TestCase):
         imported = self.client.post('/api/import', files=[('files', ('chrome.csv', csv, 'text/csv'))]).json()
         self.assertIsNone(imported['last_change'])
         identifier = imported['records'][0]['id']
-        edited = self.client.patch('/api/records/' + identifier, json={'review': 'verified'}).json()
+        edited = self.client.patch('/api/records/' + identifier, json={'review': 'reviewed'}).json()
         change = edited['last_change']
         self.assertEqual(without_id(change), {'action': 'edit', 'count': 1, 'name': 'Site', 'fields': ['review']})
         self.assertEqual(self.client.get('/api/workspace').json()['last_change'], change)
@@ -217,7 +217,7 @@ class UndoStepAPITests(unittest.TestCase):
     def test_undo_refuses_a_step_that_is_no_longer_the_last_one(self):
         csv = b'name,url,username,password,note\nSite,https://site.invalid/,alice,fictional-secret-123,\n'
         identifier = self.client.post('/api/import', files=[('files', ('chrome.csv', csv, 'text/csv'))]).json()['records'][0]['id']
-        shown = self.client.patch('/api/records/' + identifier, json={'review': 'verified'}).json()['last_change']
+        shown = self.client.patch('/api/records/' + identifier, json={'review': 'reviewed'}).json()['last_change']
         last = self.client.patch('/api/records/' + identifier, json={'note': 'fictional-note'}).json()['last_change']
         before = self.client.get('/api/workspace').json()
         refused = self.client.post('/api/undo', json={'step': shown['id']})
@@ -232,7 +232,7 @@ class UndoStepAPITests(unittest.TestCase):
     def test_undo_rejects_malformed_steps_and_names_an_empty_history(self):
         csv = b'name,url,username,password,note\nSite,https://site.invalid/,alice,fictional-secret-123,\n'
         identifier = self.client.post('/api/import', files=[('files', ('chrome.csv', csv, 'text/csv'))]).json()['records'][0]['id']
-        step = self.client.patch('/api/records/' + identifier, json={'review': 'verified'}).json()['last_change']['id']
+        step = self.client.patch('/api/records/' + identifier, json={'review': 'reviewed'}).json()['last_change']['id']
         for body in ({}, {'step': ''}, {'step': 'a' * 65}, {'step': 5}, {'step': None}, [step]):
             with self.subTest(body=body):
                 before = self.client.get('/api/workspace').content
