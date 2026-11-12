@@ -2,7 +2,7 @@
 
 Objetivo: sustituir los tamaños de letra, la familia tipográfica, los pesos, las alturas de línea, los radios y los espacios escritos directamente en `frontend/src/style.css` por variables CSS en `:root`, sin ningún cambio visual. Es la base para probar la nueva dirección visual tocando pocas líneas.
 Rama: `refactor/scale-tokens` desde `main` (`4ef1105`). Continúa `css-tokens` (Fase 1), que solo cubrió los colores. Fase 2, n.º 2: va antes de la dirección visual y de rehacer la Auditoría (L3). Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`, más la comparación de estilos calculados de S2. Estado: en curso (L4); T1 hecha, T2 pendiente.
+Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`, más la comparación de estilos calculados de S2. Estado: en curso (L5); T1 y T2 hechas, verificación independiente de T2 pendiente.
 
 ## Specs
 
@@ -27,7 +27,7 @@ Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`, más la comparac
 ## Tasks
 
 - [x] T1 — S2, S5: inventario y correspondencia valor → variable de tipografía y radios en el Log: cada literal, dónde se usa, la variable elegida y su diferencia con la guía. Ruta: inline. Sin código.
-- [ ] T2 — S2, S4: sustitución de tipografía y radios en `style.css` y comparación de estilos calculados entre `main` y la rama. Excepción a RED: refactorización sin cambio de comportamiento; las comprobaciones son S2 (`grep`), S4 (estilos calculados), `npm run build` y `npm run e2e`. Riesgo: ninguna prueba versionada detecta una regresión visual, así que lleva verificación independiente. Ruta: inline.
+- [x] T2 — S2, S4: sustitución de tipografía y radios en `style.css` y comparación de estilos calculados entre `main` y la rama. Excepción a RED: refactorización sin cambio de comportamiento; las comprobaciones son S2 (`grep`), S4 (estilos calculados), `npm run build` y `npm run e2e`. Riesgo: ninguna prueba versionada detecta una regresión visual, así que lleva verificación independiente. Ruta: inline.
 - [ ] T3 — S3, S5: inventario del espaciado en el Log: cada valor, dónde se usa, la función que cumple y la variable elegida. Ruta: inline. Sin código.
 - [ ] T4 — S3, S4: sustitución del espaciado y comparación de estilos calculados, con las mismas comprobaciones y la misma verificación independiente que T2. Ruta: inline.
 - [ ] T5 — Documentación: la guía visual (§2.2) dice que los valores viven en variables y enlaza las diferencias de S5. Ruta: inline.
@@ -84,3 +84,9 @@ Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`, más la comparac
 
   - Se quedan como literales: `border-radius:0` (`.tabs button`, `.desktop-table th .sort-button`) y `font:inherit` (S2).
   - Para la dirección visual (S5): siete textos y un icono por debajo de 13 px; cuatro papeles con 13 px (ayuda, datos compactos, controles compactos) y tres con 20 px (título de sección, título compacto, métrica), sin nada que los distinga; ocho radios donde la guía pide tres.
+- **L5 (2026-11-12).** T2 hecha. `style.css` define en `:root`, tras los colores, las 33 variables de L4, y las usa en 61 declaraciones. Se retiran las dos reglas muertas de L4.
+  - S2: fuera de `:root` solo quedan los dos `border-radius:0` permitidos (`grep`).
+  - S4: comparación de estilos calculados sobre el mismo DOM, cambiando la hoja de estilos de la página entre la de la rama y la de `main` compilada aparte. Cubre todas las propiedades salvo las variables, en cada elemento y en sus `::before` y `::after`. 22 estados: bienvenida, confirmación, Duplicados, comparación, Todas, ficha, sesión, Auditoría, Papelera, Ajustes y un aviso de error insertado como sonda, cada uno a 1440 × 900 y a 390 × 844; con el aviso de importación y el de cambio visibles. Resultado: 4 604 elementos, 0 diferencias.
+  - Control negativo: con un solo radio alterado en el CSS de `main` (`.status`, de 7 a 8 px), la comparación da diferencias en todas las pantallas donde aparece una etiqueta de estado.
+  - Sin cubrir por la comparación: los estados `:hover` y `:focus-visible`. Ninguna de sus reglas declara las propiedades de este plan (`grep`), así que no les afecta.
+  - `npm run build` y la suite E2E completa (196 pruebas) en verde.
