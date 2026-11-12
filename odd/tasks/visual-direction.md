@@ -2,7 +2,7 @@
 
 Objetivo: dar a la aplicación una identidad y una jerarquía propias, en lugar del aspecto monótono de hoy. La dirección se escribe en §1 y §2 de la [guía visual](../docs/guia-visual.md) y se aplica sobre las variables CSS de `css-tokens` y `scale-tokens`, más una escala de espaciado.
 Rama: `feat/visual-direction`, encadenada sobre `refactor/scale-tokens` (`1d2ef00`), sin fusionar todavía. Usuario: «No es necesario subir. Podemos trabajar partiendo desde esta rama ya que van muy ligadas.» Fase 2, n.º 3. Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L4); propuesta de dirección («Mesa de revisión») pendiente de la opinión del usuario.
+Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L5); «Mesa de revisión» descartada; se valora usar la skill `hallmark`.
 
 ## Specs
 
@@ -36,3 +36,4 @@ Se concretan cuando estén resueltos los supuestos. Previsión: guía (§1 y §2
   - **Escalas:** espaciado de 4, 8, 12, 16, 24, 32 y 48 px; radios de 4 px (controles), 8 px (paneles) y 12 px (lo que flota).
   - **Principios:** una frase dice lo que falta; lo resuelto se aparta; menos cajas; el estado se ve en el borde de la fila; leer antes que decorar.
   - Revisada contra los rasgos genéricos que señala la skill: sin fondo crema ni casi negro con un acento ácido, sin tarjetas iguales, sin etiquetas en mayúsculas ni separadores de punto medio.
+- **L5 (2026-11-12).** El usuario descarta la propuesta: «No me gusta. He añadido una nueva skill. Echa un vistazo». Skill nueva: `hallmark` (`.claude/skills/hallmark`), que en un diseño existente solo se usa si el usuario la nombra (`/hallmark audit <ruta>` o `/hallmark redesign <ruta>`).
