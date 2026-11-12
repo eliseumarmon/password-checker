@@ -2,7 +2,7 @@
 
 Objetivo: dar a la aplicación una identidad y una jerarquía propias, en lugar del aspecto monótono de hoy. La dirección se escribe en §1 y §2 de la [guía visual](../../docs/guia-visual.md) y se aplica sobre las variables CSS de `css-tokens` y `scale-tokens`, más una escala de espaciado.
 Rama: `feat/visual-direction`, encadenada sobre `refactor/scale-tokens` (`1d2ef00`), sin fusionar todavía. Usuario: «No es necesario subir. Podemos trabajar partiendo desde esta rama ya que van muy ligadas.» Fase 2, n.º 3. Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L21); T1 a T4 hechas; T5 en curso.
+Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L22); T1 a T5 hechas; T6 en curso.
 
 ## Specs
 
@@ -28,7 +28,7 @@ Rediseño completo con Hallmark (`/hallmark redesign`, profundidad `full`, alcan
 - [x] T2 — Sistema Console: los colores, la tipografía, el espaciado (escala de 4 px, S3, con las cinco declaraciones muertas de `scale-tokens` L6), los radios (10, 6 y 4 px) y el suelo de Hallmark: bordes de campo a 3:1, `:active`, foco en ámbar, `overflow-x: clip`, la barra lateral sin animar su anchura y el sello en la primera línea del CSS. Ruta: inline.
 - [x] T3 — Cabecera: las cuatro cifras como un panel de lecturas cortado por filetes, con los valores en Atkinson Hyperlegible Mono (mismas etiquetas y clase `.metric`), la frase sin punto medio y las dos zonas fijas sin chocar (puerta 56). Ruta: inline.
 - [x] T4 — Credenciales: pestañas, filtros, tablas y tarjetas móviles en el material de Console. Chips en azul frío para lo que detecta la aplicación y en rojo para el conflicto; verbos en lugar de flechas («Comparar», «Editar»); iconos SVG en lugar de ↕ y ⚠. Ruta: inline.
-- [ ] T5 — Diálogos y avisos: la comparación como diff dentro de la ventana de hoy (decisión del usuario: «Diff en la ventana (Recomendado)»; el despliegue bajo la fila pasa a `compare-resolution`), la ficha, la sesión, la confirmación y los avisos de error, importación y cambio. Ruta: inline.
+- [x] T5 — Diálogos y avisos: la comparación como diff dentro de la ventana de hoy (decisión del usuario: «Diff en la ventana (Recomendado)»; el despliegue bajo la fila pasa a `compare-resolution`), la ficha, la sesión, la confirmación y los avisos de error, importación y cambio. Ruta: inline.
 - [ ] T6 — Auditoría, Papelera, Ajustes y bienvenida en el mismo material, sin recomponer la Auditoría (S5). Ruta: inline.
 - [ ] T7 — Barrido de Hallmark (`sloplint --render --kept`, puertas juzgadas y revisión final en contexto limpio), documentación (`docs/guia-visual.md` §1 y §2 reescritas según Console, hoja de ruta) y cierre del plan. Ruta: inline.
 
@@ -105,3 +105,9 @@ Rediseño completo con Hallmark (`/hallmark redesign`, profundidad `full`, alcan
   - «↶ Deshacer» se queda: siete pruebas lo buscan por ese nombre y ↶ no es un emoji.
   - Tablas en el material de Console: sin rellenos en cabecera ni celdas; nombres en tinta que se subrayan en ámbar al pasar el ratón; URL en Atkinson Hyperlegible Mono.
   - Comprobado: `npm run build` y la suite E2E completa, 203 pruebas, en verde. Captura de Credenciales revisada.
+- **L22 (2026-11-12).** T5 hecha. RED: `frontend/e2e/compare-diff.spec.ts`, dos pruebas que fallaban por lo esperado. GREEN:
+  - **Comparación como diff dentro de la ventana** (decisión de L13). Cada versión conserva su tarjeta `.compare-card` con sus botones, como leen las pruebas. Dentro: el origen («chrome, línea 2», sin punto medio) en Atkinson Hyperlegible Mono y azul frío; nombre, usuario y URL en filas con filete; y `.compare-flags` como columna de marcas del diff, con `=` y «igual» o `≠` y «distinta» en rojo suave para URL, usuario y contraseña. Se conserva el resumen «Versiones diferentes · 2 registros», que leen las pruebas.
+  - **Ficha.** «↗ Abrir sitio en pestaña nueva» pasa a un icono SVG de enlace externo más el texto (puerta 63); el origen, a «chrome, línea 4».
+  - **Avisos** de error, importación y cambio: filete en lugar de sombra, como pide Console; el aviso de cambio, en tinta sobre ámbar suave.
+  - Se retira la regla vieja de chips de `.compare-flags`, que ya no aplica.
+  - Comprobado: `npm run build` y la suite E2E completa, 205 pruebas, en verde. Captura de la comparación revisada.
