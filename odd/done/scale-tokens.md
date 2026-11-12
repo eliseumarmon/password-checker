@@ -2,7 +2,7 @@
 
 Objetivo: sustituir los tamaños de letra, la familia tipográfica, los pesos, las alturas de línea y los radios escritos directamente en `frontend/src/style.css` por variables CSS en `:root`, sin ningún cambio visual. Es la base para probar la nueva dirección visual tocando pocas líneas.
 Rama: `refactor/scale-tokens` desde `main` (`4ef1105`). Continúa `css-tokens` (Fase 1), que solo cubrió los colores. Fase 2, n.º 2: va antes de la dirección visual y de rehacer la Auditoría (L3). Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`, más la comparación de estilos calculados de S2. Estado: hecho (L7); verificación independiente pendiente.
+Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`, más la comparación de estilos calculados de S2. Estado: hecho (L8); verificación independiente superada.
 
 ## Specs
 
@@ -86,3 +86,8 @@ Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`, más la comparac
   - `npm run build` y la suite E2E completa (196 pruebas) en verde.
 - **L6 (2026-11-12).** T3 llegó a una correspondencia completa del espaciado: 136 declaraciones, 133 variables (casi una por uso, porque apenas hay funciones que compartan valor) y cinco declaraciones muertas más dentro de `.sticky-head`. Ante la pregunta de si aplicarla o dejar el espaciado para la dirección visual, el usuario aclaró: «Pensaba que ibas a hacer lo de la direccion visual y no extraer todas las variables». Había entendido «Los espaciados también deberían entrar» como extraerlos ya; la intención era resolverlos con la escala. Se retiran T3 y T4 sin aplicar nada: el espaciado pasa a la dirección visual, con una escala sobre la base de 4 px y pocas variables de función. Las cinco declaraciones muertas (`.topbar` y `.metrics` `margin-bottom`; en móvil, `.top-actions` `margin-top`, `.metrics` `gap` y `.metric` `padding`) quedan anotadas para entonces.
 - **L7 (2026-11-12).** T5, documentación: `docs/guia-visual.md` (§2.2: dónde viven las variables, sus diferencias con la escala y que el espaciado queda para la dirección visual) y `docs/hoja-de-ruta.md` (el plan enlaza a `odd/done/`). El plan pasa a `odd/done/`.
+- **L8 (2026-11-12).** Verificación independiente de T2: **superada**, sin bloqueos ni advertencias. El verificador trabajó en copias aparte de `main` (`4ef1105`) y de la rama (`f282a81`), cada una compilada y servida por turnos en el puerto 5173, con un script propio:
+  - S2: fuera de `:root` solo quedan `border-radius:0` y `font:inherit`; las 33 variables están definidas y en uso; `style.css` es el único archivo de código que cambia.
+  - S4: estilos calculados de cada elemento y de sus `::before` y `::after` en 11 estados a 1440 × 900 y a 390 × 844, con el aviso de importación y el de cambio visibles: 3 888 entradas, 0 diferencias. Control negativo: un radio de `.status` alterado en 1 px da 44 diferencias por tamaño.
+  - Las dos reglas retiradas estaban muertas: el único `h1` y las cuatro métricas viven siempre dentro de `.sticky-head`.
+  - `npm run build` pasa en las dos copias. Sin cubrir, igual que en T2: `:hover` y `:focus-visible`, que no declaran estas propiedades.
