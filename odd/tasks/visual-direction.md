@@ -2,7 +2,7 @@
 
 Objetivo: dar a la aplicación una identidad y una jerarquía propias, en lugar del aspecto monótono de hoy. La dirección se escribe en §1 y §2 de la [guía visual](../../docs/guia-visual.md) y se aplica sobre las variables CSS de `css-tokens` y `scale-tokens`, más una escala de espaciado.
 Rama: `feat/visual-direction`, encadenada sobre `refactor/scale-tokens` (`1d2ef00`), sin fusionar todavía. Usuario: «No es necesario subir. Podemos trabajar partiendo desde esta rama ya que van muy ligadas.» Fase 2, n.º 3. Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L5); «Mesa de revisión» descartada; se valora usar la skill `hallmark`.
+Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L6); auditoría de Hallmark hecha, pendiente de que el usuario decida el alcance del rediseño.
 
 ## Specs
 
@@ -37,3 +37,7 @@ Se concretan cuando estén resueltos los supuestos. Previsión: guía (§1 y §2
   - **Principios:** una frase dice lo que falta; lo resuelto se aparta; menos cajas; el estado se ve en el borde de la fila; leer antes que decorar.
   - Revisada contra los rasgos genéricos que señala la skill: sin fondo crema ni casi negro con un acento ácido, sin tarjetas iguales, sin etiquetas en mayúsculas ni separadores de punto medio.
 - **L5 (2026-11-12).** El usuario descarta la propuesta: «No me gusta. He añadido una nueva skill. Echa un vistazo». Skill nueva: `hallmark` (`.claude/skills/hallmark`), que en un diseño existente solo se usa si el usuario la nombra (`/hallmark audit <ruta>` o `/hallmark redesign <ruta>`).
+- **L6 (2026-11-12).** `/hallmark audit frontend`, a petición del usuario. Sin cambios en el código. Género inferido: `modern-minimal`, con alcance de pantalla de aplicación (`--scope app`).
+  - Linter (`sloplint --render --before`) sobre `frontend/src` y la pantalla inicial servida en el puerto 5173 con 37 registros ficticios: 19 FAIL, 79 REFLEX (77 de espaciado fuera de la escala de 4 px) y 18 WARN. El registro de lo que tiene hoy la pantalla está en `.hallmark/` (excluida de Git en local, como `.claude/`).
+  - Hallmark solo renderiza URL, y la aplicación cambia de pantalla sin cambiar la URL; la Auditoría, Ajustes y los diálogos se juzgaron con capturas propias.
+  - `puppeteer-core` 25.16.0 se instaló en una carpeta temporal fuera del repositorio, solo para el renderizado.
