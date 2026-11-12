@@ -2,7 +2,7 @@
 
 Objetivo: dar a la aplicación una identidad y una jerarquía propias, en lugar del aspecto monótono de hoy. La dirección se escribe en §1 y §2 de la [guía visual](../../docs/guia-visual.md) y se aplica sobre las variables CSS de `css-tokens` y `scale-tokens`, más una escala de espaciado.
 Rama: `feat/visual-direction`, encadenada sobre `refactor/scale-tokens` (`1d2ef00`), sin fusionar todavía. Usuario: «No es necesario subir. Podemos trabajar partiendo desde esta rama ya que van muy ligadas.» Fase 2, n.º 3. Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L16); primera parte (T1 y T2) hecha, pendiente de que el usuario la vea antes de seguir con T3 a T7.
+Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L19); primera parte aprobada por el usuario; T3 en curso.
 
 ## Specs
 
@@ -92,3 +92,4 @@ Rediseño completo con Hallmark (`/hallmark redesign`, profundidad `full`, alcan
 - **L18 (2026-11-12).** Segunda revisión de la primera parte: aprobada con dos avisos, que se hacen al empezar T3 para revisarlos junto con ella.
   - El desplazamiento al recibir el foco (`dialogFocus.ts`) actúa también con clics del ratón: un campo que asoma en parte se mueve bajo el puntero, y uno más alto que la zona visible puede saltar. Se limitará a la navegación con teclado, con una prueba de clic.
   - `fonts.spec.ts` demuestra que las fuentes se descargan del propio origen, no que se usan: se añadirá una comprobación del estilo calculado del cuerpo y de un campo de contraseña.
+- **L19 (2026-11-12).** El usuario vio la primera parte en su propia instancia, que sirve `frontend/dist`: «No hace falta se ha modificado en el servidor abierto en el puerto 8000 está muy bien. Seguimos por este camino». Empieza T3.
