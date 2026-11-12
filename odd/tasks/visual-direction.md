@@ -2,7 +2,7 @@
 
 Objetivo: dar a la aplicación una identidad y una jerarquía propias, en lugar del aspecto monótono de hoy. La dirección se escribe en §1 y §2 de la [guía visual](../docs/guia-visual.md) y se aplica sobre las variables CSS de `css-tokens` y `scale-tokens`, más una escala de espaciado.
 Rama: `feat/visual-direction`, encadenada sobre `refactor/scale-tokens` (`1d2ef00`), sin fusionar todavía. Usuario: «No es necesario subir. Podemos trabajar partiendo desde esta rama ya que van muy ligadas.» Fase 2, n.º 3. Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L2); encargo confirmado, quedan supuestos.
+Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L3); encargo y tipografía decididos.
 
 ## Specs
 
@@ -16,6 +16,7 @@ Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de ca
   - Sin peticiones a Internet: ninguna fuente, icono ni imagen remota (§2.2, §7).
   - Estados identificados con texto e icono, nunca solo con color; contraste AA medido (§2.1).
   - Foco visible, objetivos táctiles de 44 px, `prefers-reduced-motion` (§2.2).
+  - Tipografía: una fuente propia con licencia libre, incluida en la aplicación como `woff2` y servida por ella misma; nunca desde Internet. La CSP de la página (`default-src 'self'`) ya lo permite (L3).
   - Tema oscuro por defecto; el tema claro es de la Fase 4 (`light-theme`), pero la paleta nueva debe poder tener su versión clara.
 - **S5 — Fuera de alcance.** Rehacer la Auditoría (Fase 2, n.º 4, `audit-layout`), que se hará sobre esta dirección.
 
@@ -27,3 +28,4 @@ Se concretan cuando estén resueltos los supuestos. Previsión: guía (§1 y §2
 
 - **L1 (2026-11-12).** Empieza el plan, a petición del usuario. Parte de `refactor/scale-tokens`, que deja en variables la tipografía y los radios, sin cambio visual y verificado. Pendiente: confirmar el encargo (S2) y después los demás supuestos, de uno en uno.
 - **L2 (2026-11-12).** Encargo (S2) propuesto a partir del README y del flujo de usuario. Usuario: «Me encaja».
+- **L3 (2026-11-12).** Tipografía. Opciones: una fuente propia incluida en la aplicación o solo las del sistema, que cambian según el equipo. Usuario: «Fuente propia incluida (Recomendado)». Coste previsto: 50–150 KB y un archivo de licencia; hoy el JS pesa 117 KB y el CSS 16 KB.
