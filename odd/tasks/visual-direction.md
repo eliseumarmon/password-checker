@@ -2,7 +2,7 @@
 
 Objetivo: dar a la aplicación una identidad y una jerarquía propias, en lugar del aspecto monótono de hoy. La dirección se escribe en §1 y §2 de la [guía visual](../../docs/guia-visual.md) y se aplica sobre las variables CSS de `css-tokens` y `scale-tokens`, más una escala de espaciado.
 Rama: `feat/visual-direction`, encadenada sobre `refactor/scale-tokens` (`1d2ef00`), sin fusionar todavía. Usuario: «No es necesario subir. Podemos trabajar partiendo desde esta rama ya que van muy ligadas.» Fase 2, n.º 3. Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L13); dirección y comparación decididas; tareas T1 a T7 definidas, pendiente de la forma de entrega.
+Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L14); entrega por partes: T1 y T2 primero; T1 en curso.
 
 ## Specs
 
@@ -69,3 +69,4 @@ Rediseño completo con Hallmark (`/hallmark redesign`, profundidad `full`, alcan
 - **L12 (2026-11-12).** Sobre «Password Checker en Console», el usuario: «Me gusta infinitamente más». Dirección elegida: el tema Console de Hallmark en gama graphite, sin las estructuras propias (Material, chips, panel lateral). Es un tema del catálogo pedido por el usuario (`theme: Console (by request)`), no un tema a medida.
   - Decisión abierta: la muestra despliega la comparación bajo su fila, pero hoy es una ventana emergente de la que dependen unas 15 comprobaciones en 5 archivos E2E (`review`, `change-notices`, `dialogs`, `import-warnings`, `safari-totp`), y `compare-resolution` (Fase 2, n.º 9 y 10) ya rehace la comparación.
 - **L13 (2026-11-12).** Comparación: «Diff en la ventana (Recomendado)». El diff de la muestra va dentro de la ventana de hoy y no se toca ninguna prueba; el despliegue bajo la fila pasa a `compare-resolution`. Tareas T1 a T7 definidas. Previsión: bastante más de 400 líneas, así que se pregunta la forma de entrega.
+- **L14 (2026-11-12).** Entrega: «Por partes (Recomendado)». Primero T1 y T2, que cambian el aspecto de toda la aplicación, y se enseñan al usuario antes de seguir con T3 a T7.
