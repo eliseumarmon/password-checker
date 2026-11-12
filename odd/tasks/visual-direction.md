@@ -2,7 +2,7 @@
 
 Objetivo: dar a la aplicación una identidad y una jerarquía propias, en lugar del aspecto monótono de hoy. La dirección se escribe en §1 y §2 de la [guía visual](../../docs/guia-visual.md) y se aplica sobre las variables CSS de `css-tokens` y `scale-tokens`, más una escala de espaciado.
 Rama: `feat/visual-direction`, encadenada sobre `refactor/scale-tokens` (`1d2ef00`), sin fusionar todavía. Usuario: «No es necesario subir. Podemos trabajar partiendo desde esta rama ya que van muy ligadas.» Fase 2, n.º 3. Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L12); dirección elegida: Console (graphite) puro; pendiente decidir dónde vive la comparación.
+Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L13); dirección y comparación decididas; tareas T1 a T7 definidas, pendiente de la forma de entrega.
 
 ## Specs
 
@@ -22,7 +22,15 @@ Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de ca
 
 ## Tasks
 
-Se concretan cuando estén resueltos los supuestos. Previsión: guía (§1 y §2 reescritas, con bocetos), escala de espaciado y aplicación pantalla a pantalla con capturas.
+Rediseño completo con Hallmark (`/hallmark redesign`, profundidad `full`, alcance de aplicación) y el tema Console en gama graphite (L12). Se conservan el contenido y el cableado: manejadores, roles, etiquetas y clases que leen las pruebas E2E. Ninguna prueba se cambia para que pase el rediseño. Cada tarea termina con `npm run build`, la suite E2E completa y capturas de antes y después.
+
+- [ ] T1 — Fuentes incluidas: Host Grotesk (400 y 500) y Atkinson Hyperlegible Mono (400 y 500), archivos `woff2` oficiales sin modificar, con sus licencias OFL, servidos por la propia aplicación. RED: prueba E2E de que las dos familias cargan y de que la página no pide nada fuera de su origen. Ruta: inline.
+- [ ] T2 — Sistema Console: los colores, la tipografía, el espaciado (escala de 4 px, S3, con las cinco declaraciones muertas de `scale-tokens` L6), los radios (10, 6 y 4 px) y el suelo de Hallmark: bordes de campo a 3:1, `:active`, foco en ámbar, `overflow-x: clip`, la barra lateral sin animar su anchura y el sello en la primera línea del CSS. Ruta: inline.
+- [ ] T3 — Cabecera: las cuatro cifras como un panel de lecturas cortado por filetes, con los valores en Atkinson Hyperlegible Mono (mismas etiquetas y clase `.metric`), la frase sin punto medio y las dos zonas fijas sin chocar (puerta 56). Ruta: inline.
+- [ ] T4 — Credenciales: pestañas, filtros, tablas y tarjetas móviles en el material de Console. Chips en azul frío para lo que detecta la aplicación y en rojo para el conflicto; verbos en lugar de flechas («Comparar», «Editar»); iconos SVG en lugar de ↕ y ⚠. Ruta: inline.
+- [ ] T5 — Diálogos y avisos: la comparación como diff dentro de la ventana de hoy (decisión del usuario: «Diff en la ventana (Recomendado)»; el despliegue bajo la fila pasa a `compare-resolution`), la ficha, la sesión, la confirmación y los avisos de error, importación y cambio. Ruta: inline.
+- [ ] T6 — Auditoría, Papelera, Ajustes y bienvenida en el mismo material, sin recomponer la Auditoría (S5). Ruta: inline.
+- [ ] T7 — Barrido de Hallmark (`sloplint --render --kept`, puertas juzgadas y revisión final en contexto limpio), documentación (`docs/guia-visual.md` §1 y §2 reescritas según Console, hoja de ruta) y cierre del plan. Ruta: inline.
 
 ## Log
 
@@ -60,3 +68,4 @@ Se concretan cuando estén resueltos los supuestos. Previsión: guía (§1 y §2
   - `sloplint`: 0 FAIL; la marca de 59 px como excepción y el aviso de la tabla en el móvil descartado, porque la pantalla real usa tarjetas en el móvil.
 - **L12 (2026-11-12).** Sobre «Password Checker en Console», el usuario: «Me gusta infinitamente más». Dirección elegida: el tema Console de Hallmark en gama graphite, sin las estructuras propias (Material, chips, panel lateral). Es un tema del catálogo pedido por el usuario (`theme: Console (by request)`), no un tema a medida.
   - Decisión abierta: la muestra despliega la comparación bajo su fila, pero hoy es una ventana emergente de la que dependen unas 15 comprobaciones en 5 archivos E2E (`review`, `change-notices`, `dialogs`, `import-warnings`, `safari-totp`), y `compare-resolution` (Fase 2, n.º 9 y 10) ya rehace la comparación.
+- **L13 (2026-11-12).** Comparación: «Diff en la ventana (Recomendado)». El diff de la muestra va dentro de la ventana de hoy y no se toca ninguna prueba; el despliegue bajo la fila pasa a `compare-resolution`. Tareas T1 a T7 definidas. Previsión: bastante más de 400 líneas, así que se pregunta la forma de entrega.
