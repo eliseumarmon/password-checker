@@ -1,12 +1,12 @@
 import type { CredentialType, DuplicateGroup, RecordEdit, Review, Screen, UndoStep } from './types';
 
-type ScreenIcon = { kind: 'glyph'; text: string } | { kind: 'trash' };
+type ScreenIcon = { kind: 'list' | 'shield' | 'tune' | 'trash' };
 
 export const SCREENS: { id: Screen; icon: ScreenIcon; label: string; title: string; showCount: boolean }[] = [
-  { id: 'credentials', icon: { kind: 'glyph', text: '▤' }, label: 'Credenciales', title: 'Credenciales', showCount: false },
-  { id: 'audit', icon: { kind: 'glyph', text: '⬡' }, label: 'Auditoría', title: 'Auditoría local', showCount: false },
+  { id: 'credentials', icon: { kind: 'list' }, label: 'Credenciales', title: 'Credenciales', showCount: false },
+  { id: 'audit', icon: { kind: 'shield' }, label: 'Auditoría', title: 'Auditoría local', showCount: false },
   { id: 'trash', icon: { kind: 'trash' }, label: 'Papelera', title: 'Papelera', showCount: true },
-  { id: 'settings', icon: { kind: 'glyph', text: '⚙' }, label: 'Ajustes', title: 'Ajustes', showCount: false },
+  { id: 'settings', icon: { kind: 'tune' }, label: 'Ajustes', title: 'Ajustes', showCount: false },
 ];
 
 /** Every review state, in the order the review moves through them. */

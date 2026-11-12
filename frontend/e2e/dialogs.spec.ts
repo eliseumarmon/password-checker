@@ -111,7 +111,7 @@ test.describe('record dialog', () => {
   test('moves focus to the next card when its row leaves on a small screen', async ({ page }) => {
     await seedRecords(page, 'Alpha', 'Bravo', 'Charlie');
     await page.setViewportSize({ width: 390, height: 844 });
-    const edit = (name: string) => page.locator('.mobile-cards .record-card', { hasText: name }).getByRole('button', { name: 'Editar →' });
+    const edit = (name: string) => page.locator('.mobile-cards .record-card', { hasText: name }).getByRole('button', { name: 'Editar' });
     await openWithKeyboard(page, edit('Bravo'));
     await editor(page).getByRole('button', { name: 'Descartar' }).click();
     await expect(page.locator('.mobile-cards .record-card')).toHaveCount(2);
@@ -124,7 +124,7 @@ test.describe('record dialog on a touch screen', () => {
 
   test('starts on its title, so that the on-screen keyboard stays closed', async ({ page }) => {
     await seedRecords(page, 'Alpha');
-    await page.locator('.mobile-cards .record-card').getByRole('button', { name: 'Editar →' }).tap();
+    await page.locator('.mobile-cards .record-card').getByRole('button', { name: 'Editar' }).tap();
     await expect(editor(page).getByRole('heading', { name: 'Editar credencial' })).toBeFocused();
   });
 });

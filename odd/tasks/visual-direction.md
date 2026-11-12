@@ -2,7 +2,7 @@
 
 Objetivo: dar a la aplicación una identidad y una jerarquía propias, en lugar del aspecto monótono de hoy. La dirección se escribe en §1 y §2 de la [guía visual](../../docs/guia-visual.md) y se aplica sobre las variables CSS de `css-tokens` y `scale-tokens`, más una escala de espaciado.
 Rama: `feat/visual-direction`, encadenada sobre `refactor/scale-tokens` (`1d2ef00`), sin fusionar todavía. Usuario: «No es necesario subir. Podemos trabajar partiendo desde esta rama ya que van muy ligadas.» Fase 2, n.º 3. Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L20); T1 a T3 hechas; T4 en curso.
+Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L21); T1 a T4 hechas; T5 en curso.
 
 ## Specs
 
@@ -27,7 +27,7 @@ Rediseño completo con Hallmark (`/hallmark redesign`, profundidad `full`, alcan
 - [x] T1 — Fuentes incluidas: Host Grotesk (400 y 500) y Atkinson Hyperlegible Mono (400 y 500), archivos oficiales sin modificar (TTF variables; ver L15), con sus licencias OFL, servidos por la propia aplicación. RED: prueba E2E de que las dos familias cargan y de que la página no pide nada fuera de su origen. Ruta: inline.
 - [x] T2 — Sistema Console: los colores, la tipografía, el espaciado (escala de 4 px, S3, con las cinco declaraciones muertas de `scale-tokens` L6), los radios (10, 6 y 4 px) y el suelo de Hallmark: bordes de campo a 3:1, `:active`, foco en ámbar, `overflow-x: clip`, la barra lateral sin animar su anchura y el sello en la primera línea del CSS. Ruta: inline.
 - [x] T3 — Cabecera: las cuatro cifras como un panel de lecturas cortado por filetes, con los valores en Atkinson Hyperlegible Mono (mismas etiquetas y clase `.metric`), la frase sin punto medio y las dos zonas fijas sin chocar (puerta 56). Ruta: inline.
-- [ ] T4 — Credenciales: pestañas, filtros, tablas y tarjetas móviles en el material de Console. Chips en azul frío para lo que detecta la aplicación y en rojo para el conflicto; verbos en lugar de flechas («Comparar», «Editar»); iconos SVG en lugar de ↕ y ⚠. Ruta: inline.
+- [x] T4 — Credenciales: pestañas, filtros, tablas y tarjetas móviles en el material de Console. Chips en azul frío para lo que detecta la aplicación y en rojo para el conflicto; verbos en lugar de flechas («Comparar», «Editar»); iconos SVG en lugar de ↕ y ⚠. Ruta: inline.
 - [ ] T5 — Diálogos y avisos: la comparación como diff dentro de la ventana de hoy (decisión del usuario: «Diff en la ventana (Recomendado)»; el despliegue bajo la fila pasa a `compare-resolution`), la ficha, la sesión, la confirmación y los avisos de error, importación y cambio. Ruta: inline.
 - [ ] T6 — Auditoría, Papelera, Ajustes y bienvenida en el mismo material, sin recomponer la Auditoría (S5). Ruta: inline.
 - [ ] T7 — Barrido de Hallmark (`sloplint --render --kept`, puertas juzgadas y revisión final en contexto limpio), documentación (`docs/guia-visual.md` §1 y §2 reescritas según Console, hoja de ruta) y cierre del plan. Ruta: inline.
@@ -99,3 +99,9 @@ Rediseño completo con Hallmark (`/hallmark redesign`, profundidad `full`, alcan
   - **Foco en los diálogos.** El desplazamiento al recibir el foco ya no actúa si el foco llega por un clic. Prueba nueva: un clic en «Notas», que asoma solo en parte, no mueve el contenido.
   - **Fuentes.** `fonts.spec.ts` comprueba también que el cuerpo y los campos de contraseña usan las fuentes incluidas.
   - Comprobado: `npm run build` y la suite E2E completa, 202 pruebas, en verde. Capturas a 1440 y 390 px revisadas.
+- **L21 (2026-11-12).** T4 hecha. RED: `frontend/e2e/icons.spec.ts` fallaba porque de los iconos de la navegación solo la papelera era SVG. GREEN:
+  - `UiIcon.vue`, iconos de trazo como `TrashIcon`, sustituye a ▤, ⬡ y ⚙ en las dos navegaciones, a ↕, ↑ y ↓ en las cabeceras ordenables, a «, ‹, › y » en el paginador y a ⚠ en el aviso de importación (puerta 30a). Los nombres accesibles no cambian.
+  - Copy (puerta 63): «Comparar →» y «Editar →» de las tarjetas móviles pasan a «Comparar» y «Editar»; la nota de la barra lateral pasa a «Solo en este equipo, sin conexión externa.». Por eso cambian dos localizadores de `dialogs.spec.ts` (`'Editar →'` pasa a `'Editar'`): es el único cambio en una prueba existente y solo sigue al texto nuevo. Se conservan los puntos medios únicos que leen las pruebas («Web · chrome» en las tarjetas, «Versiones diferentes · 2 registros» en la comparación); Hallmark admite uno en un pie o una leyenda.
+  - «↶ Deshacer» se queda: siete pruebas lo buscan por ese nombre y ↶ no es un emoji.
+  - Tablas en el material de Console: sin rellenos en cabecera ni celdas; nombres en tinta que se subrayan en ámbar al pasar el ratón; URL en Atkinson Hyperlegible Mono.
+  - Comprobado: `npm run build` y la suite E2E completa, 203 pruebas, en verde. Captura de Credenciales revisada.
