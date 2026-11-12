@@ -294,7 +294,7 @@ onUnmounted(() => {
     <main class="main">
       <div ref="stickyHead" class="sticky-head">
       <header class="topbar">
-        <div><h1>{{ SCREENS.find(s => s.id === screen)?.title }}</h1><p>Los originales no se modifican · Las contraseñas permanecen ocultas</p></div>
+        <div><h1>{{ SCREENS.find(s => s.id === screen)?.title }}</h1><p>Los originales no se modifican. Las contraseñas permanecen ocultas.</p></div>
         <div class="top-actions">
           <button v-if="data?.stats.total" @click="showSession('save')">Guardar sesión cifrada</button>
           <button :disabled="!data?.can_undo || store.busy" @click="undoShown" :title="undoTitle">↶ Deshacer</button>

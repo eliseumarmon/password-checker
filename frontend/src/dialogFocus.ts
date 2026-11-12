@@ -101,9 +101,13 @@ export function useDialogFocus(dialog: Ref<HTMLElement | null>, options: { initi
   }
 
   // A field the dialog's scrolling content has clipped can stay partly hidden when it gets focus:
-  // the browser may leave a field that already shows in part where it is. Bring it fully into view.
+  // the browser may leave a field that already shows in part where it is. Bring it fully into view,
+  // unless a click gave the focus: the content must not move under the pointer.
+  let pointerDown = false;
+  function onPointerDown(): void { pointerDown = true; }
+  function onPointerUp(): void { setTimeout(() => { pointerDown = false; }); }
   function onFocusIn(event: FocusEvent): void {
-    if (event.target instanceof HTMLElement) event.target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    if (!pointerDown && event.target instanceof HTMLElement) event.target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
   // Kept here: Vue may clear the template ref before onUnmounted runs.
   let element: HTMLElement | null = null;
@@ -113,12 +117,18 @@ export function useDialogFocus(dialog: Ref<HTMLElement | null>, options: { initi
     document.addEventListener('keydown', onKeydown);
     element = dialog.value;
     element?.addEventListener('focusin', onFocusIn);
+    element?.addEventListener('pointerdown', onPointerDown);
+    element?.addEventListener('pointerup', onPointerUp);
+    element?.addEventListener('pointercancel', onPointerUp);
     options.initial()?.focus();
   });
 
   onUnmounted(async () => {
     document.removeEventListener('keydown', onKeydown);
     element?.removeEventListener('focusin', onFocusIn);
+    element?.removeEventListener('pointerdown', onPointerDown);
+    element?.removeEventListener('pointerup', onPointerUp);
+    element?.removeEventListener('pointercancel', onPointerUp);
     openDialogs.splice(openDialogs.indexOf(self), 1);
     // The row that opened the dialog may leave in this same update.
     await nextTick();

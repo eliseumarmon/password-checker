@@ -2,7 +2,7 @@
 
 Objetivo: dar a la aplicación una identidad y una jerarquía propias, en lugar del aspecto monótono de hoy. La dirección se escribe en §1 y §2 de la [guía visual](../../docs/guia-visual.md) y se aplica sobre las variables CSS de `css-tokens` y `scale-tokens`, más una escala de espaciado.
 Rama: `feat/visual-direction`, encadenada sobre `refactor/scale-tokens` (`1d2ef00`), sin fusionar todavía. Usuario: «No es necesario subir. Podemos trabajar partiendo desde esta rama ya que van muy ligadas.» Fase 2, n.º 3. Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L19); primera parte aprobada por el usuario; T3 en curso.
+Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L20); T1 a T3 hechas; T4 en curso.
 
 ## Specs
 
@@ -26,7 +26,7 @@ Rediseño completo con Hallmark (`/hallmark redesign`, profundidad `full`, alcan
 
 - [x] T1 — Fuentes incluidas: Host Grotesk (400 y 500) y Atkinson Hyperlegible Mono (400 y 500), archivos oficiales sin modificar (TTF variables; ver L15), con sus licencias OFL, servidos por la propia aplicación. RED: prueba E2E de que las dos familias cargan y de que la página no pide nada fuera de su origen. Ruta: inline.
 - [x] T2 — Sistema Console: los colores, la tipografía, el espaciado (escala de 4 px, S3, con las cinco declaraciones muertas de `scale-tokens` L6), los radios (10, 6 y 4 px) y el suelo de Hallmark: bordes de campo a 3:1, `:active`, foco en ámbar, `overflow-x: clip`, la barra lateral sin animar su anchura y el sello en la primera línea del CSS. Ruta: inline.
-- [ ] T3 — Cabecera: las cuatro cifras como un panel de lecturas cortado por filetes, con los valores en Atkinson Hyperlegible Mono (mismas etiquetas y clase `.metric`), la frase sin punto medio y las dos zonas fijas sin chocar (puerta 56). Ruta: inline.
+- [x] T3 — Cabecera: las cuatro cifras como un panel de lecturas cortado por filetes, con los valores en Atkinson Hyperlegible Mono (mismas etiquetas y clase `.metric`), la frase sin punto medio y las dos zonas fijas sin chocar (puerta 56). Ruta: inline.
 - [ ] T4 — Credenciales: pestañas, filtros, tablas y tarjetas móviles en el material de Console. Chips en azul frío para lo que detecta la aplicación y en rojo para el conflicto; verbos en lugar de flechas («Comparar», «Editar»); iconos SVG en lugar de ↕ y ⚠. Ruta: inline.
 - [ ] T5 — Diálogos y avisos: la comparación como diff dentro de la ventana de hoy (decisión del usuario: «Diff en la ventana (Recomendado)»; el despliegue bajo la fila pasa a `compare-resolution`), la ficha, la sesión, la confirmación y los avisos de error, importación y cambio. Ruta: inline.
 - [ ] T6 — Auditoría, Papelera, Ajustes y bienvenida en el mismo material, sin recomponer la Auditoría (S5). Ruta: inline.
@@ -93,3 +93,9 @@ Rediseño completo con Hallmark (`/hallmark redesign`, profundidad `full`, alcan
   - El desplazamiento al recibir el foco (`dialogFocus.ts`) actúa también con clics del ratón: un campo que asoma en parte se mueve bajo el puntero, y uno más alto que la zona visible puede saltar. Se limitará a la navegación con teclado, con una prueba de clic.
   - `fonts.spec.ts` demuestra que las fuentes se descargan del propio origen, no que se usan: se añadirá una comprobación del estilo calculado del cuerpo y de un campo de contraseña.
 - **L19 (2026-11-12).** El usuario vio la primera parte en su propia instancia, que sirve `frontend/dist`: «No hace falta se ha modificado en el servidor abierto en el puerto 8000 está muy bien. Seguimos por este camino». Empieza T3.
+- **L20 (2026-11-12).** T3 hecha, con los dos avisos de L18. RED: tres pruebas nuevas fallaban por lo esperado (`header.spec.ts` y el clic de `dialogs.spec.ts`); las dos de `fonts.spec.ts` ya pasaban con T2 y quedan como protección. GREEN:
+  - **Cabecera.** Las cuatro cifras son un solo panel de filete con costuras de 1 px, «Revisadas» más ancha y su barra en ámbar, y los valores en Atkinson Hyperlegible Mono. Se conservan la clase `.metric`, su `strong`, las etiquetas y el alto máximo de 76 px que protegen las pruebas. La frase pasa a «Los originales no se modifican. Las contraseñas permanecen ocultas.».
+  - **Puerta 56.** La barra lateral pasa de `sticky` a `fixed` y el armazón reserva su anchura con `--rail-width` (242 px, o 64 px plegada); así solo la cabecera queda fija arriba.
+  - **Foco en los diálogos.** El desplazamiento al recibir el foco ya no actúa si el foco llega por un clic. Prueba nueva: un clic en «Notas», que asoma solo en parte, no mueve el contenido.
+  - **Fuentes.** `fonts.spec.ts` comprueba también que el cuerpo y los campos de contraseña usan las fuentes incluidas.
+  - Comprobado: `npm run build` y la suite E2E completa, 202 pruebas, en verde. Capturas a 1440 y 390 px revisadas.

@@ -218,3 +218,19 @@ for (const [label, width, height] of [['on a desktop', 1280, 720], ['on a phone'
     expect(field!.y).toBeGreaterThanOrEqual(view!.y);
   });
 }
+
+test('leaves the content where it is when a click focuses a field the dialog shows in part', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await seedRecords(page, 'Example');
+  await page.locator('button:visible', { hasText: 'Editar' }).first().click();
+  const content = editor(page).locator('.dialog-content');
+  // Only the top of the notes field shows above the bottom edge of the scrolling content.
+  const before = await content.evaluate(box => {
+    const field = box.querySelector('textarea')!;
+    box.scrollTop += field.getBoundingClientRect().top - box.getBoundingClientRect().bottom + 30;
+    return box.scrollTop;
+  });
+  await editor(page).getByLabel('Notas').click({ position: { x: 40, y: 10 } });
+  await expect(editor(page).getByLabel('Notas')).toBeFocused();
+  expect(await content.evaluate(box => box.scrollTop)).toBe(before);
+});
