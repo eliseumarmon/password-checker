@@ -2,7 +2,7 @@
 
 Objetivo: dar a la aplicación una identidad y una jerarquía propias, en lugar del aspecto monótono de hoy. La dirección se escribe en §1 y §2 de la [guía visual](../docs/guia-visual.md) y se aplica sobre las variables CSS de `css-tokens` y `scale-tokens`, más una escala de espaciado.
 Rama: `feat/visual-direction`, encadenada sobre `refactor/scale-tokens` (`1d2ef00`), sin fusionar todavía. Usuario: «No es necesario subir. Podemos trabajar partiendo desde esta rama ya que van muy ligadas.» Fase 2, n.º 3. Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L3); encargo y tipografía decididos.
+Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L4); propuesta de dirección («Mesa de revisión») pendiente de la opinión del usuario.
 
 ## Specs
 
@@ -29,3 +29,10 @@ Se concretan cuando estén resueltos los supuestos. Previsión: guía (§1 y §2
 - **L1 (2026-11-12).** Empieza el plan, a petición del usuario. Parte de `refactor/scale-tokens`, que deja en variables la tipografía y los radios, sin cambio visual y verificado. Pendiente: confirmar el encargo (S2) y después los demás supuestos, de uno en uno.
 - **L2 (2026-11-12).** Encargo (S2) propuesto a partir del README y del flujo de usuario. Usuario: «Me encaja».
 - **L3 (2026-11-12).** Tipografía. Opciones: una fuente propia incluida en la aplicación o solo las del sistema, que cambian según el equipo. Usuario: «Fuente propia incluida (Recomendado)». Coste previsto: 50–150 KB y un archivo de licencia; hoy el JS pesa 117 KB y el CSS 16 KB.
+- **L4 (2026-11-12).** Propuesta «Mesa de revisión», publicada como página privada para el usuario (artefacto `Dp98igUNmxK4wEk72UndCs`, con datos ficticios). Contenido:
+  - **Elemento principal:** la cabecera dice con una frase lo que falta («Te quedan 37 registros por revisar»), propone el siguiente paso y muestra una barra con la composición del trabajo, en lugar de cuatro métricas iguales.
+  - **Tipografía:** Atkinson Hyperlegible Next, y su versión Mono para secretos revelados y códigos 2FA. Elegida porque distingue `lI1` y `O0`, y la tarea es comprobar usuarios y URL letra a letra. Licencia OFL con nombres reservados: se incluyen los archivos oficiales sin modificar. Cinco tamaños (14, 16, 18, 24 y 36 px), ninguno por debajo de 14.
+  - **Color:** fondo de tinta verde pizarra; lavanda solo para acciones, foco y ubicación; coral (crítico) y ámbar (atención) para lo pendiente; lo resuelto en gris con ✓, sin verde. Contraste AA en todos los pares de texto (mínimo 5,9:1).
+  - **Escalas:** espaciado de 4, 8, 12, 16, 24, 32 y 48 px; radios de 4 px (controles), 8 px (paneles) y 12 px (lo que flota).
+  - **Principios:** una frase dice lo que falta; lo resuelto se aparta; menos cajas; el estado se ve en el borde de la fila; leer antes que decorar.
+  - Revisada contra los rasgos genéricos que señala la skill: sin fondo crema ni casi negro con un acento ácido, sin tarjetas iguales, sin etiquetas en mayúsculas ni separadores de punto medio.
