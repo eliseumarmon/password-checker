@@ -19,7 +19,7 @@ function restore(row: CredentialSummary): Promise<void> {
 </script>
 
 <template>
-  <section class="workspace card">
+  <section class="workspace trash-panel">
     <h2>Credenciales descartadas</h2><p>No se exportan. Restaura las que quieras recuperar.</p>
     <p v-if="!rows.length" class="empty">La papelera está vacía.</p>
     <template v-else>

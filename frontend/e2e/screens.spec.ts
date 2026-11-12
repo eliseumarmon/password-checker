@@ -17,7 +17,8 @@ test('lists the audit without dashes and sets its counts as readings', async ({ 
   await expect(item).toContainText('Weak');
   await expect(item).toContainText('carol');
   await expect(item).not.toContainText('—');
-  const face = await page.locator('.audit-count').first().evaluate(count => getComputedStyle(count).fontFamily);
+  await expect(page.locator('.audit-block', { hasText: 'Contraseñas poco seguras' }).locator('.audit-count')).toHaveText('1 credencial');
+  const face = await page.locator('.audit-count .audit-figure').first().evaluate(count => getComputedStyle(count).fontFamily);
   expect(face).toMatch(/^"?Atkinson Hyperlegible Mono"?,/);
 });
 

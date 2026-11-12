@@ -19,7 +19,7 @@ const matches = computed(() => new Map(props.group?.members.map(member => [membe
 
 <template>
   <div class="overlay modal-overlay" @click.self="$emit('close')">
-    <section ref="dialog" class="compare-dialog card" role="dialog" aria-modal="true" aria-label="Comparar duplicados">
+    <section ref="dialog" class="compare-dialog" role="dialog" aria-modal="true" aria-label="Comparar duplicados">
       <slot />
       <div class="dialog-content">
       <div class="drawer-top"><h2 ref="title" tabindex="-1">Comparar registros</h2><button aria-label="Cerrar panel" @click="$emit('close')">✕</button></div>
