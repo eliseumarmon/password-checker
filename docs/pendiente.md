@@ -22,7 +22,7 @@ Este documento reúne lo que la aplicación todavía no hace: limitaciones conoc
 
 ## Funcionalidades planificadas
 
-No hay ninguna en curso. Las fases, los planes de cada funcionalidad y las decisiones pendientes están en la [hoja de ruta](hoja-de-ruta.md); solo están aprobadas la planificación de la Fase 1 y la de `review-filters`, de la Fase 2. La última funcionalidad completada es [deshacer con atajo y avisos de cambio](../odd/done/undo-ux.md): `Ctrl/Cmd+Z` fuera de los campos de texto y un aviso tras cada cambio que dice qué cambió y permite deshacerlo, sustituyendo al anterior.
+No hay ninguna en curso. Las fases, los planes de cada funcionalidad y las decisiones pendientes están en la [hoja de ruta](hoja-de-ruta.md); solo están aprobadas la planificación de la Fase 1 y la de `review-filters`, de la Fase 2. La última funcionalidad completada es la [dirección visual](../odd/done/visual-direction.md): rediseño completo con el tema Console de Hallmark (fondo de grafito, ámbar para lo que hace la persona y azul frío para lo que detecta la aplicación), con fuentes incluidas en la aplicación, cifras como panel de lecturas y la comparación como diff.
 
 ## Ideas de diseño sin implementar
 

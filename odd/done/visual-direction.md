@@ -2,7 +2,7 @@
 
 Objetivo: dar a la aplicación una identidad y una jerarquía propias, en lugar del aspecto monótono de hoy. La dirección se escribe en §1 y §2 de la [guía visual](../../docs/guia-visual.md) y se aplica sobre las variables CSS de `css-tokens` y `scale-tokens`, más una escala de espaciado.
 Rama: `feat/visual-direction`, encadenada sobre `refactor/scale-tokens` (`1d2ef00`), sin fusionar todavía. Usuario: «No es necesario subir. Podemos trabajar partiendo desde esta rama ya que van muy ligadas.» Fase 2, n.º 3. Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L23); T1 a T6 hechas; T7 en curso.
+Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: hecho (L25).
 
 ## Specs
 
@@ -30,7 +30,7 @@ Rediseño completo con Hallmark (`/hallmark redesign`, profundidad `full`, alcan
 - [x] T4 — Credenciales: pestañas, filtros, tablas y tarjetas móviles en el material de Console. Chips en azul frío para lo que detecta la aplicación y en rojo para el conflicto; verbos en lugar de flechas («Comparar», «Editar»); iconos SVG en lugar de ↕ y ⚠. Ruta: inline.
 - [x] T5 — Diálogos y avisos: la comparación como diff dentro de la ventana de hoy (decisión del usuario: «Diff en la ventana (Recomendado)»; el despliegue bajo la fila pasa a `compare-resolution`), la ficha, la sesión, la confirmación y los avisos de error, importación y cambio. Ruta: inline.
 - [x] T6 — Auditoría, Papelera, Ajustes y bienvenida en el mismo material, sin recomponer la Auditoría (S5). Ruta: inline.
-- [ ] T7 — Barrido de Hallmark (`sloplint --render --kept`, puertas juzgadas y revisión final en contexto limpio), documentación (`docs/guia-visual.md` §1 y §2 reescritas según Console, hoja de ruta) y cierre del plan. Ruta: inline.
+- [x] T7 — Barrido de Hallmark (`sloplint --render --kept`, puertas juzgadas y revisión final en contexto limpio), documentación (`docs/guia-visual.md` §1 y §2 reescritas según Console, hoja de ruta) y cierre del plan. Ruta: inline.
 
 ## Log
 
@@ -123,3 +123,4 @@ Rediseño completo con Hallmark (`/hallmark redesign`, profundidad `full`, alcan
   - **Excepción y descartes en el sello.** 39b (la marca de dos líneas y el nombre-enlace de cada fila, que no puede crecer sin romper la prueba de filas compactas); descartados 41, F7 y 49 con su motivo. Hallmark rechazó la primera redacción de 39b porque el motivo no compartía ninguna palabra con la página.
   - **Revisión final en contexto limpio** (subagente, `review-finish.md`): «fix», ocho hallazgos. Resueltos: a 320 px la barra inferior y las cifras (2 × 2) caben; la Auditoría separa número (Atkinson Hyperlegible Mono) y unidad, con plural correcto («1 grupo», «1 credencial»); «Revisadas» es la lectura principal de la cabecera y las demás quedan discretas; «Copia exacta» pasa a verde suave para no compartir tinte con «Varias cuentas»; anillo de foco de 2 px y etiquetas de la ficha en gris; más aire sobre el título. Parciales: el texto de ejemplo de la búsqueda sigue recortado a 320 px; la Auditoría tiene filetes pero no un bloque principal, que es de `audit-layout`. Sin resolver por decisión: el diff de los dos valores de contraseña, porque la ventana las mantiene ocultas y no se añade funcionalidad. Dos avisos nuevos tras los arreglos (72, cifras pegadas al borde; F6, cifras tabulares) resueltos en la segunda pasada.
   - Comprobado: `npm run build` y la suite E2E completa, 208 pruebas, en verde. Capturas a 1440, 390 y 320 px revisadas.
+- **L25 (2026-11-12).** T7, documentación y cierre. `docs/guia-visual.md`: §1 y §2 reescritas según Console (concepto y los dos significados de color, paleta con sus valores reales de `tokens.css`, escalas de tipo, espaciado y radios, una sola capa de contención, iconos dibujados, foco), la tabla de estados con sus formas actuales y el componente 2 como diff de coincidencias. `docs/hoja-de-ruta.md`: `visual-direction` hecho y entrada en el registro. `docs/pendiente.md`: última funcionalidad completada. La ejecución queda en `.hallmark/log.json` (`mode: redesign`, `depth: full`, `scope: app`). El plan pasa a `odd/done/`.
