@@ -1,8 +1,8 @@
-# Tipografía, radios y espaciado en variables CSS
+# Tipografía y radios en variables CSS
 
-Objetivo: sustituir los tamaños de letra, la familia tipográfica, los pesos, las alturas de línea, los radios y los espacios escritos directamente en `frontend/src/style.css` por variables CSS en `:root`, sin ningún cambio visual. Es la base para probar la nueva dirección visual tocando pocas líneas.
+Objetivo: sustituir los tamaños de letra, la familia tipográfica, los pesos, las alturas de línea y los radios escritos directamente en `frontend/src/style.css` por variables CSS en `:root`, sin ningún cambio visual. Es la base para probar la nueva dirección visual tocando pocas líneas.
 Rama: `refactor/scale-tokens` desde `main` (`4ef1105`). Continúa `css-tokens` (Fase 1), que solo cubrió los colores. Fase 2, n.º 2: va antes de la dirección visual y de rehacer la Auditoría (L3). Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`, más la comparación de estilos calculados de S2. Estado: en curso (L5); T1 y T2 hechas, verificación independiente de T2 pendiente.
+Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`, más la comparación de estilos calculados de S2. Estado: en curso (L6); T1 y T2 hechas; T5 y la verificación independiente pendientes.
 
 ## Specs
 
@@ -11,15 +11,10 @@ Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`, más la comparac
   - Nombres por función, no por valor, como en `css-tokens`: `--type-…` para tamaños de texto, `--icon-…` para los iconos de texto que se dimensionan con `font-size`, `--weight-…`, `--leading-…`, `--font-…` y `--radius-…`.
   - Hoy: 34 `font-size` de 13 valores, 17 `border-radius` de 8 valores, 9 `font-weight`, 4 `line-height` y 1 `font-family`.
   - Aceptación: fuera de `:root` no queda ningún literal de esas propiedades, comprobable con `grep`. Se permiten `0`, `inherit` y `font:inherit`.
-- **S3 — Espaciado en variables.** Usuario: «Los espaciados también deberían entrar. Aunque sea más trabajo.» Cada valor en píxeles de `padding`, `margin`, `gap`, `column-gap` y `scroll-padding` pasa a `var(--…)`.
-  - Hoy: 185 valores en píxeles en `padding`, `margin` y `gap`, de 34 valores distintos, más los de `scroll-padding`.
-  - Nombres por función, agrupando los usos que cumplen el mismo papel: margen lateral de la página, relleno de tarjetas y diálogos, relleno de controles, separación entre elementos apilados o en línea… Si hoy una misma función usa valores distintos, cada valor lleva su variable y la diferencia se anota (S5).
-  - Los márgenes negativos que anulan un relleno se expresan a partir de la variable de ese relleno, con `calc(-1 * var(--…))`, para que cambien juntos.
-  - Fuera: las posiciones (`top`, `bottom`, `right`) y los tamaños (`width`, `height`, `min-height`), que no son espaciado.
-  - Aceptación: fuera de `:root` no queda ningún valor en píxeles en esas propiedades, salvo dentro de `calc()` con variables; comprobable con `grep`. Se permite `0`.
+- **S3 — Espaciado: fuera, a la dirección visual (L6).** Al ver que conservar los valores exactos exigía 133 variables, una por uso, el usuario aclaró: «Pensaba que ibas a hacer lo de la direccion visual y no extraer todas las variables». La dirección visual lo resolverá con una escala sobre la base de 4 px de la guía y unas pocas variables de función.
 - **S4 — Sin cambio visual.** Usuario, al elegir entre conservar los valores o reducirlos ya a una escala: «Sí» a conservarlos. Cada valor se mantiene aunque difiera de la guía; elegir la escala es una decisión de la dirección visual.
   - Aceptación: estilos calculados idénticos entre `main` y la rama en todos los elementos visibles, a 1440 × 900 y 390 × 844, en la bienvenida, Credenciales (Duplicados y Todas), Auditoría, Papelera, Ajustes y los diálogos de comparación, ficha, sesión y confirmación. Es el método de `css-tokens` (L6), más fiable que comparar píxeles. El script vive fuera del repositorio.
-- **S5 — Diferencias con la guía, anotadas y no corregidas.** La guía visual (§2.2) pide textos de 13 px o más, espaciado sobre una base de 4 px y radios de 8, 12 y 16 px. El código usa textos de 11 y 12 px, ocho radios distintos y espacios fuera de la base de 4 px (5, 6, 7, 9, 10, 15 px…). Cada diferencia queda en el Log como entrada para la dirección visual.
+- **S5 — Diferencias con la guía, anotadas y no corregidas.** La guía visual (§2.2) pide textos de 13 px o más, espaciado sobre una base de 4 px y radios de 8, 12 y 16 px. El código usa textos de 11 y 12 px y ocho radios distintos. El espaciado, también fuera de la base de 4 px (5, 6, 7, 9, 10, 15 px…), lo resuelve la dirección visual (S3). Cada diferencia queda en el Log como entrada para la dirección visual.
 - **S6 — Fuera de alcance.**
   - **La escala tipográfica, la identidad y la jerarquía.** Son la dirección visual, que reescribirá §1 y §2 de la guía.
   - **`feat/audit-layout`.** Aparcada sin fusionar (su L10).
@@ -28,9 +23,8 @@ Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`, más la comparac
 
 - [x] T1 — S2, S5: inventario y correspondencia valor → variable de tipografía y radios en el Log: cada literal, dónde se usa, la variable elegida y su diferencia con la guía. Ruta: inline. Sin código.
 - [x] T2 — S2, S4: sustitución de tipografía y radios en `style.css` y comparación de estilos calculados entre `main` y la rama. Excepción a RED: refactorización sin cambio de comportamiento; las comprobaciones son S2 (`grep`), S4 (estilos calculados), `npm run build` y `npm run e2e`. Riesgo: ninguna prueba versionada detecta una regresión visual, así que lleva verificación independiente. Ruta: inline.
-- [ ] T3 — S3, S5: inventario del espaciado en el Log: cada valor, dónde se usa, la función que cumple y la variable elegida. Ruta: inline. Sin código.
-- [ ] T4 — S3, S4: sustitución del espaciado y comparación de estilos calculados, con las mismas comprobaciones y la misma verificación independiente que T2. Ruta: inline.
-- [ ] T5 — Documentación: la guía visual (§2.2) dice que los valores viven en variables y enlaza las diferencias de S5. Ruta: inline.
+- ~~T3 — inventario del espaciado~~ y ~~T4 — sustitución del espaciado~~: retiradas en L6; el espaciado pasa a la dirección visual.
+- [ ] T5 — Documentación: la guía visual (§2.2) dice que los valores de tipografía y radios viven en variables y enlaza las diferencias de S5; la hoja de ruta pasa el espaciado a la dirección visual. Ruta: inline.
 
 ## Log
 
@@ -90,3 +84,4 @@ Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`, más la comparac
   - Control negativo: con un solo radio alterado en el CSS de `main` (`.status`, de 7 a 8 px), la comparación da diferencias en todas las pantallas donde aparece una etiqueta de estado.
   - Sin cubrir por la comparación: los estados `:hover` y `:focus-visible`. Ninguna de sus reglas declara las propiedades de este plan (`grep`), así que no les afecta.
   - `npm run build` y la suite E2E completa (196 pruebas) en verde.
+- **L6 (2026-11-12).** T3 llegó a una correspondencia completa del espaciado: 136 declaraciones, 133 variables (casi una por uso, porque apenas hay funciones que compartan valor) y cinco declaraciones muertas más dentro de `.sticky-head`. Ante la pregunta de si aplicarla o dejar el espaciado para la dirección visual, el usuario aclaró: «Pensaba que ibas a hacer lo de la direccion visual y no extraer todas las variables». Había entendido «Los espaciados también deberían entrar» como extraerlos ya; la intención era resolverlos con la escala. Se retiran T3 y T4 sin aplicar nada: el espaciado pasa a la dirección visual, con una escala sobre la base de 4 px y pocas variables de función. Las cinco declaraciones muertas (`.topbar` y `.metrics` `margin-bottom`; en móvil, `.top-actions` `margin-top`, `.metrics` `gap` y `.metric` `padding`) quedan anotadas para entonces.
