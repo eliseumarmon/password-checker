@@ -2,7 +2,7 @@
 
 Objetivo: dar a la aplicación una identidad y una jerarquía propias, en lugar del aspecto monótono de hoy. La dirección se escribe en §1 y §2 de la [guía visual](../../docs/guia-visual.md) y se aplica sobre las variables CSS de `css-tokens` y `scale-tokens`, más una escala de espaciado.
 Rama: `feat/visual-direction`, encadenada sobre `refactor/scale-tokens` (`1d2ef00`), sin fusionar todavía. Usuario: «No es necesario subir. Podemos trabajar partiendo desde esta rama ya que van muy ligadas.» Fase 2, n.º 3. Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L14); entrega por partes: T1 y T2 primero; T1 en curso.
+Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L15); entrega por partes: T1 hecha, T2 en curso.
 
 ## Specs
 
@@ -24,7 +24,7 @@ Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de ca
 
 Rediseño completo con Hallmark (`/hallmark redesign`, profundidad `full`, alcance de aplicación) y el tema Console en gama graphite (L12). Se conservan el contenido y el cableado: manejadores, roles, etiquetas y clases que leen las pruebas E2E. Ninguna prueba se cambia para que pase el rediseño. Cada tarea termina con `npm run build`, la suite E2E completa y capturas de antes y después.
 
-- [ ] T1 — Fuentes incluidas: Host Grotesk (400 y 500) y Atkinson Hyperlegible Mono (400 y 500), archivos `woff2` oficiales sin modificar, con sus licencias OFL, servidos por la propia aplicación. RED: prueba E2E de que las dos familias cargan y de que la página no pide nada fuera de su origen. Ruta: inline.
+- [x] T1 — Fuentes incluidas: Host Grotesk (400 y 500) y Atkinson Hyperlegible Mono (400 y 500), archivos oficiales sin modificar (TTF variables; ver L15), con sus licencias OFL, servidos por la propia aplicación. RED: prueba E2E de que las dos familias cargan y de que la página no pide nada fuera de su origen. Ruta: inline.
 - [ ] T2 — Sistema Console: los colores, la tipografía, el espaciado (escala de 4 px, S3, con las cinco declaraciones muertas de `scale-tokens` L6), los radios (10, 6 y 4 px) y el suelo de Hallmark: bordes de campo a 3:1, `:active`, foco en ámbar, `overflow-x: clip`, la barra lateral sin animar su anchura y el sello en la primera línea del CSS. Ruta: inline.
 - [ ] T3 — Cabecera: las cuatro cifras como un panel de lecturas cortado por filetes, con los valores en Atkinson Hyperlegible Mono (mismas etiquetas y clase `.metric`), la frase sin punto medio y las dos zonas fijas sin chocar (puerta 56). Ruta: inline.
 - [ ] T4 — Credenciales: pestañas, filtros, tablas y tarjetas móviles en el material de Console. Chips en azul frío para lo que detecta la aplicación y en rojo para el conflicto; verbos en lugar de flechas («Comparar», «Editar»); iconos SVG en lugar de ↕ y ⚠. Ruta: inline.
@@ -70,3 +70,7 @@ Rediseño completo con Hallmark (`/hallmark redesign`, profundidad `full`, alcan
   - Decisión abierta: la muestra despliega la comparación bajo su fila, pero hoy es una ventana emergente de la que dependen unas 15 comprobaciones en 5 archivos E2E (`review`, `change-notices`, `dialogs`, `import-warnings`, `safari-totp`), y `compare-resolution` (Fase 2, n.º 9 y 10) ya rehace la comparación.
 - **L13 (2026-11-12).** Comparación: «Diff en la ventana (Recomendado)». El diff de la muestra va dentro de la ventana de hoy y no se toca ninguna prueba; el despliegue bajo la fila pasa a `compare-resolution`. Tareas T1 a T7 definidas. Previsión: bastante más de 400 líneas, así que se pregunta la forma de entrega.
 - **L14 (2026-11-12).** Entrega: «Por partes (Recomendado)». Primero T1 y T2, que cambian el aspecto de toda la aplicación, y se enseñan al usuario antes de seguir con T3 a T7.
+- **L15 (2026-11-12).** T1 hecha. RED: `frontend/e2e/fonts.spec.ts` fallaba porque ninguna de las dos familias estaba declarada. GREEN:
+  - `frontend/src/assets/fonts/`: `HostGrotesk-wght.ttf` (81 784 bytes) y `AtkinsonHyperlegibleMono-wght.ttf` (53 960 bytes), las fuentes variables del repositorio `google/fonts` (`ofl/hostgrotesk`, `ofl/atkinsonhyperlegiblemono`), con sus `OFL.txt`. Coinciden byte a byte con el original (mismo hash de Git). Se sirven en TTF, sin convertir a `woff2`, para no modificar nada; el nombre de archivo pierde los corchetes.
+  - `style.css` las declara con `@font-face` y `font-display: swap`; Vite las empaqueta con huella en `dist/assets`. La CSP de la página (`default-src 'self'`) ya las admite.
+  - Comprobado: la prueba nueva pasa (las dos familias cargan, dos peticiones `.ttf` y ninguna fuera del origen). T2 es la que empieza a usarlas.
