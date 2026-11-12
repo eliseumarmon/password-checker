@@ -100,14 +100,22 @@ export function useDialogFocus(dialog: Ref<HTMLElement | null>, options: { initi
     else if (event.key === 'Tab' && dialog.value) keepFocusInside(event, dialog.value);
   }
 
+  // A field the dialog's scrolling content has clipped stays partly hidden when it gets focus:
+  // the browser only scrolls when nothing of it shows. Bring it fully into view.
+  function onFocusIn(event: FocusEvent): void {
+    if (event.target instanceof HTMLElement) event.target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+
   onMounted(() => {
     openDialogs.push(self);
     document.addEventListener('keydown', onKeydown);
+    dialog.value?.addEventListener('focusin', onFocusIn);
     options.initial()?.focus();
   });
 
   onUnmounted(async () => {
     document.removeEventListener('keydown', onKeydown);
+    dialog.value?.removeEventListener('focusin', onFocusIn);
     openDialogs.splice(openDialogs.indexOf(self), 1);
     // The row that opened the dialog may leave in this same update.
     await nextTick();

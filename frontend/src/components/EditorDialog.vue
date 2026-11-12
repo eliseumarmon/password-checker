@@ -108,8 +108,8 @@ async function openSite(url: string): Promise<void> {
         <p class="hint">Editar esta contraseña guardada NO cambia la contraseña real del servicio.</p>
         <p class="muted">Origen inmutable: {{labelOrigin(record.source)}} · línea {{record.line}}</p>
       </div>
-      <div class="drawer-actions"><button v-if="record.included" class="danger push-left" :disabled="busy" @click="requestTrash"><TrashIcon /> Descartar</button><button v-else class="push-left" :disabled="busy" @click="requestRestore">Restaurar</button><button @click="requestClose">Cancelar</button><button class="primary" :disabled="busy" @click="$emit('save', form)">Guardar cambios</button></div>
       </div>
+      <div class="drawer-actions"><button v-if="record.included" class="danger push-left" :disabled="busy" @click="requestTrash"><TrashIcon /> Descartar</button><button v-else class="push-left" :disabled="busy" @click="requestRestore">Restaurar</button><button @click="requestClose">Cancelar</button><button class="primary" :disabled="busy" @click="$emit('save', form)">Guardar cambios</button></div>
     </section>
   </div>
 </template>
