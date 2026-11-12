@@ -2,7 +2,7 @@
 
 Objetivo: dar a la aplicación una identidad y una jerarquía propias, en lugar del aspecto monótono de hoy. La dirección se escribe en §1 y §2 de la [guía visual](../../docs/guia-visual.md) y se aplica sobre las variables CSS de `css-tokens` y `scale-tokens`, más una escala de espaciado.
 Rama: `feat/visual-direction`, encadenada sobre `refactor/scale-tokens` (`1d2ef00`), sin fusionar todavía. Usuario: «No es necesario subir. Podemos trabajar partiendo desde esta rama ya que van muy ligadas.» Fase 2, n.º 3. Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L11); Console puro (graphite) publicado como muestra, pendiente de la opinión del usuario.
+Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L12); dirección elegida: Console (graphite) puro; pendiente decidir dónde vive la comparación.
 
 ## Specs
 
@@ -58,3 +58,5 @@ Se concretan cuando estén resueltos los supuestos. Previsión: guía (§1 y §2
   - Se conservan la barra lateral, la cabecera, las pestañas, los filtros (búsqueda y tres selectores) y las columnas de Duplicados, con sus textos (salvo el punto medio de la cabecera, que pasa a dos frases).
   - Cambian: las cuatro cifras son un solo panel dividido por filetes, con los valores en Atkinson Hyperlegible Mono; la comparación deja la ventana emergente y se despliega bajo su fila como un diff, con `=` y `≠` en el margen y en rojo suave lo que difiere; los controles son el par de Console (ámbar relleno y contorno sobre grafito).
   - `sloplint`: 0 FAIL; la marca de 59 px como excepción y el aviso de la tabla en el móvil descartado, porque la pantalla real usa tarjetas en el móvil.
+- **L12 (2026-11-12).** Sobre «Password Checker en Console», el usuario: «Me gusta infinitamente más». Dirección elegida: el tema Console de Hallmark en gama graphite, sin las estructuras propias (Material, chips, panel lateral). Es un tema del catálogo pedido por el usuario (`theme: Console (by request)`), no un tema a medida.
+  - Decisión abierta: la muestra despliega la comparación bajo su fila, pero hoy es una ventana emergente de la que dependen unas 15 comprobaciones en 5 archivos E2E (`review`, `change-notices`, `dialogs`, `import-warnings`, `safari-totp`), y `compare-resolution` (Fase 2, n.º 9 y 10) ya rehace la comparación.
