@@ -2,7 +2,7 @@
 
 Objetivo: dar a la aplicación una identidad y una jerarquía propias, en lugar del aspecto monótono de hoy. La dirección se escribe en §1 y §2 de la [guía visual](../../docs/guia-visual.md) y se aplica sobre las variables CSS de `css-tokens` y `scale-tokens`, más una escala de espaciado.
 Rama: `feat/visual-direction`, encadenada sobre `refactor/scale-tokens` (`1d2ef00`), sin fusionar todavía. Usuario: «No es necesario subir. Podemos trabajar partiendo desde esta rama ya que van muy ligadas.» Fase 2, n.º 3. Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L9); tres direcciones publicadas como muestras, pendiente de que el usuario elija.
+Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L10); «Tabla serena» con Console (graphite) publicada como muestra, pendiente de la opinión del usuario.
 
 ## Specs
 
@@ -51,3 +51,6 @@ Se concretan cuando estén resueltos los supuestos. Previsión: guía (§1 y §2
   - Paletas generadas con la librería de color de Material (`@material/material-color-utilities` 0.3.0, esquema `TonalSpot` oscuro; la 0.4.0 no carga en Node), más un color de advertencia armonizado con cada semilla. Fuera de la opción 3 su terciario lavanda.
   - Tres páginas de muestra con datos ficticios, privadas: «Bandeja de revisión» (lista y detalle, musgo dorado, Albert Sans), «Tablero de destinos» (montones por estado, rosa palo, Inclusive Sans y Figtree) y «Tabla serena» (tabla con chips y panel lateral, cian grisáceo, Lexend). Las tres conservan la barra lateral plegable con ◇ y no usan franjas en los bordes.
   - `sloplint --render --scope app` sobre las tres: 0 FAIL, una excepción justificada (39b, la marca y las filas de lista de 72 px) y avisos descartados con motivo.
+- **L10 (2026-11-12).** Usuario: «Me gusta más tabla serena y aún así no termina de convencerme. Cómo se veria con console y graphite?». Cuarta muestra, privada: «Tabla serena en grafito», la estructura de la opción 3 con los colores, la tipografía (Host Grotesk 400 y 500, Atkinson Hyperlegible Mono para las contraseñas) y las formas de Console (6 px en controles, 4 px en chips, 10 px en paneles, filetes y sin sombras).
+  - Significados de Console: ámbar para lo que hace la persona (acción principal, ubicación, filtros elegidos, «No funciona»); azul frío para lo que detecta la aplicación (copias, reutilizadas, débiles, incompletas, varias cuentas); rojo solo para el conflicto.
+  - `sloplint`: limpio tras subir el borde del campo de búsqueda a 3:1 y quitar la negrita sintética (`font-synthesis: none`, pesos 400 y 500).
