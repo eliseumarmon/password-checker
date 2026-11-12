@@ -89,3 +89,6 @@ Rediseño completo con Hallmark (`/hallmark redesign`, profundidad `full`, alcan
   - **Limpieza del manejador.** `dialogFocus.ts` guarda el elemento en `onMounted` y lo usa para quitar el manejador, porque Vue puede vaciar la referencia de plantilla antes de `onUnmounted`.
   - **Relleno en el móvil.** El contenido de la ficha conserva su relleno inferior y la barra de botones usa los mismos 16 px laterales que el contenido.
   - Comprobado: `npm run build` y la suite E2E completa, 199 pruebas, en verde.
+- **L18 (2026-11-12).** Segunda revisión de la primera parte: aprobada con dos avisos, que se hacen al empezar T3 para revisarlos junto con ella.
+  - El desplazamiento al recibir el foco (`dialogFocus.ts`) actúa también con clics del ratón: un campo que asoma en parte se mueve bajo el puntero, y uno más alto que la zona visible puede saltar. Se limitará a la navegación con teclado, con una prueba de clic.
+  - `fonts.spec.ts` demuestra que las fuentes se descargan del propio origen, no que se usan: se añadirá una comprobación del estilo calculado del cuerpo y de un campo de contraseña.
