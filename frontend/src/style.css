@@ -32,7 +32,7 @@
 .editor-dialog>.dialog-content{padding-bottom:var(--space-md);scroll-padding-bottom:var(--space-md)}
 /* The record dialog's actions sit outside its scrolling content: always visible, never over a focused field. */
 .editor-dialog>.drawer-actions{position:static;flex:none;margin:0;padding:var(--space-md) var(--space-lg)}
-@media(max-width:760px){.editor-dialog>.dialog-content{padding:var(--space-md) var(--space-md) 0}}
+@media(max-width:760px){.editor-dialog>.dialog-content{padding:var(--space-md)}.editor-dialog>.drawer-actions{padding:var(--space-md)}}
 @media(max-height:400px){.sticky-head{max-height:calc(100dvh - var(--nav-height) - 64px);overflow:auto}.drawer-actions{position:static}}
 .session-dialog:has(>.error) .drawer-actions,.editor-dialog:has(>.error) .drawer-actions{position:static}
 .confirm-overlay{z-index:40}.confirm-dialog{width:min(480px,100%);padding:var(--space-lg)}.confirm-dialog h2{margin-bottom:var(--space-sm)}.confirm-dialog p{margin:0;overflow-wrap:anywhere}.confirm-dialog .drawer-actions{position:static;padding-bottom:0;flex-wrap:wrap}

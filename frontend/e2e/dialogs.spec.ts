@@ -201,3 +201,20 @@ test.describe('session dialog', () => {
     await expect(session(page).getByLabel('Archivo cifrado')).toBeFocused();
   });
 });
+
+for (const [label, width, height] of [['on a desktop', 1280, 720], ['on a phone', 360, 640]] as const) {
+  test(`shows the whole notes field when Tab reaches it ${label}`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await seedRecords(page, 'Example');
+    await page.locator('button:visible', { hasText: 'Editar' }).first().click();
+    const content = editor(page).locator('.dialog-content');
+    const notes = editor(page).getByLabel('Notas');
+    // The browser alone leaves a field that is already partly in view where it is.
+    await editor(page).getByRole('button', { name: 'Mostrar código 2FA' }).focus();
+    await page.keyboard.press('Tab');
+    await expect(notes).toBeFocused();
+    const [field, view] = await Promise.all([notes.boundingBox(), content.boundingBox()]);
+    expect(field!.y + field!.height).toBeLessThanOrEqual(view!.y + view!.height);
+    expect(field!.y).toBeGreaterThanOrEqual(view!.y);
+  });
+}

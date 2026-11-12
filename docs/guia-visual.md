@@ -40,10 +40,10 @@ No utilizar verde para indicar que una contraseña es «segura» si únicamente 
 
 ### 2.2 Tipografía, dimensiones y ritmo
 
-- Tipografía del sistema (sin fuentes remotas): `Segoe UI`, `Roboto`, `Noto Sans`, `Arial`, sans-serif. Contraseñas y fragmentos técnicos en monoespaciada del sistema **solo cuando estén revelados**.
+- Tipografía incluida en la aplicación, nunca descargada de Internet: Host Grotesk para leer y Atkinson Hyperlegible Mono para las contraseñas y los fragmentos técnicos. Son los archivos oficiales sin modificar, con sus licencias OFL, en `frontend/src/assets/fonts/`.
 - Escala: título de pantalla **24–28 px**; título de sección **18–20 px**; cuerpo **16 px**; datos de tabla **14–15 px**; ayuda **13–14 px**; evitar textos inferiores a 13 px.
 - Espaciado base **4 px**; intervalos 8, 12, 16, 24 y 32 px. Radio **8 px** controles, **12 px** tarjetas, **16 px** paneles.
-- En el código, la familia, los tamaños de letra, los pesos, las alturas de línea y los radios son variables CSS de `:root` en `frontend/src/style.css`, nombradas por su función: `--font-sans`, `--type-…`, `--icon-…`, `--weight-…`, `--leading-…` y `--radius-…`. Sus valores todavía no siguen esta escala: hay textos de 11 y 12 px y siete radios distintos, repartidos en ocho variables. Las diferencias están en [scale-tokens](../odd/done/scale-tokens.md) (L4), y el espaciado aún no usa variables. Las dos cosas las resolverá la dirección visual.
+- En el código, las escalas viven en variables CSS. `frontend/src/tokens.css` define las del tema Console (colores, `--text-*`, `--space-*`, radios) y `frontend/src/style.css` asigna las variables por función (`--type-…`, `--radius-…`, colores por papel). El espaciado sigue la escala de 4 px y los radios son 10, 6, 4 y 2 px. Esta sección se reescribirá entera al cerrar la dirección visual ([visual-direction](../odd/tasks/visual-direction.md), T7).
 - Controles táctiles: objetivo **44 × 44 px o mayor**, salvo controles de escritorio claramente diferenciados. El mínimo WCAG 2.2 AA es 24 × 24 px con excepciones.
 - Iconos de **18–24 px**, siempre acompañados de etiqueta accesible. Iconografía sencilla y consistente, sin depender de favicons externos.
 - Movimiento: transiciones discretas **120–180 ms**, sin animación obligatoria. Respetar `prefers-reduced-motion`.
