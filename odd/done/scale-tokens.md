@@ -2,7 +2,7 @@
 
 Objetivo: sustituir los tamaños de letra, la familia tipográfica, los pesos, las alturas de línea y los radios escritos directamente en `frontend/src/style.css` por variables CSS en `:root`, sin ningún cambio visual. Es la base para probar la nueva dirección visual tocando pocas líneas.
 Rama: `refactor/scale-tokens` desde `main` (`4ef1105`). Continúa `css-tokens` (Fase 1), que solo cubrió los colores. Fase 2, n.º 2: va antes de la dirección visual y de rehacer la Auditoría (L3). Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`, más la comparación de estilos calculados de S2. Estado: en curso (L6); T1 y T2 hechas; T5 y la verificación independiente pendientes.
+Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`, más la comparación de estilos calculados de S2. Estado: hecho (L7); verificación independiente pendiente.
 
 ## Specs
 
@@ -24,7 +24,7 @@ Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`, más la comparac
 - [x] T1 — S2, S5: inventario y correspondencia valor → variable de tipografía y radios en el Log: cada literal, dónde se usa, la variable elegida y su diferencia con la guía. Ruta: inline. Sin código.
 - [x] T2 — S2, S4: sustitución de tipografía y radios en `style.css` y comparación de estilos calculados entre `main` y la rama. Excepción a RED: refactorización sin cambio de comportamiento; las comprobaciones son S2 (`grep`), S4 (estilos calculados), `npm run build` y `npm run e2e`. Riesgo: ninguna prueba versionada detecta una regresión visual, así que lleva verificación independiente. Ruta: inline.
 - ~~T3 — inventario del espaciado~~ y ~~T4 — sustitución del espaciado~~: retiradas en L6; el espaciado pasa a la dirección visual.
-- [ ] T5 — Documentación: la guía visual (§2.2) dice que los valores de tipografía y radios viven en variables y enlaza las diferencias de S5; la hoja de ruta pasa el espaciado a la dirección visual. Ruta: inline.
+- [x] T5 — Documentación: la guía visual (§2.2) dice que los valores de tipografía y radios viven en variables y enlaza las diferencias de S5; la hoja de ruta pasa el espaciado a la dirección visual. Ruta: inline.
 
 ## Log
 
@@ -85,3 +85,4 @@ Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`, más la comparac
   - Sin cubrir por la comparación: los estados `:hover` y `:focus-visible`. Ninguna de sus reglas declara las propiedades de este plan (`grep`), así que no les afecta.
   - `npm run build` y la suite E2E completa (196 pruebas) en verde.
 - **L6 (2026-11-12).** T3 llegó a una correspondencia completa del espaciado: 136 declaraciones, 133 variables (casi una por uso, porque apenas hay funciones que compartan valor) y cinco declaraciones muertas más dentro de `.sticky-head`. Ante la pregunta de si aplicarla o dejar el espaciado para la dirección visual, el usuario aclaró: «Pensaba que ibas a hacer lo de la direccion visual y no extraer todas las variables». Había entendido «Los espaciados también deberían entrar» como extraerlos ya; la intención era resolverlos con la escala. Se retiran T3 y T4 sin aplicar nada: el espaciado pasa a la dirección visual, con una escala sobre la base de 4 px y pocas variables de función. Las cinco declaraciones muertas (`.topbar` y `.metrics` `margin-bottom`; en móvil, `.top-actions` `margin-top`, `.metrics` `gap` y `.metric` `padding`) quedan anotadas para entonces.
+- **L7 (2026-11-12).** T5, documentación: `docs/guia-visual.md` (§2.2: dónde viven las variables, sus diferencias con la escala y que el espaciado queda para la dirección visual) y `docs/hoja-de-ruta.md` (el plan enlaza a `odd/done/`). El plan pasa a `odd/done/`.
