@@ -2,7 +2,7 @@
 
 Objetivo: sustituir los tamaños de letra, la familia tipográfica, los pesos, las alturas de línea, los radios y los espacios escritos directamente en `frontend/src/style.css` por variables CSS en `:root`, sin ningún cambio visual. Es la base para probar la nueva dirección visual tocando pocas líneas.
 Rama: `refactor/scale-tokens` desde `main` (`4ef1105`). Continúa `css-tokens` (Fase 1), que solo cubrió los colores. Fase 2, n.º 2: va antes de la dirección visual y de rehacer la Auditoría (L3). Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`, más la comparación de estilos calculados de S2. Estado: en curso (L3); T1 pendiente.
+Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`, más la comparación de estilos calculados de S2. Estado: en curso (L4); T1 hecha, T2 pendiente.
 
 ## Specs
 
@@ -26,7 +26,7 @@ Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`, más la comparac
 
 ## Tasks
 
-- [ ] T1 — S2, S5: inventario y correspondencia valor → variable de tipografía y radios en el Log: cada literal, dónde se usa, la variable elegida y su diferencia con la guía. Ruta: inline. Sin código.
+- [x] T1 — S2, S5: inventario y correspondencia valor → variable de tipografía y radios en el Log: cada literal, dónde se usa, la variable elegida y su diferencia con la guía. Ruta: inline. Sin código.
 - [ ] T2 — S2, S4: sustitución de tipografía y radios en `style.css` y comparación de estilos calculados entre `main` y la rama. Excepción a RED: refactorización sin cambio de comportamiento; las comprobaciones son S2 (`grep`), S4 (estilos calculados), `npm run build` y `npm run e2e`. Riesgo: ninguna prueba versionada detecta una regresión visual, así que lleva verificación independiente. Ruta: inline.
 - [ ] T3 — S3, S5: inventario del espaciado en el Log: cada valor, dónde se usa, la función que cumple y la variable elegida. Ruta: inline. Sin código.
 - [ ] T4 — S3, S4: sustitución del espaciado y comparación de estilos calculados, con las mismas comprobaciones y la misma verificación independiente que T2. Ruta: inline.
@@ -43,3 +43,44 @@ Comprobaciones: `npm run build` y `npm run e2e` en `frontend/`, más la comparac
 - **L3 (2026-11-12).** Decisiones del usuario: «Sí, añádelo a la Fase 2. Los espaciados también deberían entrar. Aunque sea más trabajo.»
   - Hoja de ruta: este plan pasa a ser el n.º 2 de la Fase 2, seguido de la dirección visual (plan por escribir) y de rehacer la Auditoría. El resto de la Fase 2 va después, para no rehacer el estilo de cada plan.
   - El espaciado entra (S3), con su inventario (T3) y su sustitución (T4) separados de los de tipografía y radios. Recuento en `main`: 185 valores en píxeles en `padding`, `margin` y `gap`, de 34 valores distintos. Previsión total: ~100 líneas cambiadas; las líneas de `style.css` son muy largas, así que cada una agrupa muchos cambios.
+- **L4 (2026-11-12).** T1: correspondencia valor → variable de tipografía y radios, sobre `main` (`4ef1105`). 33 variables para 61 usos (de los 65 literales, se retiran dos reglas muertas y quedan dos radios `0`). Los tamaños se agrupan por su papel en la jerarquía, no por componente: un componente usa la variable del papel que cumple. Los iconos de texto llevan `--icon-…` aparte, porque la dirección visual los cambiará con otro criterio que el texto.
+  - **Dos reglas muertas, que se retiran en T2.** En móvil, `.topbar h1{font-size:23px}` y `.metric strong{font-size:23px}` nunca se aplican: la cabecera y las métricas viven siempre dentro de `.sticky-head`, y `.sticky-head h1` (20 px, mismo peso y declarada después) y `.sticky-head .metric strong` (16 px, más específica) las anulan. Darles una variable sería nombrar un valor que no se ve; retirarlas no cambia ningún estilo calculado, y S4 lo comprueba.
+
+| Variable | Valor | Usos | Guía (§2.2) |
+|---|---|---|---|
+| `--font-sans` | `Segoe UI,Roboto,Noto Sans,Arial,sans-serif` | `:root` | igual |
+| `--type-heading-1` | 26px | `h1` | 24–28 px: dentro |
+| `--type-heading-1-compact` | 20px | `.sticky-head h1` (móvil) | — |
+| `--type-heading-2` | 20px | `h2` | 18–20 px: dentro |
+| `--type-heading-3` | 17px | `h3` | por debajo de los 18–20 px de un título de sección |
+| `--type-body` | 16px | `:root`, `.warning-title` | igual |
+| `--type-data` | 14px | `.desktop-table`, `.audit-item`, `.editor-fields>label:not(.check)`, `.session-field` | 14–15 px: dentro |
+| `--type-data-compact` | 13px | `.audit-item` (móvil) | por debajo de los 14–15 px de los datos |
+| `--type-help` | 13px | `small,.muted,.hint`, `.topbar p`, `.section-heading p`, `.warning-footer` | 13–14 px: dentro |
+| `--type-control-compact` | 13px | `.desktop-table button`, `.compare-actions button`, `.sticky-head .top-actions button` (móvil) | — |
+| `--type-caption` | 12px | `.brand small`, `.sidebar-note`, `.metric span`, `.status`, `.compare-flags span`, `.mobile-nav button span` (móvil) | **por debajo de 13 px** |
+| `--type-caption-compact` | 11px | `.sticky-head .metric span` (móvil) | **por debajo de 13 px** |
+| `--type-metric` | 20px | `.metric strong` | — |
+| `--type-metric-compact` | 16px | `.sticky-head .metric strong` (móvil) | — |
+| `--type-audit-count` | 25px | `.audit-count` | — |
+| `--icon-brand` | 32px | `.brand-mark` | iconos de 18–24 px: **por encima** |
+| `--icon-hero` | 38px | `.big-icon` | **por encima** |
+| `--icon-nav` | 22px | `.mobile-nav button` (móvil) | dentro |
+| `--icon-sort` | 12px | `.sort-icon` | **por debajo** |
+| `--weight-regular` | 400 | `:root`, `.editor-fields input…` | — |
+| `--weight-semibold` | 600 | `.sidebar nav button`, `.desktop-table th`, `.table-link`, `.editor-fields>label:not(.check)`, `.session-field` | — |
+| `--weight-bold` | 700 | `.primary`, `.audit-count` | — |
+| `--leading-body` | 1.5 | `p` | — |
+| `--leading-table` | 1.35 | `.desktop-table .table-link`, `.desktop-table .url-truncate` | — |
+| `--leading-tight` | 1.2 | `.metric strong`, `.sticky-head .metric span` (móvil) | — |
+| `--radius-card` | 15px | `.card,.metric` | 12 px en tarjetas: **distinto** |
+| `--radius-dropzone` | 14px | `.dropzone` | 16 px en paneles: **distinto** |
+| `--radius-item` | 12px | `.audit-block`, `.compare-card`, `.record-card` | 12 px: igual |
+| `--radius-notice` | 10px | `.error`, `.warning`, `.change` | **sin equivalente** |
+| `--radius-track` | 10px | `.progress` | **sin equivalente** |
+| `--radius-control` | 9px | `button`, campos de `.filters` y `.editor-fields`, `.audit-block details`, `.session-field input` | 8 px en controles: **distinto** |
+| `--radius-badge` | 7px | `.status` | **sin equivalente** |
+| `--radius-chip` | 6px | `.compare-flags span` | **sin equivalente** |
+
+  - Se quedan como literales: `border-radius:0` (`.tabs button`, `.desktop-table th .sort-button`) y `font:inherit` (S2).
+  - Para la dirección visual (S5): siete textos y un icono por debajo de 13 px; cuatro papeles con 13 px (ayuda, datos compactos, controles compactos) y tres con 20 px (título de sección, título compacto, métrica), sin nada que los distinga; ocho radios donde la guía pide tres.
