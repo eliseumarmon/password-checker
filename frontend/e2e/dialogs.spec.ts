@@ -234,3 +234,39 @@ test('leaves the content where it is when a click focuses a field the dialog sho
   await expect(editor(page).getByLabel('Notas')).toBeFocused();
   expect(await content.evaluate(box => box.scrollTop)).toBe(before);
 });
+
+test('still brings a field into view by keyboard after a press that ends outside the dialog', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await seedRecords(page, 'Example');
+  await page.locator('button:visible', { hasText: 'Editar' }).first().click();
+  const dialog = editor(page);
+  // A press inside the dialog that is released on the overlay, as when a text selection is dragged out.
+  const box = (await dialog.getByRole('heading', { name: 'Editar credencial' }).boundingBox())!;
+  await page.mouse.move(box.x + 5, box.y + 5);
+  await page.mouse.down();
+  await page.mouse.move(5, 5);
+  await page.mouse.up();
+  await dialog.getByRole('button', { name: 'Mostrar código 2FA' }).focus();
+  await page.keyboard.press('Tab');
+  const notes = dialog.getByLabel('Notas');
+  await expect(notes).toBeFocused();
+  const [field, view] = await Promise.all([notes.boundingBox(), dialog.locator('.dialog-content').boundingBox()]);
+  expect(field!.y + field!.height).toBeLessThanOrEqual(view!.y + view!.height);
+});
+
+test.describe('on a touch screen', () => {
+  test.use({ hasTouch: true, viewport: { width: 360, height: 640 } });
+  test('leaves the content where it is when a tap focuses a field the dialog shows in part', async ({ page }) => {
+    await seedRecords(page, 'Example');
+    await page.locator('button:visible', { hasText: 'Editar' }).first().tap();
+    const content = editor(page).locator('.dialog-content');
+    const before = await content.evaluate(box => {
+      const field = box.querySelector('textarea')!;
+      box.scrollTop += field.getBoundingClientRect().top - box.getBoundingClientRect().bottom + 30;
+      return box.scrollTop;
+    });
+    await editor(page).getByLabel('Notas').tap({ position: { x: 40, y: 10 } });
+    await expect(editor(page).getByLabel('Notas')).toBeFocused();
+    expect(await content.evaluate(box => box.scrollTop)).toBe(before);
+  });
+});

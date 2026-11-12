@@ -27,3 +27,13 @@ test('opens the site from the record with a drawn icon, not an arrow in the labe
   await expect(open).toHaveText('Abrir sitio en pestaña nueva');
   await expect(open.locator('svg')).toHaveCount(1);
 });
+
+test('names each field with its own gender in the diff', async ({ page }) => {
+  // Same site and password, two users: only the user differs.
+  await seed(page, [{ name: 'chrome.csv', lines: [CHROMIUM_HEADER,
+    'Example,https://example.invalid/,alice,fake-shared-123456,', 'Example,https://example.invalid/,bob,fake-shared-123456,'] }]);
+  await desktopTable(page).getByRole('button', { name: 'Comparar' }).click();
+  const marks = page.getByRole('dialog', { name: 'Comparar duplicados' }).locator('.compare-card').nth(1).locator('.compare-flags');
+  await expect(marks).toContainText('Usuario distinto');
+  await expect(marks).toContainText('URL igual');
+});
