@@ -2,7 +2,7 @@
 
 Objetivo: dar a la aplicación una identidad y una jerarquía propias, en lugar del aspecto monótono de hoy. La dirección se escribe en §1 y §2 de la [guía visual](../../docs/guia-visual.md) y se aplica sobre las variables CSS de `css-tokens` y `scale-tokens`, más una escala de espaciado.
 Rama: `feat/visual-direction`, encadenada sobre `refactor/scale-tokens` (`1d2ef00`), sin fusionar todavía. Usuario: «No es necesario subir. Podemos trabajar partiendo desde esta rama ya que van muy ligadas.» Fase 2, n.º 3. Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L7); rediseño completo con Hallmark; elecciones (Picks) pendientes de aprobación.
+Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L8); tercer y último intento, a medida (Hallmark `custom` y `frontend-design`); preguntas de dirección en curso.
 
 ## Specs
 
@@ -43,3 +43,6 @@ Se concretan cuando estén resueltos los supuestos. Previsión: guía (§1 y §2
   - `puppeteer-core` 25.16.0 se instaló en una carpeta temporal fuera del repositorio, solo para el renderizado.
 - **L7 (2026-11-12).** Alcance elegido por el usuario: «Rediseño completo» (`/hallmark redesign`, profundidad `full`, alcance de aplicación). Se conservan el contenido, el cableado y el armazón de pantallas (barra lateral y navegación móvil); se cambian el sistema y la composición de cada pantalla.
   - Reparto de temas (`theme.mjs deal`, semilla `local-tool-where-one-a003·3525948d·2026-11-12·r0`): Console (grafito, ámbar y azul frío), Ink (papel claro, tinta negra y verde azulado) y Dusk (paisaje fotográfico y vidrio). Propuesto: Console, porque su material es el diff y el registro de auditoría.
+- **L8 (2026-11-12).** Sobre la propuesta de Console, el usuario preguntó si la skill permite crear un tema nuevo (sí: la vía `custom` de Hallmark, `references/direction.md`). Decisión: «Haz un tercer y último intento con estas directivas. Carga también la skill de frontend-design. Haz las preguntas que necesites para ir en la dirección acertada».
+  - Qué falló en «Mesa de revisión», en palabras del usuario: «Pizarra + lavanda me parece demasiado de IA. No me gusta especialmente. El menú de passwordchecker plegable con el icono actual me gusta. El borde izquierdo de "credenciales" me parece demasiado IA. Puedes seguir las guías de material design aunque crees un tema nuevo.»
+  - Consecuencias: se conserva la barra lateral plegable con la marca actual (◇); ninguna franja de color en el borde de un elemento seleccionado; Material Design (M3) como guía de sistema: roles de color, escala tipográfica, formas y capas de estado.
