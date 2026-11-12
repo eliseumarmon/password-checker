@@ -2,7 +2,7 @@
 
 Objetivo: dar a la aplicación una identidad y una jerarquía propias, en lugar del aspecto monótono de hoy. La dirección se escribe en §1 y §2 de la [guía visual](../../docs/guia-visual.md) y se aplica sobre las variables CSS de `css-tokens` y `scale-tokens`, más una escala de espaciado.
 Rama: `feat/visual-direction`, encadenada sobre `refactor/scale-tokens` (`1d2ef00`), sin fusionar todavía. Usuario: «No es necesario subir. Podemos trabajar partiendo desde esta rama ya que van muy ligadas.» Fase 2, n.º 3. Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L22); T1 a T5 hechas; T6 en curso.
+Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L23); T1 a T6 hechas; T7 en curso.
 
 ## Specs
 
@@ -29,7 +29,7 @@ Rediseño completo con Hallmark (`/hallmark redesign`, profundidad `full`, alcan
 - [x] T3 — Cabecera: las cuatro cifras como un panel de lecturas cortado por filetes, con los valores en Atkinson Hyperlegible Mono (mismas etiquetas y clase `.metric`), la frase sin punto medio y las dos zonas fijas sin chocar (puerta 56). Ruta: inline.
 - [x] T4 — Credenciales: pestañas, filtros, tablas y tarjetas móviles en el material de Console. Chips en azul frío para lo que detecta la aplicación y en rojo para el conflicto; verbos en lugar de flechas («Comparar», «Editar»); iconos SVG en lugar de ↕ y ⚠. Ruta: inline.
 - [x] T5 — Diálogos y avisos: la comparación como diff dentro de la ventana de hoy (decisión del usuario: «Diff en la ventana (Recomendado)»; el despliegue bajo la fila pasa a `compare-resolution`), la ficha, la sesión, la confirmación y los avisos de error, importación y cambio. Ruta: inline.
-- [ ] T6 — Auditoría, Papelera, Ajustes y bienvenida en el mismo material, sin recomponer la Auditoría (S5). Ruta: inline.
+- [x] T6 — Auditoría, Papelera, Ajustes y bienvenida en el mismo material, sin recomponer la Auditoría (S5). Ruta: inline.
 - [ ] T7 — Barrido de Hallmark (`sloplint --render --kept`, puertas juzgadas y revisión final en contexto limpio), documentación (`docs/guia-visual.md` §1 y §2 reescritas según Console, hoja de ruta) y cierre del plan. Ruta: inline.
 
 ## Log
@@ -111,3 +111,9 @@ Rediseño completo con Hallmark (`/hallmark redesign`, profundidad `full`, alcan
   - **Avisos** de error, importación y cambio: filete en lugar de sombra, como pide Console; el aviso de cambio, en tinta sobre ámbar suave.
   - Se retira la regla vieja de chips de `.compare-flags`, que ya no aplica.
   - Comprobado: `npm run build` y la suite E2E completa, 205 pruebas, en verde. Captura de la comparación revisada.
+- **L23 (2026-11-12).** T6 hecha. RED: `frontend/e2e/screens.spec.ts`, tres pruebas que fallaban por lo esperado; la de la bienvenida usa el ayudante `isolated-welcome`, porque el servidor de pruebas comparte su espacio de trabajo y no vuelve a estar vacío. GREEN:
+  - **Bienvenida:** el ⇧ del área de soltar archivos pasa a un icono SVG (`upload`), y el área usa filete discontinuo de 1 px.
+  - **Auditoría:** «nombre — usuario» pierde la raya (puerta 19) y el usuario va en gris al lado; los recuentos van en Atkinson Hyperlegible Mono, salvo «No comprobadas», que no es una cifra (puerta 64). Bloques de filete sobre el fondo. La Auditoría no se recompone (S5).
+  - **Tarjetas en el móvil** (Credenciales y Papelera): filas separadas por filetes en lugar de cajas con borde dentro del panel (puerta 4).
+  - Pendiente para el barrido de T7: los botones de la cabecera que se parten en dos líneas en el móvil (puerta 49a) y el plural «1 grupos», que viene de antes.
+  - Comprobado: `npm run build` y la suite E2E completa, 208 pruebas, en verde (un error puntual de red del entorno, `ERR_NO_BUFFER_SPACE`, no se repitió). Capturas de la Auditoría y del móvil revisadas.

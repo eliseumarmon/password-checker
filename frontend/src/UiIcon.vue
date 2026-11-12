@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Line icons drawn like TrashIcon: characters such as ⚙ or ⚠ may render as emoji, depending on the font.
-export type UiIconName = 'list' | 'shield' | 'tune' | 'sort' | 'sort-up' | 'sort-down' | 'first' | 'previous' | 'next' | 'last' | 'warning' | 'external';
+export type UiIconName = 'list' | 'shield' | 'tune' | 'sort' | 'sort-up' | 'sort-down' | 'first' | 'previous' | 'next' | 'last' | 'warning' | 'external' | 'upload';
 
 defineProps<{ name: UiIconName }>();
 
@@ -17,6 +17,7 @@ const PATHS: Record<UiIconName, string> = {
   last: 'm7 7 5 5-5 5M16 7v10',
   warning: 'M12 4 21 19H3zM12 10v4M12 16.5v.5',
   external: 'M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4',
+  upload: 'M12 16V4M7 9l5-5 5 5M5 20h14',
 };
 </script>
 

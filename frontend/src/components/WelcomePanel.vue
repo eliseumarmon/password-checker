@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import UiIcon from '../UiIcon.vue';
 import { ref } from 'vue';
 import type { SessionRequestEmits } from '../types';
 
@@ -17,7 +18,7 @@ function onDrop(event: DragEvent): void {
     <h2>Empieza importando tus contraseñas</h2>
     <p>Arrastra varios CSV de Chrome, Brave, Firefox y Safari. Se compararán antes de fusionar nada.</p>
     <div class="dropzone" :class="{dragging}" @dragenter.prevent="dragging=true" @dragover.prevent @dragleave.prevent="dragging=false" @drop.prevent="onDrop">
-      <span class="big-icon">⇧</span><strong>Arrastra aquí los CSV</strong>
+      <span class="big-icon"><UiIcon name="upload" /></span><strong>Arrastra aquí los CSV</strong>
       <span>o utiliza el selector de archivos</span>
       <button class="primary" :disabled="busy" @click="$emit('pick')">Elegir archivos</button>
       <button @click="$emit('sessionRequested', 'load')">Abrir sesión cifrada anterior</button>
