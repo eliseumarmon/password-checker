@@ -130,3 +130,6 @@ Rediseño completo con Hallmark (`/hallmark redesign`, profundidad `full`, alcan
   - Arreglo de los dos: `dialogFocus.ts` guarda la hora de la última pulsación en lugar de un marcador; un foco que llega menos de un segundo después no desplaza nada, y cualquier tecla lo anula.
   - **Concordancia.** El diff decía «Usuario distinta»; ahora cada campo lleva su género («URL distinta», «Usuario distinto», «Contraseña distinta»). Prueba con dos usuarios en el mismo sitio.
   - Comprobado: `npm run build` y la suite E2E completa, 211 pruebas, en verde.
+- **L27 (2026-11-12).** Revisión (`review-reliability`) tras L26: aprobada con dos avisos, sin cambios en el código.
+  - «Los botones sin partir pueden desbordar a 320 px» («Abrir sitio en pestaña nueva», «Abrir sesión cifrada anterior»): no se confirma. Medido a 320 px, el ancho mínimo de la aplicación: el de la bienvenida ocupa de 41 a 279 px de una página de 320, y el de la ficha de 33 a 292 px dentro de un contenido de 17 a 303 que no se desplaza en horizontal.
+  - Un foco que el programa mueve menos de un segundo después de un clic no desplaza el campo: caso latente, sin ninguna acción de la aplicación que lo provoque hoy. Queda anotado aquí.
