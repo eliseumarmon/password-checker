@@ -2,7 +2,7 @@
 
 Objetivo: dar a la aplicación una identidad y una jerarquía propias, en lugar del aspecto monótono de hoy. La dirección se escribe en §1 y §2 de la [guía visual](../../docs/guia-visual.md) y se aplica sobre las variables CSS de `css-tokens` y `scale-tokens`, más una escala de espaciado.
 Rama: `feat/visual-direction`, encadenada sobre `refactor/scale-tokens` (`1d2ef00`), sin fusionar todavía. Usuario: «No es necesario subir. Podemos trabajar partiendo desde esta rama ya que van muy ligadas.» Fase 2, n.º 3. Entrega: `ask-on-risk`.
-Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L8); tercer y último intento, a medida (Hallmark `custom` y `frontend-design`); preguntas de dirección en curso.
+Comprobaciones: `npm run build`, `npm run e2e` y capturas antes y después de cada pantalla. Estado: en curso (L9); tres direcciones publicadas como muestras, pendiente de que el usuario elija.
 
 ## Specs
 
@@ -46,3 +46,8 @@ Se concretan cuando estén resueltos los supuestos. Previsión: guía (§1 y §2
 - **L8 (2026-11-12).** Sobre la propuesta de Console, el usuario preguntó si la skill permite crear un tema nuevo (sí: la vía `custom` de Hallmark, `references/direction.md`). Decisión: «Haz un tercer y último intento con estas directivas. Carga también la skill de frontend-design. Haz las preguntas que necesites para ir en la dirección acertada».
   - Qué falló en «Mesa de revisión», en palabras del usuario: «Pizarra + lavanda me parece demasiado de IA. No me gusta especialmente. El menú de passwordchecker plegable con el icono actual me gusta. El borde izquierdo de "credenciales" me parece demasiado IA. Puedes seguir las guías de material design aunque crees un tema nuevo.»
   - Consecuencias: se conserva la barra lateral plegable con la marca actual (◇); ninguna franja de color en el borde de un elemento seleccionado; Material Design (M3) como guía de sistema: roles de color, escala tipográfica, formas y capas de estado.
+- **L9 (2026-11-12).** Respuestas del usuario, de una en una: esquema «Oscuro, como hoy»; tono «Suave»; color semilla «Propón tú (Recomendado)»; y, sobre la tipografía: «Me gustaba la opcion de atkinson hyperlegible para las contraseñas. Se puede conservar eso? Haz un artefacto para qcada opción. Una imagen vale más que mil palabras».
+  - Atkinson Hyperlegible Mono se conserva en las tres, con un solo papel: contraseñas reveladas y códigos 2FA.
+  - Paletas generadas con la librería de color de Material (`@material/material-color-utilities` 0.3.0, esquema `TonalSpot` oscuro; la 0.4.0 no carga en Node), más un color de advertencia armonizado con cada semilla. Fuera de la opción 3 su terciario lavanda.
+  - Tres páginas de muestra con datos ficticios, privadas: «Bandeja de revisión» (lista y detalle, musgo dorado, Albert Sans), «Tablero de destinos» (montones por estado, rosa palo, Inclusive Sans y Figtree) y «Tabla serena» (tabla con chips y panel lateral, cian grisáceo, Lexend). Las tres conservan la barra lateral plegable con ◇ y no usan franjas en los bordes.
+  - `sloplint --render --scope app` sobre las tres: 0 FAIL, una excepción justificada (39b, la marca y las filas de lista de 72 px) y avisos descartados con motivo.
