@@ -19,7 +19,7 @@ const matches = computed(() => new Map(props.group?.members.map(member => [membe
 
 <template>
   <div class="overlay modal-overlay" @click.self="$emit('close')">
-    <section ref="dialog" class="compare-dialog card" role="dialog" aria-modal="true" aria-label="Comparar duplicados">
+    <section ref="dialog" class="compare-dialog" role="dialog" aria-modal="true" aria-label="Comparar duplicados">
       <slot />
       <div class="dialog-content">
       <div class="drawer-top"><h2 ref="title" tabindex="-1">Comparar registros</h2><button aria-label="Cerrar panel" @click="$emit('close')">✕</button></div>
@@ -27,9 +27,12 @@ const matches = computed(() => new Map(props.group?.members.map(member => [membe
       <p v-else>Este grupo ya está resuelto.</p>
       <div class="compare-grid">
         <div v-for="r in rows" :key="r.id" class="compare-card">
-          <div class="row-between"><strong>{{labelOrigin(r.source)}} · línea {{r.line}}</strong><span class="status" :class="r.included && r.review">{{r.included ? labelReview(r.review) : 'En la papelera'}}</span></div>
-          <p>{{r.name}} · {{r.username}}</p><p class="muted" :title="r.url">{{r.url}}</p>
-          <div v-if="matches.get(r.id)" class="compare-flags"><span>URL {{matches.get(r.id)!.match_url?'✓':'≠'}}</span><span>Usuario {{matches.get(r.id)!.match_username?'✓':'≠'}}</span><span>Clave {{matches.get(r.id)!.match_password?'✓':'≠'}}</span></div>
+          <div class="row-between"><strong class="compare-origin">{{labelOrigin(r.source)}}, línea {{r.line}}</strong><span class="status" :class="r.included && r.review">{{r.included ? labelReview(r.review) : 'En la papelera'}}</span></div>
+          <dl class="compare-fields"><div><dt>Nombre</dt><dd>{{r.name}}</dd></div><div><dt>Usuario</dt><dd>{{r.username}}</dd></div><div><dt>URL</dt><dd class="compare-url" :title="r.url">{{r.url}}</dd></div></dl>
+          <!-- The diff against the group's first active record: a mark and a word for each field. -->
+          <ul v-if="matches.get(r.id)" class="compare-flags">
+            <li v-for="[label, same, different] in ([['URL', matches.get(r.id)!.match_url, 'distinta'], ['Usuario', matches.get(r.id)!.match_username, 'distinto'], ['Contraseña', matches.get(r.id)!.match_password, 'distinta']] as const)" :key="label" :class="same ? 'same' : 'differs'"><span class="mark" aria-hidden="true">{{same ? '=' : '≠'}}</span>{{label}} {{same ? 'igual' : different}}</li>
+          </ul>
           <div class="compare-actions"><button @click="$emit('edit', r.id)">Ver / editar</button><button v-if="r.included" class="danger" :disabled="busy" @click="$emit('trash', r.id)"><TrashIcon /> Descartar</button><button v-else :disabled="busy" @click="$emit('restore', r.id)">Restaurar</button></div>
         </div>
       </div>

@@ -4,7 +4,9 @@ Criterios de diseño e interacción: qué debe cumplir la interfaz y por qué. N
 
 ## 1. Concepto estético
 
-**Personalidad:** herramienta de trabajo privada, precisa, sobria y amable. Inspiración funcional: agrupaciones claras de Google Password Manager, **sin reproducir su marca ni su interfaz**.
+**Personalidad:** un instrumento que lleva una persona cuidadosa. La aplicación usa el tema **Console** de Hallmark en su gama **graphite**: fondo de grafito en tres escalones, tinta pálida, paneles de filete fino cortados de una sola superficie y nada que brille. No es un terminal de neón ni un panel de cristal. Lo eligió el usuario el 2026-11-12, tras descartar otras tres direcciones ([visual-direction](../odd/done/visual-direction.md)).
+
+**Dos significados de color, nunca intercambiados:** el **ámbar** es la persona (la acción principal, la pantalla en la que está, lo que ella declara: «Revisada», el aviso de su último cambio); el **azul frío** es el instrumento (lo que la aplicación detecta: copias, cuentas distintas, origen y línea). El verde y el rojo solo dicen estado: igual o distinto, copia exacta o conflicto.
 
 **Principios de producto:**
 
@@ -15,51 +17,57 @@ Criterios de diseño e interacción: qué debe cumplir la interfaz y por qué. N
 5. **Continuidad.** La revisión de cientos de registros debe poder retomarse sin repetir trabajo.
 6. **Sin falsear certezas.** «Revisado» no significa «Acceso verificado»; no haber consultado filtraciones no significa «Sin filtraciones».
 
-**Lenguaje de interfaz:** español sencillo, acciones concretas: «Comparar», «Descartar» (a la papelera), «Restaurar», «Deshacer», «Guardar sesión cifrada». Evitar etiquetas ambiguas como «Arreglar» y «Seguro» cuando no se haya comprobado nada.
+**Lenguaje de interfaz:** español sencillo, acciones concretas: «Comparar», «Descartar» (a la papelera), «Restaurar», «Deshacer», «Guardar sesión cifrada». Evitar etiquetas ambiguas como «Arreglar» y «Seguro» cuando no se haya comprobado nada. Sin flechas pegadas al texto de un botón, sin rayas y sin cadenas de puntos medios: como mucho uno, en un pie o una leyenda.
 
 ## 2. Sistema visual
 
-### 2.1 Paleta propuesta
+Las reglas que siguen las comprueba el linter de Hallmark (`sloplint --scope app`); el sello al principio de `frontend/src/style.css` registra el tema, sus excepciones justificadas y el resultado de la última revisión.
 
-| Token | Oscuro predeterminado | Claro alternativo | Función |
+### 2.1 Paleta
+
+Los valores viven en `frontend/src/tokens.css` (tema Console, en hexadecimal sRGB exacto de sus valores OKLCH) y `frontend/src/style.css` los asigna por papel.
+
+| Papel | Variable de Console | Valor | Uso |
 |---|---|---|---|
-| `surface/page` | `#0B1017` | `#F6F8FB` | Fondo general |
-| `surface/card` | `#141C27` | `#FFFFFF` | Tarjetas y paneles |
-| `surface/raised` | `#1B2635` | `#EEF2F7` | Menús y capas |
-| `text/primary` | `#F1F5F9` | `#172437` | Texto principal |
-| `text/secondary` | `#B6C4D5` | `#506176` | Metadatos y ayudas |
-| `accent` | `#7CC4FF` | `#125CA8` | Foco, enlaces, selección |
-| `success` | `#61D6B1` | `#167450` | Comprobado / terminado |
-| `warning` | `#FFD07A` | `#935500` | Reutilización / revisión |
-| `danger` | `#FF929D` | `#AD3043` | Conflicto / alerta |
-| `border/control` | `#62758F` | `#7F8DA0` | Contornos interactivos |
+| Fondo | `--color-paper` | `#0d1013` | Página y barra lateral |
+| Panel | `--color-paper-2` | `#15191c` | Paneles, celdas de las cifras, diálogos |
+| Fondo profundo | `--color-paper-3` | `#06080b` | Campos de texto, botón pulsado |
+| Tinta | `--color-ink` | `#eceff2` | Texto principal |
+| Tinta secundaria | `--color-ink-2` | `#c3c8cc` | Valores en reposo |
+| Texto secundario | `--color-muted` | `#9da2a8` | Etiquetas, ayudas y bordes de campo |
+| Filete | `--color-rule` / `--color-rule-2` | `#2d3135` / `#484e54` | Separadores / bordes de controles |
+| Persona | `--color-accent` (+ `-soft`, `-ink`) | `#f7b83d` | Acción principal, ubicación, foco, «Revisada» |
+| Instrumento | `--color-cool` (+ `-soft`) | `#6ebcfc` | Lo que detecta la aplicación |
+| Igual | `--color-ok` (+ `-soft`) | `#61cb7c` | «Copia exacta», marcas `=` del diff |
+| Distinto | `--color-bad` (+ `-soft`) | `#f66d67` | Conflicto, marcas `≠`, errores |
 
-Colores **propuestos**, sujetos a mediciones automáticas de contraste en implementación: AA en texto normal (≥ 4,5:1), ≥ 3:1 para componentes/indicadores significativos y foco visible. Los estados siempre se identifican además con **texto e icono**, nunca solo color.
+Contraste medido: texto normal AA (4,5:1 o más), bordes de campo y foco 3:1 o más. Los estados se identifican siempre con **texto e icono**, nunca solo con color. No usar verde para decir que una contraseña es «segura» si solo ha superado reglas locales: «Sin alertas locales» es más preciso.
 
-No utilizar verde para indicar que una contraseña es «segura» si únicamente ha superado reglas locales básicas. «Sin alertas locales» es más preciso.
+El tema claro (Fase 4, `light-theme`) usará la gama **paper** de Console, con los mismos dos significados.
 
 ### 2.2 Tipografía, dimensiones y ritmo
 
-- Tipografía del sistema (sin fuentes remotas): `Segoe UI`, `Roboto`, `Noto Sans`, `Arial`, sans-serif. Contraseñas y fragmentos técnicos en monoespaciada del sistema **solo cuando estén revelados**.
-- Escala: título de pantalla **24–28 px**; título de sección **18–20 px**; cuerpo **16 px**; datos de tabla **14–15 px**; ayuda **13–14 px**; evitar textos inferiores a 13 px.
-- Espaciado base **4 px**; intervalos 8, 12, 16, 24 y 32 px. Radio **8 px** controles, **12 px** tarjetas, **16 px** paneles.
-- En el código, la familia, los tamaños de letra, los pesos, las alturas de línea y los radios son variables CSS de `:root` en `frontend/src/style.css`, nombradas por su función: `--font-sans`, `--type-…`, `--icon-…`, `--weight-…`, `--leading-…` y `--radius-…`. Sus valores todavía no siguen esta escala: hay textos de 11 y 12 px y siete radios distintos, repartidos en ocho variables. Las diferencias están en [scale-tokens](../odd/done/scale-tokens.md) (L4), y el espaciado aún no usa variables. Las dos cosas las resolverá la dirección visual.
-- Controles táctiles: objetivo **44 × 44 px o mayor**, salvo controles de escritorio claramente diferenciados. El mínimo WCAG 2.2 AA es 24 × 24 px con excepciones.
-- Iconos de **18–24 px**, siempre acompañados de etiqueta accesible. Iconografía sencilla y consistente, sin depender de favicons externos.
-- Movimiento: transiciones discretas **120–180 ms**, sin animación obligatoria. Respetar `prefers-reduced-motion`.
-- Foco de teclado destacado (contorno sólido de 2 px, color contrastado). Componentes tabulares navegables con teclado.
+- **Tipografía incluida en la aplicación, nunca descargada de Internet:** Host Grotesk (400 y 500) para leer y Atkinson Hyperlegible Mono para lo que escribe la máquina: contraseñas, códigos 2FA, URL, origen y línea, y las cifras. Son los archivos oficiales sin modificar, con sus licencias OFL, en `frontend/src/assets/fonts/`. La monoespaciada nunca va en una etiqueta, un título ni un botón.
+- **Escala tipográfica** de razón 1,2 desde 16 px (`--text-xs` 12 px a `--text-3xl` 33 px). Títulos en Host Grotesk 500 con interletraje de −0,03 em; cuerpo de 16 px con interlineado 1,55; etiquetas y datos de tabla a 14 px.
+- **Espaciado** sobre la escala de 4 px de Console: 2, 4, 8, 12, 16, 24, 40, 64, 96 y 144 px (`--space-3xs` a `--space-4xl`). Ningún espaciado en píxeles sueltos.
+- **Radios:** 10 px en paneles, 6 px en controles, 4 px en etiquetas de estado y chips, 2 px en barras de progreso. Ninguna sombra: la profundidad la dan los escalones del fondo y los filetes.
+- **Una sola capa de contención:** nada de cajas con borde dentro de otras cajas. Lo que va junto (las cuatro cifras de la cabecera, las versiones de la comparación, los bloques de la Auditoría) es una superficie cortada por filetes de 1 px.
+- **Controles:** 32 a 40 px de alto en escritorio, con objetivo táctil de 44 × 44 px en el móvil; el texto de un botón nunca se parte, y es la fila la que pasa a la línea siguiente. El mínimo WCAG 2.2 AA es 24 × 24 px.
+- **Iconos** dibujados en SVG (`UiIcon`, `TrashIcon`), siempre acompañados de etiqueta accesible: nunca caracteres que una fuente pueda convertir en emoji.
+- **Movimiento** solo como respuesta a una acción, con `--dur-micro` (120 ms) y `--dur-short` (220 ms), y nada con `prefers-reduced-motion`.
+- **Foco de teclado:** contorno ámbar de 2 px, instantáneo. Lo que recibe el foco dentro de un diálogo se desplaza hasta verse entero si llegó con el teclado.
 
 ### 2.3 Tipos de información y estados visuales
 
 | Tipo | Forma | Qué significa |
 |---|---|---|
-| Duplicado exacto | Indicador neutro «Copia exacta» | URL canónica, usuario exacto y contraseña iguales, sin dos códigos 2FA distintos; pueden diferir notas y procedencia |
-| Conflicto | Icono alerta y texto «Versiones diferentes» | Misma cuenta aparente con contraseñas o códigos 2FA distintos; requiere descartar una versión |
-| Cuenta distinta | Indicador «Varias cuentas» | Mismo sitio, distinta identidad; normalmente conservar |
+| Duplicado exacto | Etiqueta verde suave «Copia exacta» | URL canónica, usuario exacto y contraseña iguales, sin dos códigos 2FA distintos; pueden diferir notas y procedencia |
+| Conflicto | Etiqueta roja suave «Versiones diferentes»; en la comparación, `≠` y «Contraseña distinta» | Misma cuenta aparente con contraseñas o códigos 2FA distintos; requiere descartar una versión |
+| Cuenta distinta | Etiqueta azul fría «Varias cuentas» | Mismo sitio, distinta identidad; normalmente conservar |
 | Reutilización | Icono advertencia + «Usada en N cuentas» | Misma contraseña en cuentas distintas; **no** equivale a duplicado |
-| Pendiente | Punto + texto «Pendiente» | No revisado |
-| Revisado | Check de revisión + texto «Revisada» | El usuario lo da por bueno; no afirma que el acceso esté comprobado |
-| Incorrecto | Icono X + texto «No funciona» | Requiere corrección manual; queda como trabajo pendiente y no cuenta en el progreso |
+| Pendiente | Etiqueta con filete «Pendiente» | No revisado |
+| Revisado | Etiqueta ámbar «Revisada» | El usuario lo da por bueno; no afirma que el acceso esté comprobado |
+| Incorrecto | Etiqueta roja «No funciona» | Requiere corrección manual; queda como trabajo pendiente y no cuenta en el progreso |
 | En la papelera | Icono de basura y sección «Papelera» | No saldrá en el CSV; se restaura desde la papelera |
 
 El estado de **revisión** y el estado de **seguridad** son independientes. Las ediciones de URL/usuario/contraseña/código 2FA invalidan la verificación previa; una edición de notas no.
@@ -103,7 +111,7 @@ Las pantallas actuales se describen en el [flujo de usuario](flujo-usuario.md). 
 ## 6. Biblioteca de componentes
 
 1. **Dropzone + selector de archivos:** admite varios CSV; identifica navegador por cabecera, no solo por nombre de fichero; muestra recuento y errores específicos; los originales quedan intactos.
-2. **Chip de coincidencia:** «URL ✓ / Usuario ✓ / Clave ≠» sin mostrar secretos. `≠` no implica contraseña incorrecta.
+2. **Diff de coincidencias:** en cada versión de la comparación, una fila por campo con `=` e «igual» o `≠` y «distinta» (URL, usuario, contraseña), sin mostrar secretos; lo distinto, en rojo suave. `≠` no implica contraseña incorrecta.
 3. **Comparador de registros:** original inmutable frente a candidato editable; procedencia visible.
 4. **Campo secreto:** oculto por defecto, con su propio botón «Mostrar/Ocultar» (nombre accesible «Mostrar contraseña» o «Mostrar código 2FA»); revelar uno no revela el otro y nunca se revelan todos al cargar. El campo «Código 2FA (TOTP)» de la ficha, bajo la contraseña, sigue este patrón y pide a navegadores y gestores de contraseñas que no lo autocompleten, aunque no todos lo respetan.
 5. **Enlace de servicio:** clic explícito abre **pestaña nueva** solo para URL web `http(s)` validada, con `noopener noreferrer`; si hay credenciales en URL, exigir revisión y no abrirla tal cual. No usar favicons remotos.

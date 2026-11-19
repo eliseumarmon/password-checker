@@ -111,7 +111,7 @@ test.describe('record dialog', () => {
   test('moves focus to the next card when its row leaves on a small screen', async ({ page }) => {
     await seedRecords(page, 'Alpha', 'Bravo', 'Charlie');
     await page.setViewportSize({ width: 390, height: 844 });
-    const edit = (name: string) => page.locator('.mobile-cards .record-card', { hasText: name }).getByRole('button', { name: 'Editar →' });
+    const edit = (name: string) => page.locator('.mobile-cards .record-card', { hasText: name }).getByRole('button', { name: 'Editar' });
     await openWithKeyboard(page, edit('Bravo'));
     await editor(page).getByRole('button', { name: 'Descartar' }).click();
     await expect(page.locator('.mobile-cards .record-card')).toHaveCount(2);
@@ -124,7 +124,7 @@ test.describe('record dialog on a touch screen', () => {
 
   test('starts on its title, so that the on-screen keyboard stays closed', async ({ page }) => {
     await seedRecords(page, 'Alpha');
-    await page.locator('.mobile-cards .record-card').getByRole('button', { name: 'Editar →' }).tap();
+    await page.locator('.mobile-cards .record-card').getByRole('button', { name: 'Editar' }).tap();
     await expect(editor(page).getByRole('heading', { name: 'Editar credencial' })).toBeFocused();
   });
 });
@@ -199,5 +199,74 @@ test.describe('session dialog', () => {
     await page.getByRole('button', { name: 'Ajustes' }).first().click();
     await openWithKeyboard(page, page.getByRole('button', { name: 'Abrir', exact: true }));
     await expect(session(page).getByLabel('Archivo cifrado')).toBeFocused();
+  });
+});
+
+for (const [label, width, height] of [['on a desktop', 1280, 720], ['on a phone', 360, 640]] as const) {
+  test(`shows the whole notes field when Tab reaches it ${label}`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await seedRecords(page, 'Example');
+    await page.locator('button:visible', { hasText: 'Editar' }).first().click();
+    const content = editor(page).locator('.dialog-content');
+    const notes = editor(page).getByLabel('Notas');
+    // The browser alone leaves a field that is already partly in view where it is.
+    await editor(page).getByRole('button', { name: 'Mostrar código 2FA' }).focus();
+    await page.keyboard.press('Tab');
+    await expect(notes).toBeFocused();
+    const [field, view] = await Promise.all([notes.boundingBox(), content.boundingBox()]);
+    expect(field!.y + field!.height).toBeLessThanOrEqual(view!.y + view!.height);
+    expect(field!.y).toBeGreaterThanOrEqual(view!.y);
+  });
+}
+
+test('leaves the content where it is when a click focuses a field the dialog shows in part', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await seedRecords(page, 'Example');
+  await page.locator('button:visible', { hasText: 'Editar' }).first().click();
+  const content = editor(page).locator('.dialog-content');
+  // Only the top of the notes field shows above the bottom edge of the scrolling content.
+  const before = await content.evaluate(box => {
+    const field = box.querySelector('textarea')!;
+    box.scrollTop += field.getBoundingClientRect().top - box.getBoundingClientRect().bottom + 30;
+    return box.scrollTop;
+  });
+  await editor(page).getByLabel('Notas').click({ position: { x: 40, y: 10 } });
+  await expect(editor(page).getByLabel('Notas')).toBeFocused();
+  expect(await content.evaluate(box => box.scrollTop)).toBe(before);
+});
+
+test('still brings a field into view by keyboard after a press that ends outside the dialog', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await seedRecords(page, 'Example');
+  await page.locator('button:visible', { hasText: 'Editar' }).first().click();
+  const dialog = editor(page);
+  // A press inside the dialog that is released on the overlay, as when a text selection is dragged out.
+  const box = (await dialog.getByRole('heading', { name: 'Editar credencial' }).boundingBox())!;
+  await page.mouse.move(box.x + 5, box.y + 5);
+  await page.mouse.down();
+  await page.mouse.move(5, 5);
+  await page.mouse.up();
+  await dialog.getByRole('button', { name: 'Mostrar código 2FA' }).focus();
+  await page.keyboard.press('Tab');
+  const notes = dialog.getByLabel('Notas');
+  await expect(notes).toBeFocused();
+  const [field, view] = await Promise.all([notes.boundingBox(), dialog.locator('.dialog-content').boundingBox()]);
+  expect(field!.y + field!.height).toBeLessThanOrEqual(view!.y + view!.height);
+});
+
+test.describe('on a touch screen', () => {
+  test.use({ hasTouch: true, viewport: { width: 360, height: 640 } });
+  test('leaves the content where it is when a tap focuses a field the dialog shows in part', async ({ page }) => {
+    await seedRecords(page, 'Example');
+    await page.locator('button:visible', { hasText: 'Editar' }).first().tap();
+    const content = editor(page).locator('.dialog-content');
+    const before = await content.evaluate(box => {
+      const field = box.querySelector('textarea')!;
+      box.scrollTop += field.getBoundingClientRect().top - box.getBoundingClientRect().bottom + 30;
+      return box.scrollTop;
+    });
+    await editor(page).getByLabel('Notas').tap({ position: { x: 40, y: 10 } });
+    await expect(editor(page).getByLabel('Notas')).toBeFocused();
+    expect(await content.evaluate(box => box.scrollTop)).toBe(before);
   });
 });

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import NoticeBase from './NoticeBase.vue';
+import UiIcon from '../UiIcon.vue';
 import type { ImportWarning } from '../types';
 
 // Import warnings: file/column names come from an untrusted CSV and are only
@@ -21,7 +22,7 @@ function rowsLabel(rows: number): string {
 
 <template>
   <NoticeBase kind="warning" @close="$emit('close')">
-    <p class="warning-title"><span aria-hidden="true">⚠</span> <strong>Importación completada con advertencias</strong></p>
+    <p class="warning-title"><UiIcon name="warning" /> <strong>Importación completada con advertencias</strong></p>
     <p v-if="summarized" class="warning-summary">{{ totalColumns }} columnas descartadas</p>
     <button v-if="summarized" type="button" class="warning-details" :aria-expanded="expanded" @click="expanded = !expanded">Ver detalles</button>
     <ul v-show="!summarized || expanded" class="warning-files">

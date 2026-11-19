@@ -94,20 +94,42 @@ export function useDialogFocus(dialog: Ref<HTMLElement | null>, options: { initi
   const self = {};
 
   function onKeydown(event: KeyboardEvent): void {
+    // The keyboard takes over: focus that follows may bring its field into view again.
+    lastPress = -Infinity;
     if (openDialogs[openDialogs.length - 1] !== self) return;
     // A held key repeats: without this check, each repeat would close the next dialog down.
     if (event.key === 'Escape') { if (!event.repeat) options.onEscape(); }
     else if (event.key === 'Tab' && dialog.value) keepFocusInside(event, dialog.value);
   }
 
+  // A field the dialog's scrolling content has clipped can stay partly hidden when it gets focus:
+  // the browser may leave a field that already shows in part where it is. Bring it fully into view,
+  // unless a click or a tap gave the focus: the content must not move under the pointer. A press counts
+  // for a second, which also covers the mouse events a browser sends late after a tap, and a press
+  // released outside the dialog cannot leave the keyboard path switched off.
+  const PRESS_WINDOW_MS = 1000;
+  let lastPress = -Infinity;
+  function onPointerDown(): void { lastPress = performance.now(); }
+  function onFocusIn(event: FocusEvent): void {
+    if (performance.now() - lastPress < PRESS_WINDOW_MS) return;
+    if (event.target instanceof HTMLElement) event.target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+  // Kept here: Vue may clear the template ref before onUnmounted runs.
+  let element: HTMLElement | null = null;
+
   onMounted(() => {
     openDialogs.push(self);
     document.addEventListener('keydown', onKeydown);
+    element = dialog.value;
+    element?.addEventListener('focusin', onFocusIn);
+    element?.addEventListener('pointerdown', onPointerDown);
     options.initial()?.focus();
   });
 
   onUnmounted(async () => {
     document.removeEventListener('keydown', onKeydown);
+    element?.removeEventListener('focusin', onFocusIn);
+    element?.removeEventListener('pointerdown', onPointerDown);
     openDialogs.splice(openDialogs.indexOf(self), 1);
     // The row that opened the dialog may leave in this same update.
     await nextTick();

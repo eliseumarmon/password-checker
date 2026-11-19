@@ -6,5 +6,5 @@ defineEmits<{ review: [id: string] }>();
 </script>
 
 <template>
-  <div v-for="id in ids" :key="id" class="audit-item"><span>{{records.get(id)?.name}} — {{records.get(id)?.username}}</span><button @click="$emit('review', id)">Revisar</button></div>
+  <div v-for="id in ids" :key="id" class="audit-item"><span>{{records.get(id)?.name}} <span class="audit-user">{{records.get(id)?.username}}</span></span><button @click="$emit('review', id)">Revisar</button></div>
 </template>

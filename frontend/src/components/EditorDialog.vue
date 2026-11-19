@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue';
 import TrashIcon from '../TrashIcon.vue';
+import UiIcon from '../UiIcon.vue';
 import { safeWebUrl } from '../api';
 import { confirmAction } from '../confirm';
 import { useDialogFocus } from '../dialogFocus';
@@ -98,7 +99,7 @@ async function openSite(url: string): Promise<void> {
       <div class="editor-fields editor-grid">
         <label>Nombre<input v-model="form.name" autocomplete="off" /></label>
         <label>URL o paquete Android<input v-model="form.url" autocomplete="off" spellcheck="false" /></label>
-        <button v-if="safeWebUrl(form.url || '')" @click="openSite(form.url || '')">↗ Abrir sitio en pestaña nueva</button>
+        <button v-if="safeWebUrl(form.url || '')" @click="openSite(form.url || '')"><UiIcon name="external" /> Abrir sitio en pestaña nueva</button>
         <p v-else class="muted">Las URI de Android no son enlaces web. Comprueba la app manualmente en el teléfono.</p>
         <label>Usuario<input v-model="form.username" autocomplete="off" /></label>
         <label>Contraseña <span class="secret-input"><input v-model="form.password" :type="revealed?'text':'password'" autocomplete="new-password" spellcheck="false" /><button :aria-label="revealed?'Ocultar contraseña':'Mostrar contraseña'" @click="revealed=!revealed">{{revealed?'Ocultar':'Mostrar'}}</button></span></label>
@@ -106,10 +107,10 @@ async function openSite(url: string): Promise<void> {
         <label>Notas<textarea v-model="form.note" rows="5"></textarea></label>
         <label>Estado de revisión<select v-model="form.review"><option value="pending">{{labelReview('pending')}}</option><option value="reviewed">{{labelReview('reviewed')}}</option><option value="incorrect">{{labelReview('incorrect')}}</option></select></label>
         <p class="hint">Editar esta contraseña guardada NO cambia la contraseña real del servicio.</p>
-        <p class="muted">Origen inmutable: {{labelOrigin(record.source)}} · línea {{record.line}}</p>
+        <p class="muted">Origen inmutable: {{labelOrigin(record.source)}}, línea {{record.line}}</p>
+      </div>
       </div>
       <div class="drawer-actions"><button v-if="record.included" class="danger push-left" :disabled="busy" @click="requestTrash"><TrashIcon /> Descartar</button><button v-else class="push-left" :disabled="busy" @click="requestRestore">Restaurar</button><button @click="requestClose">Cancelar</button><button class="primary" :disabled="busy" @click="$emit('save', form)">Guardar cambios</button></div>
-      </div>
     </section>
   </div>
 </template>

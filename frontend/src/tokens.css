@@ -1,0 +1,23 @@
+/* Console graphite, its OKLCH values written as their exact sRGB hex (the E2E contrast checks read computed colours as rgb). */
+:root {
+  color-scheme: dark;
+  --space-3xs: 2px; --space-2xs: 4px; --space-xs: 8px; --space-sm: 12px; --space-md: 16px; --space-lg: 24px; --space-xl: 40px; --space-2xl: 64px; --space-3xl: 96px; --space-4xl: 144px;
+  --text-xs: 0.75rem; --text-sm: 0.875rem; --text-md: 1rem; --text-lg: 1.2rem; --text-xl: 1.44rem; --text-2xl: 1.728rem; --text-3xl: 2.074rem;
+  --text-display-s: 1.44rem; --text-display: 1.728rem; --text-section: 1.2rem; --text-title: 1rem; --text-lead: 1rem;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); --ease-in: cubic-bezier(0.7, 0, 0.84, 0); --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms; --dur-short: 220ms; --dur-long: 420ms;
+  --color-error: #f47c70; --color-success: #6fc884;
+  --container: 1440px; --gutter: 64px; --gap-columns: 32px; --section-gap-s: 120px; --section-gap: 144px; --section-gap-l: 176px;
+  --z-base: 1; --z-raised: 10; --z-dropdown: 100; --z-sticky: 200; --z-sticky-nav: 300; --z-modal: 400; --z-toast: 500; --z-tooltip: 600;
+  --color-paper: #0d1013; --color-paper-2: #15191c; --color-paper-3: #06080b;
+  --color-ink: #eceff2; --color-ink-2: #c3c8cc; --color-muted: #9da2a8;
+  --color-rule: #2d3135; --color-rule-2: #484e54;
+  --color-accent: #f7b83d; --color-accent-ink: #1c0e00; --color-accent-soft: #38280a; --color-focus: #f7b83d;
+  --color-cool: #6ebcfc; --color-cool-soft: #142e43;
+  --color-ok: #61cb7c; --color-ok-soft: #162519; --color-bad: #f66d67; --color-bad-soft: #2f1a18;
+  --font-display: "Host Grotesk", ui-sans-serif, system-ui, sans-serif; --font-body: var(--font-display);
+  --font-outlier: "Atkinson Hyperlegible Mono", ui-monospace, monospace;
+  --radius-card: 10px; --radius-pill: 6px; --rule-hair: 1px;
+  --shadow-card: none;
+  --tracking-display: -0.03em; --display-weight: 500;
+}

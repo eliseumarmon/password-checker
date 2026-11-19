@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from 'vue';
 import { api } from './api';
 import { useWorkspace } from './store';
 import TrashIcon from './TrashIcon.vue';
+import UiIcon from './UiIcon.vue';
 import ErrorNotice from './components/ErrorNotice.vue';
 import ChangeNotice from './components/ChangeNotice.vue';
 import WarningNotice from './components/WarningNotice.vue';
@@ -286,15 +287,15 @@ onUnmounted(() => {
     <aside class="sidebar" :class="{collapsed}" aria-label="Navegación principal">
       <button class="brand" :aria-label="collapsed?'Expandir menú':'Contraer menú'" :title="collapsed?'Expandir menú':'Contraer menú'" :aria-expanded="!collapsed" @click="collapsed=!collapsed"><span class="brand-mark">◇</span><span class="label"><strong>Password Checker</strong><small>Revisión privada de credenciales</small></span></button>
       <nav>
-        <button v-for="s in SCREENS" :key="s.id" :class="{active:screen===s.id}" :aria-current="screen===s.id ? 'page' : undefined" :title="s.showCount?`${s.label} (${trashed.length})`:s.label" @click="screen=s.id"><span class="nav-icon"><TrashIcon v-if="s.icon.kind==='trash'" /><template v-else>{{s.icon.text}}</template></span><span class="label">{{s.label}}<template v-if="s.showCount"> ({{trashed.length}})</template></span></button>
+        <button v-for="s in SCREENS" :key="s.id" :class="{active:screen===s.id}" :aria-current="screen===s.id ? 'page' : undefined" :title="s.showCount?`${s.label} (${trashed.length})`:s.label" @click="screen=s.id"><span class="nav-icon"><TrashIcon v-if="s.icon.kind==='trash'" /><UiIcon v-else :name="s.icon.kind" /></span><span class="label">{{s.label}}<template v-if="s.showCount"> ({{trashed.length}})</template></span></button>
       </nav>
-      <p class="sidebar-note label">Solo en este equipo · Sin conexión externa</p>
+      <p class="sidebar-note label">Solo en este equipo, sin conexión externa.</p>
     </aside>
 
     <main class="main">
       <div ref="stickyHead" class="sticky-head">
       <header class="topbar">
-        <div><h1>{{ SCREENS.find(s => s.id === screen)?.title }}</h1><p>Los originales no se modifican · Las contraseñas permanecen ocultas</p></div>
+        <div><h1>{{ SCREENS.find(s => s.id === screen)?.title }}</h1><p>Los originales no se modifican. Las contraseñas permanecen ocultas.</p></div>
         <div class="top-actions">
           <button v-if="data?.stats.total" @click="showSession('save')">Guardar sesión cifrada</button>
           <button :disabled="!data?.can_undo || store.busy" @click="undoShown" :title="undoTitle">↶ Deshacer</button>
@@ -349,6 +350,6 @@ onUnmounted(() => {
       <ErrorNotice v-if="errorHost==='session'" :message="store.error" @close="store.error=''" />
     </SessionDialog>
     <ConfirmDialog v-if="pendingConfirm" :request="pendingConfirm" @settle="settleConfirm" />
-    <nav ref="mobileNav" class="mobile-nav" aria-label="Navegación móvil"><button v-for="s in SCREENS" :key="s.id" :class="{active:screen===s.id}" :aria-current="screen===s.id ? 'page' : undefined" @click="screen=s.id"><TrashIcon v-if="s.icon.kind==='trash'" /><template v-else>{{s.icon.text}}</template><span>{{s.label}}</span></button></nav>
+    <nav ref="mobileNav" class="mobile-nav" aria-label="Navegación móvil"><button v-for="s in SCREENS" :key="s.id" :class="{active:screen===s.id}" :aria-current="screen===s.id ? 'page' : undefined" @click="screen=s.id"><TrashIcon v-if="s.icon.kind==='trash'" /><UiIcon v-else :name="s.icon.kind" /><span>{{s.label}}</span></button></nav>
   </div>
 </template>
